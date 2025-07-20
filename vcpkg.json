@@ -1,0 +1,23 @@
+{
+  "dependencies": [
+    "fmt",
+    {
+      "name": "imgui",
+      "features": [
+        "docking-experimental",
+        "freetype",
+        "glfw-binding",
+        "opengl3-binding"
+      ]
+    },
+    "glfw3",
+    "opengl",
+    "glm",
+    "freetype",
+    "pugixml",
+    "glad",
+    "box2d",
+    "openal-soft",
+    "stb"
+  ]
+}
