@@ -1,27 +1,30 @@
-#include <GLFW/glfw3.h>
 #include <engine/global.h>
+#include <engine/render.h>
+#include <engine/audio.h>
+#include <engine/input.h>
+#include <thread>
+#include <fmt/core.h>
 
 int main(int argc, char** argv) {
-  glfwInit();
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-  Engine::window.store(glfwCreateWindow(800, 600, "Metal", nullptr, nullptr));
-  if (!Engine::window.load()) {
-    glfwTerminate();
-    return -1;
-  }
+  fmt::print("Main Thread: Starting\n");
+  std::thread r_init(r::Init);
+  std::thread a_init(a::Init);
+  r_init.join();
+  a_init.join();
 
-  glfwMakeContextCurrent(Engine::window.load());
   while (!glfwWindowShouldClose(Engine::window.load())) {
-    glfwSwapBuffers(Engine::window.load());
-    glfwPollEvents();
+    if (glfwGetKey(Engine::window.load(), GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+      // Don't break the loop immediately, allow for cleanup
+      glfwSetWindowShouldClose(Engine::window.load(), true);
+    }
+    r::Update();
+    i::Update();
   }
 
-  glfwDestroyWindow(Engine::window.load());
-  glfwTerminate();
+  std::thread r_quit(r::Quit);
+  std::thread a_quit(a::Quit);
+  r_quit.join();
+  a_quit.join();
+  fmt::print("Main Thread: Exiting\n");
   return 0;
 }

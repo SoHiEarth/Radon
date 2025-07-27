@@ -6,6 +6,8 @@
 
 namespace Engine {
   extern std::atomic<GLFWwindow*> window;
+  extern std::atomic<int> width;
+  extern std::atomic<int> height;
 }
 
 #endif // ENGINE_GLOBAL_H
