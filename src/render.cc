@@ -20,6 +20,7 @@ void r::Init() {
 #endif
   Engine::window.store(glfwCreateWindow(800, 600, "Metal", nullptr, nullptr));
   if (!Engine::window.load()) {
+    fmt::print("Failed to create GLFW window\n");
     glfwTerminate();
     return;
   }
@@ -35,6 +36,7 @@ void r::Init() {
   glfwGetFramebufferSize(Engine::window.load(), &width, &height);
   Engine::width.store(width);
   Engine::height.store(height);
+  glfwSetFramebufferSizeCallback(Engine::window.load(), FBSizeCallback);
   glViewport(0, 0, width, height);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
