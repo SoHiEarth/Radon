@@ -2,6 +2,7 @@
 #include <atomic>
 #include <GLFW/glfw3.h>
 
-std::atomic<GLFWwindow*> Engine::window{nullptr};
-std::atomic<int> Engine::width{800};
-std::atomic<int> Engine::height{600};
+_WINDOW_ATOMIC Engine::window{nullptr};
+_INT_ATOMIC    Engine::width{800};
+_INT_ATOMIC    Engine::height{600};
+_LEVEL_ATOMIC  Engine::current_level{nullptr};

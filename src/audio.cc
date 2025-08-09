@@ -20,7 +20,7 @@ void a::Init() {
 
   alcMakeContextCurrent(context);
 
-  fmt::print("Audio Thread: Initialized OpenAL\n");
+  fmt::print("Initialized OpenAL\n");
 }
 
 void a::Quit() {
@@ -35,5 +35,5 @@ void a::Quit() {
     device = nullptr;
   }
 
-  fmt::print("Audio Thread: Terminated OpenAL\n");
+  fmt::print("Terminated OpenAL\n");
 }

@@ -4,6 +4,7 @@
 namespace r {
   void Init();
   void Update();
+  void Present();
   void Quit();
 }
 

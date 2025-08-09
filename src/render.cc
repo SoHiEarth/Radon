@@ -19,12 +19,12 @@ void r::Init() {
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
   Engine::window.store(glfwCreateWindow(800, 600, "Metal", nullptr, nullptr));
-  if (!Engine::window.load()) {
+  if (!GET_WINDOW()) {
     fmt::print("Failed to create GLFW window\n");
     glfwTerminate();
     return;
   }
-  glfwMakeContextCurrent(Engine::window.load());
+  glfwMakeContextCurrent(GET_WINDOW());
   
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     fmt::print("Failed to initialize GLAD\n");
@@ -33,34 +33,38 @@ void r::Init() {
   }
 
   int width, height;
-  glfwGetFramebufferSize(Engine::window.load(), &width, &height);
+  glfwGetFramebufferSize(GET_WINDOW(), &width, &height);
   Engine::width.store(width);
   Engine::height.store(height);
-  glfwSetFramebufferSizeCallback(Engine::window.load(), FBSizeCallback);
+  glfwSetFramebufferSizeCallback(GET_WINDOW(), FBSizeCallback);
   glViewport(0, 0, width, height);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
-    
-  fmt::print("Render Thread: Initialized OpenGL\n");
+  fmt::print("Initialized OpenGL\n");
   return;
 }
 
 void r::Update() {
-  if (Engine::window.load()) {
+  if (GET_WINDOW()) {
     glfwPollEvents();
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glfwSwapBuffers(Engine::window.load());
+  }
+}
+
+void r::Present() {
+  if (GET_WINDOW()) {
+    glfwSwapBuffers(GET_WINDOW());
   }
 }
 
 void r::Quit() {
-  if (Engine::window.load()) {
-    glfwDestroyWindow(Engine::window.load());
+  if (GET_WINDOW()) {
+    glfwDestroyWindow(GET_WINDOW());
     Engine::window.store(nullptr);
   }
   glfwTerminate();
-  fmt::print("Render Thread: Terminated OpenGL\n");
+  fmt::print("Terminated OpenGL\n");
 }

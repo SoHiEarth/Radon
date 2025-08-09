@@ -1,8 +1,10 @@
 #include <engine/input.h>
 #include <GLFW/glfw3.h>
+#include <fmt/core.h>
 
 void i::Init() {
-  // Do nothing, GLFW init is handled by rendering.
+  glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  fmt::print("Initialized Input\n");
 }
 
 void i::Update() {
@@ -10,5 +12,7 @@ void i::Update() {
 }
 
 void i::Quit() {
-  // Do nothing, GLFW cleanup is handled by rendering.
+  glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  glfwSetCursorPos(glfwGetCurrentContext(), 0.0, 0.0);
+  fmt::print("Terminated Input\n");
 }

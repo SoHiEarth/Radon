@@ -15,7 +15,7 @@ class Level {
     void Init();
     void Update();
     void Quit();
-    const Object* GetObject(const std::string_view name) {
+    const Object* GetObject(const std::string_view name) const {
         auto it = objects.find(std::string(name));
         if (it != objects.end()) {
             return it->second;
@@ -23,15 +23,15 @@ class Level {
         return nullptr;
     }
 
-    void AddObject(const std::string& name, Object* object) {
+    const void AddObject(const std::string& name, Object* object) {
         objects.insert(std::make_pair(name, object));
     }
 
-    void RemoveObject(const std::string& name) {
+    const void RemoveObject(const std::string& name) {
         objects.erase(name);
     }
-  private:
     std::map<std::string, Object*> objects;
+  private:
 };
 
 #endif // LEVEL_H
