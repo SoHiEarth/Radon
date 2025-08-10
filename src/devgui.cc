@@ -3,8 +3,11 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <engine/global.h>
+#include <classes/sprite.h>
 
 bool dev::hud_enabled = false;
+
+Object* current_object = nullptr;
 
 void dev::Init() {
   IMGUI_CHECKVERSION();
@@ -26,6 +29,27 @@ void dev::Update() {
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
   ImGui::ShowDemoWindow();
+  ImGui::Begin("Scene");
+  for (int i = 0;i < Engine::current_level.load()->objects.size(); i++) {
+    if (ImGui::Button(std::to_string(i).c_str())) {
+      current_object = Engine::current_level.load()->objects[i];
+    }
+  }
+  ImGui::End();
+
+  ImGui::Begin("Objects");
+  if (ImGui::Button("Add Sprite")) {
+    Engine::current_level.load()->objects.push_back(new Sprite());
+  }
+  ImGui::End();
+
+  ImGui::Begin("Inspector");
+  if (!current_object) {
+    ImGui::Text("Select an object");
+  } else {
+    ImGui::Text("Sprite Selected");
+  }
+  ImGui::End();
 }
 
 void dev::LateUpdate() {

@@ -7,7 +7,7 @@
 
 class Sprite : public Object {
   public:
-    Sprite();
+    Sprite() {};
     void Init() override;
     void Update() override;
     void Render() override;
