@@ -11,15 +11,12 @@ void a::Init() {
   if (!device) {
     return;
   }
-
   context = alcCreateContext(device, nullptr);
   if (!context) {
     alcCloseDevice(device);
     return;
   }
-
   alcMakeContextCurrent(context);
-
   fmt::print("Initialized OpenAL\n");
 }
 
@@ -29,11 +26,9 @@ void a::Quit() {
     alcDestroyContext(context);
     context = nullptr;
   }
-  
   if (device) {
     alcCloseDevice(device);
     device = nullptr;
   }
-
   fmt::print("Terminated OpenAL\n");
 }

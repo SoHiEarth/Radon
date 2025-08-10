@@ -39,12 +39,16 @@ int main(int argc, char** argv) {
     Engine::current_level.store(new Level());
   }
 
+  i::AddHook({GLFW_KEY_ESCAPE, ButtonState::BUTTON_STATE_RELEASE}, []() {
+    glfwSetWindowShouldClose(Engine::window.load(), true);
+  });
+
+  i::AddHook({GLFW_KEY_F1, ButtonState::BUTTON_STATE_PRESS}, []() {
+      dev::hud_enabled = !dev::hud_enabled;
+  });
+
   while (!glfwWindowShouldClose(Engine::window.load())) {
     i::Update();
-    if (glfwGetKey(Engine::window.load(), GLFW_KEY_F1) == GLFW_PRESS) {
-      dev::hud_enabled = !dev::hud_enabled;
-    }
-
     dev::Update();
     r::Update();
     if (Engine::current_level.load())

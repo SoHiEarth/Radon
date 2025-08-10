@@ -1,5 +1,6 @@
 #include <glad/glad.h>
 #include <classes/level.h>
+#include <classes/object.h>
 #include <engine/filesystem.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -48,7 +49,6 @@ void f::LoadLevelDynamicData(const Level* level, const std::string_view path) {
   pugi::xml_node root = doc.child("DynamicData");
   for (pugi::xml_node object_node : root.children("Object")) {
     std::string name = object_node.attribute("name").as_string();
-    const Object* object = level->GetObject(name);
   }
 }
 
@@ -58,8 +58,6 @@ void f::SaveLevel(const Level* level, const std::string_view path) {
   pugi::xml_node root = doc.append_child("StaticData");
   for (const auto& object : level->objects) {
     pugi::xml_node object_node = root.append_child("Object");
-    object_node.append_attribute("name") = object.first.c_str();
-    SaveObject(object.second, object_node);
   }
 }
 
@@ -68,13 +66,10 @@ void f::SaveLevelDynamicData(const Level* level, const std::string_view path) {
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child("DynamicData");
   for (const auto& object : level->objects) {
-    if (!object.second->is_static) {
+    if (!object->is_static) {
       pugi::xml_node object_node = root.append_child("Object");
-      object_node.append_attribute("name") = object.first.c_str();
-      SaveObject(object.second, object_node);
     }
   }
-  
   doc.save_file(path.data());
 }
 
