@@ -34,6 +34,7 @@ void r::Init() {
 
   int width, height;
   glfwGetFramebufferSize(GET_WINDOW(), &width, &height);
+  glfwSwapInterval(1);
   Engine::width.store(width);
   Engine::height.store(height);
   glfwSetFramebufferSizeCallback(GET_WINDOW(), FBSizeCallback);
@@ -42,8 +43,6 @@ void r::Init() {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
-  // VSync
-  glfwSwapInterval(1);
   fmt::print("Initialized OpenGL\n");
   return;
 }
@@ -51,7 +50,7 @@ void r::Init() {
 void r::Update() {
   if (GET_WINDOW()) {
     glfwPollEvents();
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   }
 }

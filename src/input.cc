@@ -1,5 +1,6 @@
 #include <engine/input.h>
 #include <GLFW/glfw3.h>
+#include <engine/global.h>
 #include <fmt/core.h>
 #include <map>
 #include <functional>
@@ -27,7 +28,6 @@ void i::RemoveHook(std::pair<int, ButtonState> key) {
   } else {
     event_hooks.erase(key);
     fmt::print("Removed input hook for key: {}\t", key.first);
-    fmt::print("With state: {}\n", GET_KEY_TYPE(key));
   }
 }
 
@@ -64,10 +64,10 @@ void i::Update() {
 }
 
 void i::Quit() {
-  if (glfwGetCurrentContext() == nullptr) {
+  if (!Engine::window.load()) {
     fmt::print("No GLFW context to quit input\n");
   } else {
-    glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetInputMode(Engine::window.load(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   }
   fmt::print("Terminated Input\n");
 }

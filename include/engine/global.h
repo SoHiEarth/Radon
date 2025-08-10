@@ -9,7 +9,6 @@
 #define _WINDOW_ATOMIC std::atomic<GLFWwindow*>
 #define _LEVEL_ATOMIC std::atomic<Level*>
 #define GET_WINDOW() Engine::window.load()
-#define SET_WINDOW(window) Engine::window.store(window)
 
 namespace Engine {
   extern _WINDOW_ATOMIC window;

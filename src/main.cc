@@ -18,21 +18,19 @@ std::vector<std::thread> workers;
     fmt::print("Spawned thread for {}\n", #func); \
   }
 
+#define WAIT_WORKERS() \
+  for (auto& worker : workers) { \
+    worker.join(); \
+  }
+
 int main(int argc, char** argv) {
-#ifdef __APPLE__
   r::Init();
   i::Init();
-#else
-  SPAWN_THREAD(r::Init);
-  SPAWN_THREAD(i::Init);
-#endif
   SPAWN_THREAD(a::Init);
   SPAWN_THREAD(p::Init);
   dev::Init();
 
-  for (auto& worker : workers) {
-    worker.join();
-  }
+  WAIT_WORKERS();
   workers.clear();
 
   if (Engine::window.load()) {
@@ -61,19 +59,12 @@ int main(int argc, char** argv) {
     Engine::current_level.load()->Quit();
   }
 
-  dev::Quit();
   SPAWN_THREAD(a::Quit);
   SPAWN_THREAD(p::Quit);
-#ifndef __APPLE__
-  SPAWN_THREAD(i::Quit);
-  SPAWN_THREAD(r::Quit);
-#else
-  i::Quit();
-  r::Quit();
-#endif
-  for (auto& worker : workers) {
-    worker.join();
-  }
+  WAIT_WORKERS();
   workers.clear();
+  i::Quit();
+  dev::Quit();
+  r::Quit();
   return 0;
 }

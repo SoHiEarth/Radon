@@ -25,52 +25,26 @@ Texture f::LoadTexture(const std::string_view path) {
 
 Level f::LoadLevel(const std::string_view path) {
   Level level;
-  pugi::xml_document doc;
-  pugi::xml_parse_result result = doc.load_file(path.data());
-  if (!result) {
-    throw std::runtime_error("Failed to load level file: " + std::string(path));
-  }
-  pugi::xml_node root = doc.child("Data");
-
-  for (pugi::xml_node object_node : root.children("Object")) {
-    std::string name = object_node.attribute("name").as_string();
-  }
 
   return level;
 }
 
 void f::LoadLevelDynamicData(const Level* level, const std::string_view path) {
-  pugi::xml_document doc;
-  pugi::xml_parse_result result = doc.load_file(path.data());
-  if (!result) {
-    throw std::runtime_error("Failed to load dynamic data file: " + std::string(path));
-  }
-  
-  pugi::xml_node root = doc.child("DynamicData");
-  for (pugi::xml_node object_node : root.children("Object")) {
-    std::string name = object_node.attribute("name").as_string();
-  }
+
 }
 
 // Saves the data of the entire level, including static and dynamic objects
 void f::SaveLevel(const Level* level, const std::string_view path) {
-  pugi::xml_document doc;
-  pugi::xml_node root = doc.append_child("StaticData");
-  for (const auto& object : level->objects) {
-    pugi::xml_node object_node = root.append_child("Object");
-  }
+
 }
 
 // Saves the data for dynamic objects in the level, for use as save files
 void f::SaveLevelDynamicData(const Level* level, const std::string_view path) {
-  pugi::xml_document doc;
-  pugi::xml_node root = doc.append_child("DynamicData");
-  for (const auto& object : level->objects) {
-    if (!object->is_static) {
-      pugi::xml_node object_node = root.append_child("Object");
-    }
-  }
-  doc.save_file(path.data());
+
+}
+
+void f::LoadObject(Object* object, const pugi::xml_node& base_node) {
+
 }
 
 void f::SaveObject(const Object* object, const pugi::xml_node& base_node) {

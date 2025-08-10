@@ -11,6 +11,8 @@ namespace f {
   void LoadLevelDynamicData(const Level* level, const std::string_view path);
   void SaveLevel(const Level* level, const std::string_view path);
   void SaveLevelDynamicData(const Level* level, const std::string_view path);
+
+  void LoadObject(Object* object, const pugi::xml_node& base_node);
   void SaveObject(const Object* object, const pugi::xml_node& base_node);
 }
 
