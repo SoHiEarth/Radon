@@ -2,7 +2,7 @@
 #define SPRITE_H
 
 #include <classes/object.h>
-#include <classes/texture.h>
+#include <classes/material.h>
 #include <classes/shader.h>
 #include <string>
 
@@ -14,7 +14,7 @@ class Sprite : public Object {
     void Render() override;
     void Quit() override;
     std::string path;
-    Texture* texture = nullptr;
+    Material* material = nullptr;
     Shader* shader = nullptr;
   private:
     std::string prev_path;

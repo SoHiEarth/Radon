@@ -24,3 +24,9 @@ void Level::Quit() {
     object->Quit();
   }
 }
+
+void Level::AddObject(Object* object) {
+  if (!object) return;
+  objects.push_back(object);
+  object->Init();
+}

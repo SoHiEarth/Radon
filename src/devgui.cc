@@ -1,3 +1,4 @@
+// Everything in here is probably jank
 #include <engine/devgui.h>
 #include <imgui.h>
 #include <imgui_stdlib.h>
@@ -7,9 +8,24 @@
 #include <classes/sprite.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <format>
+
 bool dev::hud_enabled = false;
 Object* current_object = nullptr;
-std::string test_string{"Test"};
+
+void MaterialView(Material* material) {
+  if (!material) return;
+  if (material->diffuse != nullptr) {
+    ImGui::Text("Material - Diffuse");
+    ImGui::Image(material->diffuse->id, ImVec2(100, 100));
+  }
+  if (material->specular != nullptr) {
+    ImGui::Text("Material - Specular");
+    ImGui::Image(material->specular->id, ImVec2(100, 100));
+  }
+  ImGui::DragFloat("Material - Shininess", &material->shininess);
+}
+
 void dev::Init() {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -22,26 +38,22 @@ void dev::Init() {
 
 void dev::Update() {
   if (!dev::hud_enabled) {
-    glfwSetInputMode(Engine::window.load(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(GET_WINDOW(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     return;
   }
-  glfwSetInputMode(Engine::window.load(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  glfwSetInputMode(GET_WINDOW(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
   ImGui::Begin("Scene");
-  for (int i = 0;i < Engine::current_level.load()->objects.size(); i++) {
-    if (ImGui::Button(std::to_string(i).c_str())) {
-      current_object = Engine::current_level.load()->objects[i];
-    }
-  }
+  for (int i = 0;i < GET_LEVEL()->objects.size(); i++)
+    if (ImGui::Button(std::format("{}", i).c_str()))
+      current_object = GET_LEVEL()->objects[i];
   ImGui::End();
 
   ImGui::Begin("Objects");
-  if (ImGui::Button("Add Sprite")) {
-    Engine::current_level.load()->objects.push_back(new Sprite());
-    Engine::current_level.load()->objects.back()->Init();
-  }
+  if (ImGui::Button("Add Sprite"))
+    GET_LEVEL()->AddObject(new Sprite);
   ImGui::End();
 
   ImGui::Begin("Inspector");
@@ -54,15 +66,13 @@ void dev::Update() {
     Sprite* sprite = dynamic_cast<Sprite*>(current_object);
     if (sprite != nullptr) {
       ImGui::InputText("Path", &sprite->path);
-      if (sprite->texture != nullptr) {
-        ImGui::Image(sprite->texture->id, ImVec2(100, 100));
-      }
+      MaterialView(sprite->material);
     }
   }
   ImGui::End();
 }
 
-void dev::LateUpdate() {
+void dev::Render() {
   if (!dev::hud_enabled) return;
   ImGui::Render();
   ImGui::EndFrame();

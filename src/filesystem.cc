@@ -17,25 +17,40 @@ Texture* f::LoadTexture(const std::string_view path) {
   }
   Texture* texture = new Texture;
   glGenTextures(1, &texture->id);
-  glBindTexture(GL_TEXTURE_2D, texture->id);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  stbi_set_flip_vertically_on_load(true);
   unsigned char* data = stbi_load(path.data(), &texture->w, &texture->h, &texture->channels, 0);
   if (data) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture->w, texture->h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    GLenum format;
+    switch (texture->channels) {
+      case 1:
+        format = GL_RED;
+        break;
+      case 3:
+        format = GL_RGB;
+        break;
+      case 4:
+        format = GL_RGBA;
+        break;
+      default:
+        format = GL_RGB;
+        break;
+    }
+    glBindTexture(GL_TEXTURE_2D, texture->id);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, texture->w, texture->h, 0, format, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    stbi_image_free(data);
   } else {
     fmt::print("Failed to load texture {}\n", path);
+    stbi_image_free(data);
   }
-  stbi_image_free(data);
   return texture;
 }
 
 void f::FreeTexture(Texture *texture) {
-  if (!texture) return;
+  if (texture == nullptr) return;
   glDeleteTextures(1, &texture->id);
   delete texture;
 }
@@ -126,6 +141,7 @@ Shader* f::LoadShader(const std::string_view path) {
 }
 
 void f::FreeShader(Shader *shader) {
+  if (shader == nullptr) return;
   glDeleteProgram(shader->id);
   delete shader;
 }

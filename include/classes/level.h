@@ -15,8 +15,8 @@ class Level {
     void Update();
     void Render();
     void Quit();
+    void AddObject(Object* object);
     std::vector<Object*> objects;
-  private:
 };
 
 #endif // LEVEL_H

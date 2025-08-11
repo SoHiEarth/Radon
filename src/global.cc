@@ -5,4 +5,5 @@
 _WINDOW_ATOMIC Engine::window{nullptr};
 _INT_ATOMIC    Engine::width{800};
 _INT_ATOMIC    Engine::height{600};
-_LEVEL_ATOMIC  Engine::current_level{nullptr};
+_LEVEL_ATOMIC  Engine::level{nullptr};
+Camera         Engine::camera;

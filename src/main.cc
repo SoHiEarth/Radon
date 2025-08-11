@@ -21,50 +21,62 @@ std::vector<std::thread> workers;
 #define WAIT_WORKERS() \
   for (auto& worker : workers) { \
     worker.join(); \
-  }
+  } \
+  workers.clear();
 
 int main(int argc, char** argv) {
   r::Init();
   i::Init();
   SPAWN_THREAD(a::Init);
   SPAWN_THREAD(p::Init);
+  WAIT_WORKERS();
   dev::Init();
 
-  WAIT_WORKERS();
-  workers.clear();
-
-  if (Engine::window.load()) {
-    Engine::current_level.store(new Level());
-  }
+  if (!GET_LEVEL())
+    Engine::level.store(new Level());
 
   i::AddHook({GLFW_KEY_ESCAPE, ButtonState::BUTTON_STATE_RELEASE}, []() {
-    glfwSetWindowShouldClose(Engine::window.load(), true);
+    glfwSetWindowShouldClose(GET_WINDOW(), true);
   });
 
   i::AddHook({GLFW_KEY_F1, ButtonState::BUTTON_STATE_PRESS}, []() {
       dev::hud_enabled = !dev::hud_enabled;
   });
 
-  while (!glfwWindowShouldClose(Engine::window.load())) {
+  i::AddHook({GLFW_KEY_W, ButtonState::BUTTON_STATE_HOLD}, []() {
+      Engine::camera.position.y--;
+  });
+
+  i::AddHook({GLFW_KEY_S, ButtonState::BUTTON_STATE_HOLD}, []() {
+      Engine::camera.position.y++;
+  });
+
+  i::AddHook({GLFW_KEY_A, ButtonState::BUTTON_STATE_HOLD}, []() {
+      Engine::camera.position.x++;
+  });
+
+  i::AddHook({GLFW_KEY_D, ButtonState::BUTTON_STATE_HOLD}, []() {
+      Engine::camera.position.x--;
+  });
+
+  while (!glfwWindowShouldClose(GET_WINDOW())) {
     dev::Update();
-    if (Engine::current_level.load())
-      Engine::current_level.load()->Update();
     r::Update();
-    if (Engine::current_level.load())
-      Engine::current_level.load()->Render();
-    dev::LateUpdate();
-    r::Present();
+    p::Update();
+    if (GET_LEVEL()) GET_LEVEL()->Update();
+    if (GET_LEVEL()) GET_LEVEL()->Render();
+    dev::Render();
+    r::Render();
     i::Update();
   }
 
-  if (Engine::current_level.load())
-    Engine::current_level.load()->Quit();
+  if (GET_LEVEL())
+    GET_LEVEL()->Quit();
 
   dev::Quit();
   SPAWN_THREAD(a::Quit);
   SPAWN_THREAD(p::Quit);
   WAIT_WORKERS();
-  workers.clear();
   i::Quit();
   r::Quit();
   return 0;

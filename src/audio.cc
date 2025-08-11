@@ -20,16 +20,16 @@ static void GetAudioDevices(const ALCchar* devices) {
 
 void a::Init() {
   ALboolean enumeration = alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT");
-  if (enumeration == AL_TRUE) {
+  if (enumeration == AL_TRUE)
     GetAudioDevices(alcGetString(NULL, ALC_DEVICE_SPECIFIER));
-  } else {
+  else
     fmt::print("Cannot get devices as AL instance does not support enumeration.\n");
-  }
   device = alcOpenDevice(nullptr);
-  alGetError(); // Clear errors
+  alGetError();
   context = alcCreateContext(device, NULL);
   if (!alcMakeContextCurrent(context)) {
     fmt::print("Failed to make context current\n");
+    return;
   }
   fmt::print("Initialized OpenAL\n");
 }
