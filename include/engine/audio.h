@@ -1,11 +1,9 @@
-#ifndef ENGINE_AUDIO_H
-#define ENGINE_AUDIO_H
-
-#include <AL/al.h>
+#ifndef AUDIO_H
+#define AUDIO_H
 
 namespace a {
   void Init();
   void Quit();
 }
 
-#endif // ENGINE_AUDIO_H
+#endif // AUDIO_H

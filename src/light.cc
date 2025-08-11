@@ -6,11 +6,11 @@
 #include <fmt/core.h>
 
 void DirectionalLight::Init() {
-  r::AddDirectionalLight(this);
+  r::AddLight(this);
 }
 
 void DirectionalLight::Quit() {
-  r::RemoveDirectionalLight(this);
+  r::RemoveLight(this);
 }
 
 void DirectionalLight::SetUniforms(const Shader* shader) {
@@ -21,11 +21,11 @@ void DirectionalLight::SetUniforms(const Shader* shader) {
 }
 
 void PointLight::Init() {
-  r::AddPointLight(this);
+  r::AddLight(this);
 }
 
 void PointLight::Quit() {
-  r::RemovePointLight(this);
+  r::RemoveLight(this);
 }
 
 void PointLight::SetUniforms(const Shader* shader, const int pos) {
@@ -40,11 +40,11 @@ void PointLight::SetUniforms(const Shader* shader, const int pos) {
 }
 
 void SpotLight::Init() {
-  r::AddSpotLight(this);
+  r::AddLight(this);
 }
 
 void SpotLight::Quit() {
-  r::RemoveSpotLight(this);
+  r::RemoveLight(this);
 }
 
 void SpotLight::SetUniforms(const Shader* shader, const int pos) {

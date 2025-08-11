@@ -1,9 +1,8 @@
 #include <engine/global.h>
-#include <atomic>
-#include <GLFW/glfw3.h>
+#include <classes/camera.h>
 
-_WINDOW_ATOMIC Engine::window{nullptr};
-_INT_ATOMIC    Engine::width{800};
-_INT_ATOMIC    Engine::height{600};
-_LEVEL_ATOMIC  Engine::level{nullptr};
-Camera         Engine::camera;
+GLFWwindow* Engine::window = nullptr;
+int         Engine::width = 800;
+int         Engine::height = 600;
+Level*      Engine::level = nullptr;
+Camera      Engine::camera;

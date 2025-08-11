@@ -1,5 +1,5 @@
-#ifndef CLASSES_TEXTURE_H
-#define CLASSES_TEXTURE_H
+#ifndef TEXTURE_H
+#define TEXTURE_H
 
 #include <string>
 
@@ -11,4 +11,4 @@ struct Texture {
   Texture(const std::string_view path) : path(path) {};
 };
 
-#endif // CLASSES_TEXTURE_H
+#endif // TEXTURE_H

@@ -1,10 +1,10 @@
 #include <engine/physics.h>
 #include <box2d/box2d.h>
 #include <fmt/core.h>
-#define GRAVITY -10.0f // TEMP!!!
+#define GRAVITY -10.0f
 #define UPDATE_RATE 60.0f
-b2WorldId world_id;
 
+b2WorldId world_id;
 float time_step = 1.0f/UPDATE_RATE;
 int substep_count = 4;
 

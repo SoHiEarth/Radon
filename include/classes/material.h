@@ -1,13 +1,16 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
+
 #include <string>
+
 class Texture;
 class Shader;
+
 struct Material {
   Texture* diffuse = nullptr,
     *specular = nullptr;
   Shader* shader = nullptr;
-  float shininess;
+  float shininess = 0;
   std::string directory;
   const bool IsValid() const;
   void Bind() const;

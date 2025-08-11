@@ -1,16 +1,18 @@
-#ifndef ENGINE_FILESYSTEM_H
-#define ENGINE_FILESYSTEM_H
+#ifndef FILESYSTEM_H
+#define FILESYSTEM_H
 
-#include <classes/texture.h>
-#include <classes/level.h>
-#include <classes/shader.h>
 #include <pugixml.hpp>
+
+class Object;
+class Texture;
+class Level;
+class Shader;
 
 namespace f {
   Texture* LoadTexture(const std::string_view path);
   void FreeTexture(Texture* texture);
 
-  Level LoadLevel(const std::string_view path);
+  Level* LoadLevel(const std::string_view path);
   void LoadLevelDynamicData(const Level* level, const std::string_view path);
   void SaveLevel(const Level* level, const std::string_view path);
   void SaveLevelDynamicData(const Level* level, const std::string_view path);
@@ -22,4 +24,4 @@ namespace f {
   void FreeShader(Shader* shader);
 }
 
-#endif
+#endif // FILESYSTEM_H

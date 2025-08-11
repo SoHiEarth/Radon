@@ -1,38 +1,29 @@
 #include <glad/glad.h>
 #include <engine/render.h>
 #include <engine/global.h>
-#include <classes/shader.h>
+#include <engine/devgui.h>
 #include <GLFW/glfw3.h>
 #include <fmt/core.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
-#include <engine/devgui.h>
 #include <vector>
 #include <classes/light.h>
+#include <classes/camera.h>
+#include <classes/material.h>
+#include <classes/shader.h>
 
-DirectionalLight* directional_light;
-std::vector<PointLight*> point_lights;
-std::vector<SpotLight*> spot_lights;
+DirectionalLight* r::directional_light = nullptr;
+std::vector<PointLight*> r::point_lights;
+std::vector<SpotLight*> r::spot_lights;
+
 
 void FBSizeCallback(GLFWwindow* window, int width, int height) {
   glViewport(0, 0, width, height);
-  Engine::width.store(width);
-  Engine::height.store(height);
+  Engine::width = width;
+  Engine::height = height;
 }
-
-glm::vec3 light_ambient = {0.2f, 0.2f, 0.2f},
-    light_diffuse = {0.5f, 0.5f, 0.5f},
-    light_specular = {1.0f, 1.0f, 1.0f},
-    light_position = {0.0f, 0.0f, 0.0f};
-
-glm::vec3 pointLightPositions[] = {
-	glm::vec3( 0.7f,  0.2f,  2.0f),
-	glm::vec3( 2.3f, -3.3f, -4.0f),
-	glm::vec3(-4.0f,  2.0f, -12.0f),
-	glm::vec3( 0.0f,  0.0f, -3.0f)
-};
 
 float vertices[] = {
      0.5f,  0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
@@ -55,16 +46,16 @@ void r::Init() {
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-  Engine::window.store(glfwCreateWindow(800, 600, "Metal", nullptr, nullptr));
-  if (!GET_WINDOW()) {
+  Engine::width = 800;
+  Engine::height = 600;
+  Engine::window = glfwCreateWindow(Engine::width, Engine::height, "Metal", nullptr, nullptr);
+  if (!Engine::window) {
     fmt::print("Failed to create GLFW window\n");
     glfwTerminate();
     return;
   }
-  glfwMakeContextCurrent(GET_WINDOW());
-  Engine::width.store(800);
-  Engine::height.store(600);
-  glfwSetFramebufferSizeCallback(GET_WINDOW(), FBSizeCallback);
+  glfwMakeContextCurrent(Engine::window);
+  glfwSetFramebufferSizeCallback(Engine::window, FBSizeCallback);
   glfwSwapInterval(1);
 
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -74,7 +65,7 @@ void r::Init() {
   }
 
   glEnable(GL_DEPTH_TEST);
-  glViewport(0, 0, Engine::width.load(), Engine::height.load());
+  glViewport(0, 0, Engine::width, Engine::height);
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
   glGenBuffers(1, &EBO);
@@ -94,7 +85,7 @@ void r::Init() {
 }
 
 void r::Update() {
-  if (!GET_WINDOW()) return;
+  if (!Engine::window) return;
   if (directional_light)
     glClearColor(directional_light->ambient.x,
         directional_light->ambient.y,
@@ -114,15 +105,15 @@ void r::Update() {
 }
 
 void r::Render() {
-  glfwSwapBuffers(GET_WINDOW());
+  glfwSwapBuffers(Engine::window);
 }
 
 void r::Quit() {
   glDeleteVertexArrays(1, &VAO);
   glDeleteBuffers(1, &VBO);
-  if (GET_WINDOW()) {
-    glfwDestroyWindow(GET_WINDOW());
-    Engine::window.store(nullptr);
+  if (Engine::window != nullptr) {
+    glfwDestroyWindow(Engine::window);
+    Engine::window = nullptr;
   }
   glfwTerminate();
   fmt::print("Terminated OpenGL\n");
@@ -136,82 +127,34 @@ glm::mat4 GetTransform(const glm::vec3 &pos, const glm::vec2 &scale, float rot) 
   return transform;
 }
 
-void r::RenderTexture(const Material* material, const glm::vec3 &pos, const glm::vec2 &size, float rot) {
+void r::RenderTexture(const Material *material, const glm::vec3 &pos, const glm::vec2 &size, float rot) {
   if (!material) return;
   if (!material->IsValid()) return;
-  Shader* shader = material->shader; // For readability
 
-  // Transformations
   glm::mat4 model = GetTransform(pos, size, rot),
     view = glm::translate(glm::mat4(1.0f), Engine::camera.position),
-    projection = glm::perspective(glm::radians(60.0f),
-        ((float)Engine::width.load() / (float)Engine::height.load()),
+    projection = glm::perspective(glm::radians(60.0f), ((float)Engine::width / (float)Engine::height),
         0.1f, 100.0f);
+  
   material->Bind();
-  shader->SetMat4("model", model);
-  shader->SetMat4("view", view);
-  shader->SetMat4("projection", projection);
+  material->shader->SetMat4("model", model);
+  material->shader->SetMat4("view", view);
+  material->shader->SetVec3("viewPos", Engine::camera.position);
+  material->shader->SetMat4("projection", projection);
 
-  if (directional_light)
-    directional_light->SetUniforms(material->shader);
-  shader->SetInt("NUM_POINT_LIGHTS", (int)point_lights.size());
+  if (directional_light) directional_light->SetUniforms(material->shader);
+  
+  material->shader->SetInt("NUM_POINT_LIGHTS", (int)point_lights.size());
   for (int i = 0; i < point_lights.size(); i++) {
-    if (point_lights[i])
-      point_lights[i]->SetUniforms(material->shader, i);
+    if (point_lights[i]) point_lights[i]->SetUniforms(material->shader, i);
   }
-  shader->SetInt("NUM_SPOT_LIGHTS", (int)spot_lights.size());
+  
+  material->shader->SetInt("NUM_SPOT_LIGHTS", (int)spot_lights.size());
   for (int i = 0; i < spot_lights.size(); i++) {
-    if (spot_lights[i])
-      spot_lights[i]->SetUniforms(material->shader, i);
+    if (spot_lights[i]) spot_lights[i]->SetUniforms(material->shader, i);
   }
 
-  shader->SetVec3("viewPos", Engine::camera.position);
   glBindVertexArray(VAO);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-}
-
-void r::AddDirectionalLight(DirectionalLight *light) {
-  if (!light) return;
-  RemoveDirectionalLight(directional_light);
-  light->active = true;
-  directional_light = light;
-}
-
-void r::AddPointLight(PointLight *light) {
-  if (!light) return;
-  light->active = true;
-  point_lights.push_back(light);
-}
-
-void r::AddSpotLight(SpotLight *light) {
-  if (!light) return;
-  light->active = true;
-  spot_lights.push_back(light);
-}
-
-void r::RemoveDirectionalLight(DirectionalLight *target) {
-  if (!target) return;
-  target->active = false;
-  directional_light = nullptr;
-}
-
-void r::RemovePointLight(PointLight *target) {
-  if (!target) return;
-  for (int i = 0; i < point_lights.size(); i++) {
-    if (point_lights[i] == target) {
-      target->active = false;
-      point_lights.erase(point_lights.begin() + i);
-    }
-  }
-}
-
-void r::RemoveSpotLight(SpotLight *target) {
-  if (!target) return;
-  for (int i = 0; i < spot_lights.size(); i++) {
-    if (spot_lights[i] == target) {
-      target->active = false;
-      spot_lights.erase(spot_lights.begin() + i);
-    }
-  }
 }

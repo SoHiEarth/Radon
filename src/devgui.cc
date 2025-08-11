@@ -1,16 +1,20 @@
 // Everything in here is probably jank
 #include <engine/devgui.h>
+#include <engine/global.h>
+#include <classes/sprite.h>
+#include <classes/light.h>
+#include <classes/texture.h>
+#include <classes/shader.h>
+#include <classes/level.h>
+#include <classes/material.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
 #include <imgui_stdlib.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
-#include <engine/global.h>
-#include <classes/sprite.h>
-#include <classes/light.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <GLFW/glfw3.h>
 #include <format>
-#include <classes/texture.h>
 
 bool dev::hud_enabled = false;
 Object* current_object = nullptr;
@@ -20,21 +24,16 @@ void MaterialView(Material* material) {
     ImGui::Text("Material is not valid");
     return;
   }
+  if (!material->IsValid()) return;
   ImGui::SeparatorText("Material Info");
-  if (material->diffuse != nullptr) {
-    ImGui::Text("Diffuse");
-    ImGui::Image(material->diffuse->id, ImVec2(100, 100));
-  }
-  if (material->specular != nullptr) {
-    ImGui::Text("Specular");
-    ImGui::Image(material->specular->id, ImVec2(100, 100));
-  }
-  ImGui::DragFloat("Material - Shininess", &material->shininess);
-  if (material->shader != nullptr) {
-    ImGui::Text("Shader");
-    ImGui::Text("Vert: %s", material->shader->vert_path.data());
-    ImGui::Text("Frag: %s", material->shader->frag_path.data());
-  }
+  ImGui::Text("Diffuse");
+  ImGui::Image(material->diffuse->id, ImVec2(100, 100));
+  ImGui::Text("Specular");
+  ImGui::Image(material->specular->id, ImVec2(100, 100));
+  ImGui::DragFloat("Shininess", &material->shininess);
+  ImGui::Text("Shader");
+  ImGui::Text("Vert: %s", material->shader->vert_path.data());
+  ImGui::Text("Frag: %s", material->shader->frag_path.data());
 }
 
 void dev::Init() {
@@ -43,34 +42,31 @@ void dev::Init() {
   ImGuiIO& io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
-  ImGui_ImplGlfw_InitForOpenGL(Engine::window.load(), true);
+  ImGui_ImplGlfw_InitForOpenGL(Engine::window, true);
   ImGui_ImplOpenGL3_Init("#version 150");
 }
 
 void dev::Update() {
   if (!dev::hud_enabled) {
-    glfwSetInputMode(GET_WINDOW(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(Engine::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     return;
   }
-  glfwSetInputMode(GET_WINDOW(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  glfwSetInputMode(Engine::window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
   ImGui::Begin("Scene");
-  for (int i = 0;i < GET_LEVEL()->objects.size(); i++)
-    if (ImGui::Button(std::format("{}", i).c_str()))
-      current_object = GET_LEVEL()->objects[i];
-  ImGui::End();
-
-  ImGui::Begin("Objects");
-  if (ImGui::Button("Add Sprite"))
-    GET_LEVEL()->AddObject(new Sprite);
-  if (ImGui::Button("Add Directional Light"))
-    GET_LEVEL()->AddObject(new DirectionalLight);
-  if (ImGui::Button("Add Point Light"))
-    GET_LEVEL()->AddObject(new PointLight);
-  if (ImGui::Button("Add Spot Light"))
-    GET_LEVEL()->AddObject(new SpotLight);
+  if (ImGui::Button("Add Sprite")) Engine::level->AddObject(new Sprite);
+  if (ImGui::Button("Add Directional Light")) Engine::level->AddObject(new DirectionalLight);
+  if (ImGui::Button("Add Point Light")) Engine::level->AddObject(new PointLight);
+  if (ImGui::Button("Add Spot Light")) Engine::level->AddObject(new SpotLight);
+  ImGui::SeparatorText("Scene Objects");
+  int i = 0;
+  for (const auto& object : Engine::level->objects) {
+    i++;
+    if (ImGui::Button(std::format("{} ({})", object->name, i).c_str()))
+      current_object = object;
+  }
   ImGui::End();
 
   ImGui::Begin("Inspector");

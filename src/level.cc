@@ -26,7 +26,7 @@ void Level::Quit() {
 }
 
 void Level::AddObject(Object* object) {
-  if (!object) return;
+  if (object == nullptr) return;
   objects.push_back(object);
   object->Init();
 }

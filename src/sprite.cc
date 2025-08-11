@@ -1,5 +1,5 @@
 #include <classes/sprite.h>
-#include <engine/filesystem.h>
+#include <classes/material.h>
 #include <engine/render.h>
 #include <fmt/core.h>
 

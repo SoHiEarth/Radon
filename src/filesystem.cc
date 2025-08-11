@@ -1,18 +1,19 @@
 #include <glad/glad.h>
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 #include <fmt/core.h>
 #include <classes/level.h>
 #include <classes/object.h>
 #include <classes/shader.h>
+#include <classes/texture.h>
 #include <engine/filesystem.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-#include <filesystem>
 
 Texture* f::LoadTexture(const std::string_view path) {
   if (!std::filesystem::exists(path)) {
-    fmt::print("Requested texture: doesn't exist\n", path);
+    fmt::print("Requested texture: {} doesn't exist\n", path);
     return nullptr;
   }
   Texture* texture = new Texture(path);
@@ -29,9 +30,6 @@ Texture* f::LoadTexture(const std::string_view path) {
         break;
       case 4:
         format = GL_RGBA;
-        break;
-      default:
-        format = GL_RGB;
         break;
     }
     glBindTexture(GL_TEXTURE_2D, texture->id);
@@ -55,9 +53,8 @@ void f::FreeTexture(Texture *texture) {
   delete texture;
 }
 
-Level f::LoadLevel(const std::string_view path) {
-  Level level;
-
+Level* f::LoadLevel(const std::string_view path) {
+  Level* level = new Level();
   return level;
 }
 
@@ -65,12 +62,10 @@ void f::LoadLevelDynamicData(const Level* level, const std::string_view path) {
 
 }
 
-// Saves the data of the entire level, including static and dynamic objects
 void f::SaveLevel(const Level* level, const std::string_view path) {
 
 }
 
-// Saves the data for dynamic objects in the level, for use as save files
 void f::SaveLevelDynamicData(const Level* level, const std::string_view path) {
 
 }
@@ -115,7 +110,7 @@ unsigned int CompileShader(const std::string_view code, int type) {
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (!success) {
     glGetShaderInfoLog(shader, 512, NULL, log);
-    fmt::print("Shader compilation failed. \nGL Info:{}\n", log);
+    fmt::print("Shader compilation failed.\n{}", log);
     return 0;
   }
   return shader;
@@ -123,13 +118,10 @@ unsigned int CompileShader(const std::string_view code, int type) {
 
 Shader* f::LoadShader(const std::string_view vert_path, const std::string_view frag_path) {
   Shader* shader = new Shader(vert_path.data(), frag_path.data());
-  unsigned int vertex = CompileShader(ReadFile(vert_path),
-      GL_VERTEX_SHADER),
-               fragment = CompileShader(ReadFile(frag_path),
-      GL_FRAGMENT_SHADER);
+  unsigned int vertex = CompileShader(ReadFile(vert_path), GL_VERTEX_SHADER),
+    fragment = CompileShader(ReadFile(frag_path), GL_FRAGMENT_SHADER);
   if (vertex == 0 || fragment == 0) return nullptr;
-  unsigned int program;
-  program = glCreateProgram();
+  unsigned int program = glCreateProgram();
   glAttachShader(program, vertex);
   glAttachShader(program, fragment);
   glLinkProgram(program);
@@ -138,12 +130,12 @@ Shader* f::LoadShader(const std::string_view vert_path, const std::string_view f
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if (!success) {
     glGetProgramInfoLog(program, 512, NULL, log);
-    fmt::print("Shader program link failed. \nGL Info:{}\n", log);
+    fmt::print("Shader program link failed.\n{}", log);
     return nullptr;
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);
-  fmt::print("Successfully loaded shader\n");
+  fmt::print("Successfully loaded shader. Vert: {}, Frag: {}\n", vert_path, frag_path);
   shader->id = program;
   return shader;
 }

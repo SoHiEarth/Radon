@@ -1,21 +1,21 @@
-#ifndef ENGINE_INPUT_H
-#define ENGINE_INPUT_H
+#ifndef INPUT_H
+#define INPUT_H
 
 #include <functional>
+#define Trigger std::pair<int, ButtonState>
 
 enum class ButtonState {
-  BUTTON_STATE_PRESS, // Button was pressed this frame
-  BUTTON_STATE_HOLD, // Button is being held down
-  BUTTON_STATE_RELEASE // Button was released this frame
-                       // Triggered when button is released
+  PRESS, // Button was pressed this frame
+  HOLD, // Button is being held down
+  RELEASE // Button was released this frame
 };
 
 namespace i {
-  void AddHook(std::pair<int, ButtonState>, std::function<void()> hook);
-  void RemoveHook(std::pair<int, ButtonState> key);
+  void AddHook(const Trigger& trigger, const std::function<void()>& hook);
+  void RemoveHook(const Trigger& trigger);
   void Init();
   void Update();
   void Quit();
 }
 
-#endif // ENGINE_INPUT_H
+#endif // INPUT_H

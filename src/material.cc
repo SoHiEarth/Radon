@@ -1,4 +1,6 @@
 #include <classes/material.h>
+#include <classes/texture.h>
+#include <classes/shader.h>
 #include <engine/filesystem.h>
 #include <glad/glad.h>
 

@@ -2,20 +2,18 @@
 #define SPRITE_H
 
 #include <classes/object.h>
-#include <classes/material.h>
-#include <classes/shader.h>
 #include <string>
+
+class Material;
 
 class Sprite : public Object {
   public:
-    Sprite() {};
     void Init() override;
     void Update() override;
     void Render() override;
     void Quit() override;
     std::string path;
     Material* material = nullptr;
-    Shader* shader = nullptr;
   private:
     std::string prev_path;
 };
