@@ -12,10 +12,10 @@
 
 Texture* f::LoadTexture(const std::string_view path) {
   if (!std::filesystem::exists(path)) {
-    fmt::print("Requested textures don't exist\n");
+    fmt::print("Requested texture: doesn't exist\n", path);
     return nullptr;
   }
-  Texture* texture = new Texture;
+  Texture* texture = new Texture(path);
   glGenTextures(1, &texture->id);
   unsigned char* data = stbi_load(path.data(), &texture->w, &texture->h, &texture->channels, 0);
   if (data) {
@@ -84,6 +84,10 @@ void f::SaveObject(const Object* object, const pugi::xml_node& base_node) {
 }
 
 const std::string ReadFile(const std::string_view path) {
+  if (!std::filesystem::exists(path)) {
+    fmt::print("Requested file: {} does not exist.\n", path);
+    return "";
+  }
   std::ifstream file;
   file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
   try {
@@ -100,6 +104,7 @@ const std::string ReadFile(const std::string_view path) {
 }
 
 unsigned int CompileShader(const std::string_view code, int type) {
+  if (code.empty()) return 0;
   const char* code_data = code.data();
   unsigned int shader;
   int success;
@@ -110,17 +115,19 @@ unsigned int CompileShader(const std::string_view code, int type) {
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (!success) {
     glGetShaderInfoLog(shader, 512, NULL, log);
-    fmt::print("Shader Compilation failed. \nGL Info:{}\n", log);
+    fmt::print("Shader compilation failed. \nGL Info:{}\n", log);
+    return 0;
   }
   return shader;
 }
 
-Shader* f::LoadShader(const std::string_view path) {
-  Shader* shader = new Shader();
-  unsigned int vertex = CompileShader(ReadFile(std::string(path) + "/vert.glsl"),
+Shader* f::LoadShader(const std::string_view vert_path, const std::string_view frag_path) {
+  Shader* shader = new Shader(vert_path.data(), frag_path.data());
+  unsigned int vertex = CompileShader(ReadFile(vert_path),
       GL_VERTEX_SHADER),
-               fragment = CompileShader(ReadFile(std::string(path) + "/frag.glsl"),
+               fragment = CompileShader(ReadFile(frag_path),
       GL_FRAGMENT_SHADER);
+  if (vertex == 0 || fragment == 0) return nullptr;
   unsigned int program;
   program = glCreateProgram();
   glAttachShader(program, vertex);
@@ -132,6 +139,7 @@ Shader* f::LoadShader(const std::string_view path) {
   if (!success) {
     glGetProgramInfoLog(program, 512, NULL, log);
     fmt::print("Shader program link failed. \nGL Info:{}\n", log);
+    return nullptr;
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);

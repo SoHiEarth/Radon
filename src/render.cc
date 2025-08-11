@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <engine/render.h>
 #include <engine/global.h>
+#include <classes/shader.h>
 #include <GLFW/glfw3.h>
 #include <fmt/core.h>
 #include <glm/glm.hpp>
@@ -8,6 +9,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 #include <engine/devgui.h>
+#include <vector>
+#include <classes/light.h>
+
+DirectionalLight* directional_light;
+std::vector<PointLight*> point_lights;
+std::vector<SpotLight*> spot_lights;
 
 void FBSizeCallback(GLFWwindow* window, int width, int height) {
   glViewport(0, 0, width, height);
@@ -19,6 +26,13 @@ glm::vec3 light_ambient = {0.2f, 0.2f, 0.2f},
     light_diffuse = {0.5f, 0.5f, 0.5f},
     light_specular = {1.0f, 1.0f, 1.0f},
     light_position = {0.0f, 0.0f, 0.0f};
+
+glm::vec3 pointLightPositions[] = {
+	glm::vec3( 0.7f,  0.2f,  2.0f),
+	glm::vec3( 2.3f, -3.3f, -4.0f),
+	glm::vec3(-4.0f,  2.0f, -12.0f),
+	glm::vec3( 0.0f,  0.0f, -3.0f)
+};
 
 float vertices[] = {
      0.5f,  0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
@@ -51,6 +65,7 @@ void r::Init() {
   Engine::width.store(800);
   Engine::height.store(600);
   glfwSetFramebufferSizeCallback(GET_WINDOW(), FBSizeCallback);
+  glfwSwapInterval(1);
 
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     fmt::print("Failed to initialize GLAD\n");
@@ -80,15 +95,20 @@ void r::Init() {
 
 void r::Update() {
   if (!GET_WINDOW()) return;
-  glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+  if (directional_light)
+    glClearColor(directional_light->ambient.x,
+        directional_light->ambient.y,
+        directional_light->ambient.z,
+        1.0f);
+  else
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
   if (dev::hud_enabled) {
-    ImGui::Begin("Render Control Panel");
-    ImGui::DragFloat3("Light Position", glm::value_ptr(light_position), 0.1); 
-    ImGui::DragFloat3("Light Ambient", glm::value_ptr(light_ambient), 0.1); 
-    ImGui::DragFloat3("Light Diffuse", glm::value_ptr(light_diffuse), 0.1); 
-    ImGui::DragFloat3("Light Specular", glm::value_ptr(light_specular), 0.1); 
+    ImGui::Begin("Renderer Status");
+    ImGui::Text("Directional light status: %d", (int)(directional_light != nullptr));
+    ImGui::Text("Point light count: %d", (int)point_lights.size());
+    ImGui::Text("Spot light count: %d", (int)spot_lights.size());
+    ImGui::DragFloat3("Camera Position", glm::value_ptr(Engine::camera.position));
     ImGui::End();
   }
 }
@@ -116,31 +136,82 @@ glm::mat4 GetTransform(const glm::vec3 &pos, const glm::vec2 &scale, float rot) 
   return transform;
 }
 
-void r::RenderTexture(const Material* material, const Shader *shader, const glm::vec3 &pos, const glm::vec2 &size, float rot) {
-  if (!material || !shader) return;
-  if (!material->diffuse || !material->specular) return;
+void r::RenderTexture(const Material* material, const glm::vec3 &pos, const glm::vec2 &size, float rot) {
+  if (!material) return;
+  if (!material->IsValid()) return;
+  Shader* shader = material->shader; // For readability
+
+  // Transformations
   glm::mat4 model = GetTransform(pos, size, rot),
     view = glm::translate(glm::mat4(1.0f), Engine::camera.position),
     projection = glm::perspective(glm::radians(60.0f),
         ((float)Engine::width.load() / (float)Engine::height.load()),
         0.1f, 100.0f);
-  glUseProgram(shader->id);
+  material->Bind();
   shader->SetMat4("model", model);
   shader->SetMat4("view", view);
   shader->SetMat4("projection", projection);
-  shader->SetInt("material.diffuse", 0);
-  shader->SetInt("material.specular", 1);
-  shader->SetFloat("material.shininess", material->shininess);
-  shader->SetVec3("light.position", light_position);
-  shader->SetVec3("light.ambient", light_ambient);
-  shader->SetVec3("light.diffuse", light_diffuse);
-  shader->SetVec3("light.specular", light_specular);
+
+  if (directional_light)
+    directional_light->SetUniforms(material->shader);
+  shader->SetInt("NUM_POINT_LIGHTS", (int)point_lights.size());
+  for (int i = 0; i < point_lights.size(); i++) {
+    if (point_lights[i])
+      point_lights[i]->SetUniforms(material->shader, i);
+  }
+  shader->SetInt("NUM_SPOT_LIGHTS", (int)spot_lights.size());
+  for (int i = 0; i < spot_lights.size(); i++) {
+    if (spot_lights[i])
+      spot_lights[i]->SetUniforms(material->shader, i);
+  }
+
   shader->SetVec3("viewPos", Engine::camera.position);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, material->diffuse->id);
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, material->specular->id);
   glBindVertexArray(VAO);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+}
+
+void r::AddDirectionalLight(DirectionalLight *light) {
+  if (!light) return;
+  RemoveDirectionalLight(directional_light);
+  light->active = true;
+  directional_light = light;
+}
+
+void r::AddPointLight(PointLight *light) {
+  if (!light) return;
+  light->active = true;
+  point_lights.push_back(light);
+}
+
+void r::AddSpotLight(SpotLight *light) {
+  if (!light) return;
+  light->active = true;
+  spot_lights.push_back(light);
+}
+
+void r::RemoveDirectionalLight(DirectionalLight *target) {
+  if (!target) return;
+  target->active = false;
+  directional_light = nullptr;
+}
+
+void r::RemovePointLight(PointLight *target) {
+  if (!target) return;
+  for (int i = 0; i < point_lights.size(); i++) {
+    if (point_lights[i] == target) {
+      target->active = false;
+      point_lights.erase(point_lights.begin() + i);
+    }
+  }
+}
+
+void r::RemoveSpotLight(SpotLight *target) {
+  if (!target) return;
+  for (int i = 0; i < spot_lights.size(); i++) {
+    if (spot_lights[i] == target) {
+      target->active = false;
+      spot_lights.erase(spot_lights.begin() + i);
+    }
+  }
 }

@@ -18,7 +18,7 @@ namespace f {
   void LoadObject(Object* object, const pugi::xml_node& base_node);
   void SaveObject(const Object* object, const pugi::xml_node& base_node);
 
-  Shader* LoadShader(const std::string_view path);
+  Shader* LoadShader(const std::string_view vert_path, const std::string_view frag_path);
   void FreeShader(Shader* shader);
 }
 

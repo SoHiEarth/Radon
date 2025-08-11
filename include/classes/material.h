@@ -1,13 +1,20 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
-#include <classes/texture.h>
+#include <string>
+class Texture;
+class Shader;
 struct Material {
-  Texture* diffuse;
-  Texture* specular;
+  Texture* diffuse = nullptr,
+    *specular = nullptr;
+  Shader* shader = nullptr;
   float shininess;
-  Material() {
-    diffuse = new Texture();
-    specular = new Texture();
+  std::string directory;
+  const bool IsValid() const;
+  void Bind() const;
+  void Load(const std::string& path);
+  void Free();
+  Material(const std::string& path) {
+    Load(path);
   }
 };
 
