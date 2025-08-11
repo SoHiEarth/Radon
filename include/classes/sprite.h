@@ -3,6 +3,7 @@
 
 #include <classes/object.h>
 #include <classes/texture.h>
+#include <classes/shader.h>
 #include <string>
 
 class Sprite : public Object {
@@ -12,11 +13,11 @@ class Sprite : public Object {
     void Update() override;
     void Render() override;
     void Quit() override;
-    void SetTexture(const std::string& path);
-    Texture GetTexture() const;
-  private:
-    Texture texture;
     std::string path;
+    Texture* texture = nullptr;
+    Shader* shader = nullptr;
+  private:
+    std::string prev_path;
 };
 
 #endif // SPRITE_H

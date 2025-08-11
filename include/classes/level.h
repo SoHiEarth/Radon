@@ -13,6 +13,7 @@ class Level {
   public:
     void Init();
     void Update();
+    void Render();
     void Quit();
     std::vector<Object*> objects;
   private:

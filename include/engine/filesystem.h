@@ -3,10 +3,13 @@
 
 #include <classes/texture.h>
 #include <classes/level.h>
+#include <classes/shader.h>
 #include <pugixml.hpp>
 
 namespace f {
-  Texture LoadTexture(const std::string_view path);
+  Texture* LoadTexture(const std::string_view path);
+  void FreeTexture(Texture* texture);
+
   Level LoadLevel(const std::string_view path);
   void LoadLevelDynamicData(const Level* level, const std::string_view path);
   void SaveLevel(const Level* level, const std::string_view path);
@@ -14,6 +17,9 @@ namespace f {
 
   void LoadObject(Object* object, const pugi::xml_node& base_node);
   void SaveObject(const Object* object, const pugi::xml_node& base_node);
+
+  Shader* LoadShader(const std::string_view path);
+  void FreeShader(Shader* shader);
 }
 
 #endif

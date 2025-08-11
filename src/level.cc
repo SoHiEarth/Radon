@@ -13,6 +13,12 @@ void Level::Update() {
   }
 }
 
+void Level::Render() {
+  for (const auto& object : objects) {
+    object->Render();
+  }
+}
+
 void Level::Quit() {
   for (const auto& object : objects) {
     object->Quit();

@@ -46,25 +46,26 @@ int main(int argc, char** argv) {
   });
 
   while (!glfwWindowShouldClose(Engine::window.load())) {
-    i::Update();
     dev::Update();
-    r::Update();
     if (Engine::current_level.load())
       Engine::current_level.load()->Update();
+    r::Update();
+    if (Engine::current_level.load())
+      Engine::current_level.load()->Render();
     dev::LateUpdate();
     r::Present();
+    i::Update();
   }
 
-  if (Engine::current_level.load()) {
+  if (Engine::current_level.load())
     Engine::current_level.load()->Quit();
-  }
 
+  dev::Quit();
   SPAWN_THREAD(a::Quit);
   SPAWN_THREAD(p::Quit);
   WAIT_WORKERS();
   workers.clear();
   i::Quit();
-  dev::Quit();
   r::Quit();
   return 0;
 }
