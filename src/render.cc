@@ -21,7 +21,7 @@ std::vector<SpotLight*> r::spot_lights;
 unsigned int VAO, VBO, EBO, framebuffer, renderbuffer, colorbuffer;
 unsigned int screen_vao, screen_vbo;
 Shader* screen_shader = nullptr;
-int render_factor = 4;
+int render_factor = 4, prev_render_factor;
 
 void RecreateFramebuffer();
 void FBSizeCallback(GLFWwindow* window, int width, int height) {
@@ -106,6 +106,7 @@ void r::Init() {
   glEnableVertexAttribArray(1);
 
   RecreateFramebuffer();
+  prev_render_factor = render_factor;
 
   screen_shader = f::LoadShader("screen_shader/vert.glsl", "screen_shader/frag.glsl");
   if (screen_shader == nullptr) {
@@ -122,6 +123,10 @@ void r::Init() {
 
 void r::Update() {
   if (!Engine::window) return;
+  if (render_factor != prev_render_factor) {
+    RecreateFramebuffer();
+    prev_render_factor = render_factor;
+  }
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
   glViewport(0, 0, Engine::width/render_factor, Engine::height/render_factor);
   glEnable(GL_DEPTH_TEST);
@@ -147,6 +152,7 @@ void r::Render() {
     ImGui::Text("Spot light count: %d", (int)spot_lights.size());
     ImGui::DragFloat3("Camera Position", glm::value_ptr(Engine::camera.position));
     ImGui::InputInt("Render Factor", &render_factor);
+    if (render_factor <= 0) render_factor = 1;
     ImGui::SameLine();
     if (ImGui::Button("Set")) {
       RecreateFramebuffer();

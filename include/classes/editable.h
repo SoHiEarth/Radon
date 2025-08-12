@@ -43,10 +43,10 @@ template <typename T> class Editable : public IEditable {
         ImGui::InputText(i_label, &i_value);
       }
       else if constexpr (std::is_same_v<T, glm::vec2>) {
-        ImGui::DragFloat2(i_label, glm::value_ptr(i_value));
+        ImGui::DragFloat2(i_label, glm::value_ptr(i_value), 0.1f);
       }
       else if constexpr (std::is_same_v<T, glm::vec3>) {
-        ImGui::DragFloat3(i_label, glm::value_ptr(i_value));
+        ImGui::DragFloat3(i_label, glm::value_ptr(i_value), 0.1f);
       }
       else if constexpr (std::is_same_v<T, Material*>) {
         MaterialView(i_value);

@@ -46,19 +46,19 @@ int main(int argc, char** argv) {
   });
 
   i::AddHook({GLFW_KEY_W, ButtonState::HOLD}, []() {
-      Engine::camera.position.y--;
+      Engine::camera.position.y-=0.2;
   });
 
   i::AddHook({GLFW_KEY_S, ButtonState::HOLD}, []() {
-      Engine::camera.position.y++;
+      Engine::camera.position.y+=0.2;
   });
 
   i::AddHook({GLFW_KEY_A, ButtonState::HOLD}, []() {
-      Engine::camera.position.x++;
+      Engine::camera.position.x+=0.2;
   });
 
   i::AddHook({GLFW_KEY_D, ButtonState::HOLD}, []() {
-      Engine::camera.position.x--;
+      Engine::camera.position.x-=0.2;
   });
 
   while (!glfwWindowShouldClose(Engine::window)) {
