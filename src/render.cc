@@ -87,9 +87,9 @@ void r::Init() {
 void r::Update() {
   if (!Engine::window) return;
   if (directional_light)
-    glClearColor(directional_light->ambient.x,
-        directional_light->ambient.y,
-        directional_light->ambient.z,
+    glClearColor(directional_light->ambient->x,
+        directional_light->ambient->y,
+        directional_light->ambient->z,
         1.0f);
   else
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);

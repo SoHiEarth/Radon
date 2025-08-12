@@ -12,8 +12,8 @@ class Sprite : public Object {
     void Update() override;
     void Render() override;
     void Quit() override;
-    std::string path;
-    Material* material = nullptr;
+    Editable<std::string> path = {"", "Path", reg};
+    Editable<Material*> material = {nullptr, "Material", reg};
   private:
     std::string prev_path;
 };

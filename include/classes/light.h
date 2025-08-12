@@ -7,16 +7,16 @@
 class Shader;
 class Light : public Object {
   public:
-    glm::vec3 ambient = glm::vec3(0.0f),
-      diffuse = glm::vec3(0.0f),
-      specular = glm::vec3(0.0f);
+    Editable<glm::vec3> ambient = {glm::vec3(0.0f), "Ambient", reg},
+                        diffuse = {glm::vec3(0.0f), "Diffuse", reg},
+                        specular = {glm::vec3(0.0f), "Specular", reg};
     void Update() override {};
     void Render() override {};
 };
 
 class DirectionalLight : public Light {
   public:
-    glm::vec3 direction = glm::vec3(0.0f);
+    Editable<glm::vec3> direction = {glm::vec3(0.0f), "Direction", reg};
     void Init() override;
     void Quit() override;
     void SetUniforms(const Shader* shader);
@@ -24,9 +24,9 @@ class DirectionalLight : public Light {
 
 class PointLight : public Light {
   public:
-    float constant = 1.0f,
-      linear = 0.0f,
-      quadratic = 0.0f;
+    Editable<float> constant = {1.0f, "Constant", reg},
+                    linear = {0.0f, "Linear", reg},
+                    quadratic = {0.0f, "Quadratic", reg};
     void Init() override;
     void Quit() override;
     void SetUniforms(const Shader* shader, const int pos);
@@ -34,12 +34,12 @@ class PointLight : public Light {
 
 class SpotLight : public Light {
   public:
-    glm::vec3 direction = glm::vec3(0.0f);
-    float constant = 1.0f,
-      linear = 0.0f,
-      quadratic = 0.0f,
-      cutOff = 20.0f,
-      outerCutOff = 25.0f;
+    Editable<glm::vec3> direction = {glm::vec3(0.0f), "Direction", reg};
+    Editable<float> constant = {1.0f, "Constant", reg},
+                    linear = {0.0f, "Linear", reg},
+                    quadratic = {0.0f, "Quadratic", reg},
+                    cutOff = {20.0f, "Cutoff", reg},
+                    outerCutOff = {25.0f, "Outer Cutoff", reg};
     void Init() override;
     void Quit() override;
     void SetUniforms(const Shader* shader, const int pos);

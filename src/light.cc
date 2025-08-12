@@ -57,6 +57,6 @@ void SpotLight::SetUniforms(const Shader* shader, const int pos) {
   shader->SetFloat(prefix + ".constant", constant);
   shader->SetFloat(prefix + ".linear", linear);
   shader->SetFloat(prefix + ".quadratic", quadratic);
-  shader->SetFloat(prefix + "cutoff", glm::cos(glm::radians(cutOff)));
-  shader->SetFloat(prefix + "outerCutoff", glm::cos(glm::radians(outerCutOff)));
+  shader->SetFloat(prefix + "cutoff", glm::cos(glm::radians(cutOff.i_value)));
+  shader->SetFloat(prefix + "outerCutoff", glm::cos(glm::radians(outerCutOff.i_value)));
 }

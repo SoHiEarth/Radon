@@ -19,23 +19,6 @@
 bool dev::hud_enabled = false;
 Object* current_object = nullptr;
 
-void MaterialView(Material* material) {
-  if (!material) {
-    ImGui::Text("Material is not valid");
-    return;
-  }
-  if (!material->IsValid()) return;
-  ImGui::SeparatorText("Material Info");
-  ImGui::Text("Diffuse");
-  ImGui::Image(material->diffuse->id, ImVec2(100, 100));
-  ImGui::Text("Specular");
-  ImGui::Image(material->specular->id, ImVec2(100, 100));
-  ImGui::DragFloat("Shininess", &material->shininess);
-  ImGui::Text("Shader");
-  ImGui::Text("Vert: %s", material->shader->vert_path.data());
-  ImGui::Text("Frag: %s", material->shader->frag_path.data());
-}
-
 void dev::Init() {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -64,7 +47,7 @@ void dev::Update() {
   int i = 0;
   for (const auto& object : Engine::level->objects) {
     i++;
-    if (ImGui::Button(std::format("{} ({})", object->name, i).c_str()))
+    if (ImGui::Button(std::format("{} ({})", object->name->c_str(), i).c_str()))
       current_object = object;
   }
   ImGui::End();
@@ -73,46 +56,8 @@ void dev::Update() {
   if (!current_object) {
     ImGui::Text("Select an Object");
   } else {
-    ImGui::DragFloat3("Position", glm::value_ptr(current_object->position), 0.1f);
-    ImGui::DragFloat2("Scale", glm::value_ptr(current_object->scale), 0.1f);
-    ImGui::DragFloat("Rotation", &current_object->rotation, 0.1f);
-    // Temp solution until I get a EditableField<T> system working
-    Sprite* sprite = dynamic_cast<Sprite*>(current_object);
-    if (sprite != nullptr) {
-      ImGui::SeparatorText("Sprite");
-      ImGui::InputText("Path", &sprite->path);
-      MaterialView(sprite->material);
-    }
-    DirectionalLight* dLight = dynamic_cast<DirectionalLight*>(current_object);
-    if (dLight != nullptr) {
-      ImGui::SeparatorText("Directional Light");
-      ImGui::DragFloat3("Direction", glm::value_ptr(dLight->direction), 0.1f);
-      ImGui::DragFloat3("Ambient", glm::value_ptr(dLight->ambient), 0.1f);
-      ImGui::DragFloat3("Diffuse", glm::value_ptr(dLight->diffuse), 0.1f);
-      ImGui::DragFloat3("Specular", glm::value_ptr(dLight->specular), 0.1f);
-    }
-    PointLight* pLight = dynamic_cast<PointLight*>(current_object);
-    if (pLight != nullptr) {
-      ImGui::SeparatorText("Point Light");
-      ImGui::DragFloat3("Ambient", glm::value_ptr(pLight->ambient), 0.1f);
-      ImGui::DragFloat3("Diffuse", glm::value_ptr(pLight->diffuse), 0.1f);
-      ImGui::DragFloat3("Specular", glm::value_ptr(pLight->specular), 0.1f);
-      ImGui::DragFloat("Constant", &pLight->constant, 0.1f);
-      ImGui::DragFloat("Linear", &pLight->linear, 0.1f);
-      ImGui::DragFloat("Quadratic", &pLight->quadratic, 0.1f);
-    }
-    SpotLight* sLight = dynamic_cast<SpotLight*>(current_object);
-    if (sLight != nullptr) {
-      ImGui::SeparatorText("Spot Light");
-      ImGui::DragFloat3("Direction", glm::value_ptr(sLight->direction), 0.1f);
-      ImGui::DragFloat3("Ambient", glm::value_ptr(sLight->ambient), 0.1f);
-      ImGui::DragFloat3("Diffuse", glm::value_ptr(sLight->diffuse), 0.1f);
-      ImGui::DragFloat3("Specular", glm::value_ptr(sLight->specular), 0.1f);
-      ImGui::DragFloat("Constant", &sLight->constant, 0.1f);
-      ImGui::DragFloat("Linear", &sLight->linear, 0.1f);
-      ImGui::DragFloat("Quadratic", &sLight->quadratic, 0.1f);
-      ImGui::DragFloat("Cutoff", &sLight->cutOff, 0.1f);
-      ImGui::DragFloat("Outer Cutoff", &sLight->outerCutOff, 0.1f);
+    for (const auto& field : current_object->reg) {
+      if (field != nullptr) field->RenderInterface();
     }
   }
   ImGui::End();

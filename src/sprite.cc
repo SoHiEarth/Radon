@@ -4,14 +4,14 @@
 #include <fmt/core.h>
 
 void Sprite::Init() {
-  material = new Material(path);
+  material = {new Material(path), "Material", reg};
   prev_path = path;
 }
 
 void Sprite::Update() {
   if (path != prev_path) {
-    material->Free();
-    material->Load(path);
+    material.i_value->Free();
+    material.i_value->Load(path);
     prev_path = path;
   }
 }
@@ -21,5 +21,5 @@ void Sprite::Render() {
 }
 
 void Sprite::Quit() {
-  material->Free();
+  material.i_value->Free();
 }
