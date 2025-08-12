@@ -62,14 +62,12 @@ int main(int argc, char** argv) {
   });
 
   while (!glfwWindowShouldClose(Engine::window)) {
-    dev::Update();
+    i::Update();
+    if (Engine::level) Engine::level->Update();
     r::Update();
     p::Update();
-    if (Engine::level) Engine::level->Update();
     if (Engine::level) Engine::level->Render();
-    dev::Render();
     r::Render();
-    i::Update();
   }
 
   if (Engine::level) Engine::level->Quit();
