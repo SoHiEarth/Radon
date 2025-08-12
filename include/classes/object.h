@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <string>
 #include <classes/editable.h>
-
+class Material;
 class Object {
   public:
     std::vector<IEditable*> reg;
@@ -13,6 +13,7 @@ class Object {
     Editable<glm::vec2> scale     = {glm::vec2(1.0f), "Scale", reg};
     Editable<float> rotation      = {0.0f, "Rotation", reg};
     Editable<bool> is_static      = {false, "Static", reg};
+    Material* material            = nullptr;
     virtual void Init()   = 0;
     virtual void Update() = 0;
     virtual void Render() = 0;

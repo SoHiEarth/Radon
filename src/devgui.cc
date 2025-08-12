@@ -18,6 +18,27 @@
 
 bool dev::hud_enabled = false;
 Object* current_object = nullptr;
+std::string material_path = "";
+
+void MaterialView(Material* material) {
+  if (!material) {
+    ImGui::SeparatorText("Load a Material from disk");
+    ImGui::InputText("Path", &material_path);
+    if (ImGui::Button("Load"))
+      material = new Material(material_path);
+    return;
+  }
+  if (!material->IsValid()) return;
+  ImGui::SeparatorText("Material");
+  ImGui::Text("Diffuse");
+  ImGui::Image(material->diffuse->id, ImVec2(100, 100));
+  ImGui::Text("Specular");
+  ImGui::Image(material->specular->id, ImVec2(100, 100));
+  ImGui::DragFloat("Shininess", &material->shininess);
+  ImGui::Text("Shader");
+  ImGui::Text("Vert: %s", material->shader->vert_path.data());
+  ImGui::Text("Frag: %s", material->shader->frag_path.data());
+}
 
 void dev::Init() {
   IMGUI_CHECKVERSION();
@@ -38,7 +59,7 @@ void dev::Update() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
-  ImGui::Begin("Scene");
+  ImGui::Begin("Scene Management");
   if (ImGui::Button("Add Sprite")) Engine::level->AddObject(new Sprite);
   if (ImGui::Button("Add Directional Light")) Engine::level->AddObject(new DirectionalLight);
   if (ImGui::Button("Add Point Light")) Engine::level->AddObject(new PointLight);
@@ -47,18 +68,18 @@ void dev::Update() {
   int i = 0;
   for (const auto& object : Engine::level->objects) {
     i++;
-    if (ImGui::Button(std::format("{} ({})", object->name->c_str(), i).c_str()))
+    if (ImGui::Button(std::format("{}###{}", object->name->c_str(), i).c_str()))
       current_object = object;
   }
   ImGui::End();
 
-  ImGui::Begin("Inspector");
+  ImGui::Begin("Properties");
   if (!current_object) {
     ImGui::Text("Select an Object");
   } else {
-    for (const auto& field : current_object->reg) {
+    for (const auto& field : current_object->reg)
       if (field != nullptr) field->RenderInterface();
-    }
+    MaterialView(current_object->material);
   }
   ImGui::End();
 }

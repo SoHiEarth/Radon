@@ -36,7 +36,7 @@ unsigned int indices[] = {
   0, 1, 3,
   1, 2, 3
 };
-unsigned int VAO, VBO, EBO;
+unsigned int VAO, VBO, EBO, FBO, RBO;
 
 void r::Init() {
   glfwInit();

@@ -4,16 +4,13 @@
 #include <classes/object.h>
 #include <string>
 
-class Material;
-
 class Sprite : public Object {
   public:
     void Init() override;
     void Update() override;
     void Render() override;
     void Quit() override;
-    Editable<std::string> path = {"", "Path", reg};
-    Editable<Material*> material = {nullptr, "Material", reg};
+    Editable<std::string> path = {"sprite_test", "Path", reg};
   private:
     std::string prev_path;
 };
