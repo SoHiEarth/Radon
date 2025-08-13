@@ -111,4 +111,3 @@ CheckOptions:
     value: true
   - key: performance-unnecessary-value-param.AllowedTypes
     value: std::unique_ptr
-

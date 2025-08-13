@@ -13,6 +13,7 @@
 #include <engine/render.h>
 #include <fmt/core.h>
 #include <imgui.h>
+#include <array>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -20,15 +21,16 @@
 #include <vector>
 
 #define TEXT_COLOR_RED ImVec4(1.0f, 0.0f, 0.0f, 1.0f)
-enum { kNumColorbuffers = 2, kDefaultBloomAmount = 10 };
+enum : std::uint8_t { kNumColorbuffers = 2, kDefaultBloomAmount = 10, kPingPongCount = 2 };
 using ImGui::TextColored;
 
 DirectionalLight *r::g_directional_light = nullptr;
 std::vector<PointLight *> r::g_point_lights;
 std::vector<SpotLight *> r::g_spot_lights;
 unsigned int g_vao, g_vbo, g_ebo;
-unsigned int g_framebuffer, g_renderbuffer, g_colorbuffers[kNumColorbuffers];
-unsigned int g_pingpong_framebuffer[2], g_pingpong_colorbuffer[2];
+unsigned int g_framebuffer, g_renderbuffer;
+std::array<unsigned int, kNumColorbuffers> g_colorbuffers;
+std::array<unsigned int, kPingPongCount> g_pingpong_framebuffer, g_pingpong_colorbuffer;
 std::vector<unsigned int> g_attachments;
 unsigned int g_screen_vao, g_screen_vbo;
 Shader *g_screen_shader = nullptr, *g_screen_shader_blur;
@@ -37,6 +39,15 @@ float g_screen_exposure = 1.0;
 int g_bloom_amount = kDefaultBloomAmount;
 bool g_bloom = true, g_antialias = true;
 
+const std::array<unsigned int, 6> kGIndices = {0, 1, 3, 1, 2, 3};
+const std::array<float, 32> kGVertices = {0.5F,  0.5F,  0.0F, 0.0F, 0.0F, -1.0F, 1.0F, 1.0F,
+                                          0.5F,  -0.5F, 0.0F, 0.0F, 0.0F, -1.0F, 1.0F, 0.0F,
+                                          -0.5F, -0.5F, 0.0F, 0.0F, 0.0F, -1.0F, 0.0F, 0.0F,
+                                          -0.5F, 0.5F,  0.0F, 0.0F, 0.0F, -1.0F, 0.0F, 1.0F};
+const std::array<float, 24> kGScreenVertices = {-1.0F, 1.0F,  0.0F, 1.0F, -1.0F, -1.0F, 0.0F, 0.0F,
+                                                1.0F,  -1.0F, 1.0F, 0.0F, -1.0F, 1.0F,  0.0F, 1.0F,
+                                                1.0F,  -1.0F, 1.0F, 0.0F, 1.0F,  1.0F,  1.0F, 1.0F};
+
 void RecreateFramebuffer();
 void FBSizeCallback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
@@ -44,16 +55,6 @@ void FBSizeCallback(GLFWwindow *window, int width, int height) {
   Engine::g_height = height;
   RecreateFramebuffer();
 }
-
-float g_vertices[] = {0.5F, 0.5F, 0.0F,  0.0F, 0.0F, -1.0F, 1.0F,  1.0F,  0.5F, -0.5F, 0.0F,
-                      0.0F, 0.0F, -1.0F, 1.0F, 0.0F, -0.5F, -0.5F, 0.0F,  0.0F, 0.0F,  -1.0F,
-                      0.0F, 0.0F, -0.5F, 0.5F, 0.0F, 0.0F,  0.0F,  -1.0F, 0.0F, 1.0F};
-
-unsigned int g_indices[] = {0, 1, 3, 1, 2, 3};
-
-float g_screen_vertices[] = {-1.0F, 1.0F,  0.0F, 1.0F, -1.0F, -1.0F, 0.0F, 0.0F,
-                             1.0F,  -1.0F, 1.0F, 0.0F, -1.0F, 1.0F,  0.0F, 1.0F,
-                             1.0F,  -1.0F, 1.0F, 0.0F, 1.0F,  1.0F,  1.0F, 1.0F};
 
 void r::Init() {
   glfwInit();
@@ -88,9 +89,9 @@ void r::Init() {
   glGenBuffers(1, &g_ebo);
   glBindVertexArray(g_vao);
   glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertices), g_vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(kGVertices), kGVertices.data(), GL_STATIC_DRAW);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(g_indices), g_indices, GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kGIndices), kGIndices.data(), GL_STATIC_DRAW);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) nullptr);
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
@@ -102,7 +103,7 @@ void r::Init() {
   glGenBuffers(1, &g_screen_vbo);
   glBindVertexArray(g_screen_vao);
   glBindBuffer(GL_ARRAY_BUFFER, g_screen_vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(g_screen_vertices), g_screen_vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(kGScreenVertices), kGScreenVertices.data(), GL_STATIC_DRAW);
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) nullptr);
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) (2 * sizeof(float)));
@@ -184,8 +185,8 @@ void r::Render() {
       ImGui::Image(g_colorbuffer, ImVec2(100, 100));
     }
     ImGui::Text("Ping Pong Colorbuffer");
-    for (unsigned int i : g_pingpong_colorbuffer) {
-      ImGui::Image(i, ImVec2(100, 100));
+    for (unsigned int g_colorbuffer : g_pingpong_colorbuffer) {
+      ImGui::Image(g_colorbuffer, ImVec2(100, 100));
     }
     ImGui::End();
   }
@@ -194,11 +195,12 @@ void r::Render() {
   bool first_iteration = true;
   g_screen_shader_blur->Use();
   for (unsigned int i = 0; std::cmp_less(i, g_bloom_amount); i++) {
-    glBindFramebuffer(GL_FRAMEBUFFER, g_pingpong_framebuffer[horizontal]);
+    glBindFramebuffer(GL_FRAMEBUFFER, g_pingpong_framebuffer[static_cast<size_t>(horizontal)]);
     g_screen_shader_blur->SetInt("horizontal", static_cast<int>(horizontal));
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D,
-                  first_iteration ? g_colorbuffers[1] : g_pingpong_colorbuffer[!horizontal]);
+    glBindTexture(GL_TEXTURE_2D, first_iteration
+                                     ? g_colorbuffers[1]
+                                     : g_pingpong_colorbuffer[static_cast<size_t>(!horizontal)]);
     glBindVertexArray(g_screen_vao);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     horizontal = !horizontal;
@@ -219,7 +221,7 @@ void r::Render() {
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, g_colorbuffers[0]);
   glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, g_pingpong_colorbuffer[!horizontal]);
+  glBindTexture(GL_TEXTURE_2D, g_pingpong_colorbuffer[static_cast<size_t>(!horizontal)]);
   g_screen_shader->SetInt("bloom", static_cast<int>(g_bloom));
   g_screen_shader->SetFloat("exposure", g_screen_exposure);
   glBindVertexArray(g_screen_vao);
@@ -318,7 +320,7 @@ void RecreateFramebuffer() {
   int framebuffer_height = Engine::g_height / g_render_factor;
   glGenFramebuffers(1, &g_framebuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
-  glGenTextures(kNumColorbuffers, g_colorbuffers);
+  glGenTextures(kNumColorbuffers, g_colorbuffers.data());
   for (unsigned int i = 0; i < kNumColorbuffers; i++) {
     glBindTexture(GL_TEXTURE_2D, g_colorbuffers[i]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, framebuffer_width, framebuffer_height, 0, GL_RGBA,
@@ -346,8 +348,8 @@ void RecreateFramebuffer() {
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  glGenFramebuffers(2, g_pingpong_framebuffer);
-  glGenTextures(2, g_pingpong_colorbuffer);
+  glGenFramebuffers(2, g_pingpong_framebuffer.data());
+  glGenTextures(2, g_pingpong_colorbuffer.data());
   for (unsigned int i = 0; i < 2; i++) {
     glBindFramebuffer(GL_FRAMEBUFFER, g_pingpong_framebuffer[i]);
     glBindTexture(GL_TEXTURE_2D, g_pingpong_colorbuffer[i]);
