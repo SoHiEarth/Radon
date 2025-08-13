@@ -19,6 +19,8 @@ public:
   Editable<glm::vec3> direction_ = {glm::vec3(0.0F), "Direction", reg_};
   void Init() override;
   void Quit() override;
+  void Load(pugi::xml_node& node) override;
+  void Save(pugi::xml_node& node) const override;
   void SetUniforms(const Shader* shader);
 };
 
@@ -28,6 +30,8 @@ public:
                   quadratic_ = {0.0F, "Quadratic", reg_};
   void Init() override;
   void Quit() override;
+  void Load(pugi::xml_node& node) override;
+  void Save(pugi::xml_node& node) const override;
   void SetUniforms(const Shader* shader, int k_pos);
 };
 
@@ -39,6 +43,8 @@ public:
                   outer_cut_off_ = {25.0F, "Outer Cutoff", reg_};
   void Init() override;
   void Quit() override;
+  void Load(pugi::xml_node& node) override;
+  void Save(pugi::xml_node& node) const override;
   void SetUniforms(const Shader* shader, int k_pos);
 };
 

@@ -1,5 +1,11 @@
 {
   "dependencies": [
+    "box2d",
+    "fmt",
+    "freetype",
+    "glad",
+    "glfw3",
+    "glm",
     {
       "name": "imgui",
       "features": [
@@ -9,14 +15,9 @@
         "opengl3-binding"
       ]
     },
-    "glfw3",
-    "opengl",
-    "glm",
-    "freetype",
-    "pugixml",
-    "glad",
-    "box2d",
     "openal-soft",
+    "opengl",
+    "pugixml",
     "stb"
   ]
 }

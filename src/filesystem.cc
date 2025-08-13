@@ -3,44 +3,89 @@
 #include <classes/object.h>
 #include <classes/shader.h>
 #include <classes/texture.h>
+#include <classes/sprite.h>
+#include <classes/light.h>
 #include <engine/filesystem.h>
 #include <fmt/core.h>
 #include <glad/glad.h>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <unordered_map>
+#include <functional>
+#include <format>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-enum { kLogSize = 512 };
-
+enum : std::uint16_t { kLogSize = 512 };
+std::unordered_map<const char*, std::function<Object*()>> g_object_factory = {
+  {"Sprite", {[](){ return new Sprite(); }}},
+  {"DirectionalLight", {[](){ return new DirectionalLight(); }}},
+  {"PointLight", {[](){ return new PointLight(); }}},
+  {"SpotLight", {[](){ return new SpotLight(); }}}
+};
 using std::string_view;
 
 Level* f::LoadLevel(const std::string_view kPath) {
   auto* level = new Level();
   level->path_ = kPath;
-  // Load objects from path
+  
+  pugi::xml_document doc;
+  pugi::xml_parse_result result = doc.load_file(kPath.data());
+  if (!result) {
+    std::runtime_error(std::format("Failed to parse level file. Details: {}, {}", kPath, result.description()));
+  }
+
+  pugi::xml_node root = doc.child("level");
+  if (!root) {
+    std::runtime_error(std::format("Requested file is not a valid level file. Details {}", kPath));
+  }
+  for (pugi::xml_node object_node : root.children("object")) {
+    level->AddObject(LoadObject(object_node));
+  }
   return level;
 }
 
 void f::LoadLevelDynamicData(Level* level, const std::string_view kPath) {
   auto* dynamic_data = new DynamicData();
   dynamic_data->target_level_ = level->path_;
-  // Load dynamic objects from path (XML)
-  dynamic_data->Apply(level);
+  pugi::xml_document doc;
+  pugi::xml_parse_result result = doc.load_file(kPath.data());
+  if (!result) {
+    std::runtime_error(std::format("Failed to parse save data. Details: {}, {}", kPath, result.description()));
+  }
+  pugi::xml_node root = doc.child("data");
+  for (pugi::xml_node& object_node : root.children("object")) {
+    Object* object = LoadObject(object_node);
+    for (auto & old : level->objects_) {
+      if (object->name_ == old->name_) {
+        delete old;
+        old = object;
+      }
+    }
+  }
 }
 
-void f::SaveLevel(const Level* level, const std::string_view kPath) {}
+void f::SaveLevel(const Level* level, const std::string_view kPath) {
 
-void f::SaveLevelDynamicData(const Level* level, const std::string_view kPath) {}
+}
 
-void f::LoadObject(Object* object, const pugi::xml_node& base_node) {}
+void f::SaveLevelDynamicData(const Level* level, const std::string_view kPath) {
 
-void f::SaveObject(const Object* object, const pugi::xml_node& base_node) {}
+}
+
+Object* f::LoadObject(pugi::xml_node& base_node) {
+  Object* object = g_object_factory[base_node.attribute("type").name()]();
+  object->Load(base_node);
+  return object;
+}
+
+void f::SaveObject(const Object* object, pugi::xml_node& base_node) {
+  object->Save(base_node);
+}
 
 std::string ReadFile(const std::string_view kPath) {
   if (!std::filesystem::exists(kPath)) {
-    fmt::print("Requested file: {} does not exist.\n", kPath);
-    return "";
+    throw std::runtime_error(std::format("Requested file does not exist. Details: {}", kPath));
   }
   std::ifstream file;
   file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -51,14 +96,13 @@ std::string ReadFile(const std::string_view kPath) {
     file.close();
     return stream.str();
   } catch (std::ifstream::failure e) {
-    fmt::print("Failed to read file.\n");
+    throw std::runtime_error(std::format("Failed to load file. Details: {}", kPath));
   }
-  return "";
 }
 
 unsigned int CompileShader(const std::string_view kCode, int type) {
   if (kCode.empty()) {
-    return 0;
+    throw std::runtime_error(std::format("Got empty code."));
   }
   const char* code_data = kCode.data();
   unsigned int shader;
@@ -70,8 +114,7 @@ unsigned int CompileShader(const std::string_view kCode, int type) {
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (success == 0) {
     glGetShaderInfoLog(shader, kLogSize, nullptr, log.data());
-    fmt::print("Shader compilation failed.\n{}", log.data());
-    return 0;
+    std::runtime_error(std::format("Shader compilation failed. Details: {}", log.data()));
   }
   return shader;
 }
@@ -81,7 +124,7 @@ Shader* f::LoadShader(const string_view kVertPath, const std::string_view kFragP
   unsigned int vertex = CompileShader(ReadFile(kVertPath), GL_VERTEX_SHADER);
   unsigned int fragment = CompileShader(ReadFile(kFragPath), GL_FRAGMENT_SHADER);
   if (vertex == 0 || fragment == 0) {
-    return nullptr;
+    std::runtime_error(std::format("Unknown shader error. Details: {}, {}", kVertPath, kFragPath));
   }
   unsigned int program = glCreateProgram();
   glAttachShader(program, vertex);
@@ -92,8 +135,7 @@ Shader* f::LoadShader(const string_view kVertPath, const std::string_view kFragP
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if (success == 0) {
     glGetProgramInfoLog(program, kLogSize, nullptr, log.data());
-    fmt::print("Shader program link failed.\n{}", log.data());
-    return nullptr;
+    std::runtime_error(std::format("Shader program link failed. Details: {}", log.data()));
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);
@@ -112,8 +154,7 @@ void f::FreeShader(Shader* shader) {
 
 Texture* f::LoadTexture(const std::string_view kPath) {
   if (!std::filesystem::exists(kPath)) {
-    fmt::print("Requested texture: {} doesn't exist\n", kPath);
-    return nullptr;
+    std::runtime_error(std::format("Requested texture doesn't exist. Details: {}", kPath));
   }
   auto* texture = new Texture(kPath);
   glGenTextures(1, &texture->id_);
@@ -141,7 +182,7 @@ Texture* f::LoadTexture(const std::string_view kPath) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     stbi_image_free(data);
   } else {
-    fmt::print("Failed to load texture {}\n", kPath);
+    std::runtime_error(std::format("Failed to load texture. Details: {}", kPath));
     stbi_image_free(data);
   }
   return texture;

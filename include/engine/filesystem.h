@@ -17,10 +17,10 @@ void LoadLevelDynamicData(Level* level, std::string_view path);
 void SaveLevel(const Level* level, std::string_view path);
 void SaveLevelDynamicData(const Level* level, std::string_view path);
 
-void LoadObject(Object* object, const pugi::xml_node& base_node);
-void SaveObject(const Object* object, const pugi::xml_node& base_node);
+Object* LoadObject(pugi::xml_node& base_node);
+void SaveObject(const Object* object, pugi::xml_node& base_node);
 
-Shader* LoadShader(std::string_view kVertPath, std::string_view kFragPath);
+Shader* LoadShader(std::string_view k_vert_path, std::string_view k_frag_path);
 void FreeShader(Shader* shader);
 }  // namespace f
 

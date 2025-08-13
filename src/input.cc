@@ -15,7 +15,7 @@ std::map<int, bool> g_prev_frame_key_states;
 
 void i::AddHook(const Trigger& key, const std::function<void()>& hook) {
   if (glfwGetCurrentContext() == nullptr) {
-    fmt::print("No GLFW context to add input hook\n");
+    std::runtime_error("No GLFW context to add input hook");
   } else {
     g_event_hooks[key] = hook;
     fmt::print("Added input hook for key: {}\tWith state {}\n", key.first,
@@ -25,7 +25,7 @@ void i::AddHook(const Trigger& key, const std::function<void()>& hook) {
 
 void i::RemoveHook(const Trigger& key) {
   if (glfwGetCurrentContext() == nullptr) {
-    fmt::print("No GLFW context to remove input hook\n");
+    std::runtime_error("No GLFW context to remove input hook");
     return;
   }
   g_event_hooks.erase(key);
@@ -35,7 +35,7 @@ void i::RemoveHook(const Trigger& key) {
 
 void i::Init() {
   if (glfwGetCurrentContext() == nullptr) {
-    fmt::print("No GLFW context to initialize input\n");
+    std::runtime_error("No GLFW context to initialize input");
   } else {
     glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     fmt::print("Initialized Input\n");
@@ -60,7 +60,7 @@ void i::Update() {
 
 void i::Quit() {
   if (Engine::g_window == nullptr) {
-    fmt::print("No GLFW context to quit input\n");
+    std::runtime_error("No GLFW context to quit input");
   } else {
     glfwSetInputMode(Engine::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   }

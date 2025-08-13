@@ -30,7 +30,7 @@ void a::Init() {
   alGetError();
   g_context = alcCreateContext(g_device, nullptr);
   if (alcMakeContextCurrent(g_context) == 0) {
-    fmt::print("AL: Failed to make context current\n");
+    std::runtime_error("AL: Failed to make context current");
     return;
   }
   fmt::print("Initialized OpenAL\n");

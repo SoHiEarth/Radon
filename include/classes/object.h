@@ -3,6 +3,7 @@
 
 #include <classes/editable.h>
 #include <glm/glm.hpp>
+#include <pugixml.hpp>
 #include <string>
 class Material;
 class Object {
@@ -18,6 +19,9 @@ public:
   virtual void Update() = 0;
   virtual void Render() = 0;
   virtual void Quit() = 0;
+  virtual void Load(pugi::xml_node& node) = 0;
+  virtual void Save(pugi::xml_node& node) const = 0;
+  virtual ~Object() = default;
 };
 
 #endif  // OBJECT_H

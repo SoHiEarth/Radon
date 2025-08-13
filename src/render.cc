@@ -67,16 +67,14 @@ void r::Init() {
 #endif
   Engine::g_window = glfwCreateWindow(Engine::g_width, Engine::g_height, "Metal", nullptr, nullptr);
   if (Engine::g_window == nullptr) {
-    fmt::print("Failed to create GLFW window\n");
-    glfwTerminate();
-    return;
+    std::runtime_error("Failed to create GLFW window");
   }
   glfwMakeContextCurrent(Engine::g_window);
   glfwSetFramebufferSizeCallback(Engine::g_window, FBSizeCallback);
   glfwSwapInterval(1);
 
   if (0 == gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    fmt::print("Failed to initialize GLAD\n");
+    std::runtime_error("Failed to initialize GLAD\n");
     glfwTerminate();
     return;
   }
@@ -113,21 +111,13 @@ void r::Init() {
   g_prev_render_factor = g_render_factor;
 
   g_screen_shader = f::LoadShader("screen_shader/vert.glsl", "screen_shader/frag.glsl");
-  if (g_screen_shader == nullptr) {
-    fmt::print("Failed to load screen shader.\n");
-  } else {
-    g_screen_shader->Use();
-    g_screen_shader->SetInt("scene", 0);
-    g_screen_shader->SetInt("blur", 1);
-  }
+  g_screen_shader->Use();
+  g_screen_shader->SetInt("scene", 0);
+  g_screen_shader->SetInt("blur", 1);
 
   g_screen_shader_blur = f::LoadShader("screen_blur/vert.glsl", "screen_blur/frag.glsl");
-  if (g_screen_shader_blur == nullptr) {
-    fmt::print("Failed to load screen shader.\n");
-  } else {
-    g_screen_shader_blur->Use();
-    g_screen_shader_blur->SetInt("image", 0);
-  }
+  g_screen_shader_blur->Use();
+  g_screen_shader_blur->SetInt("image", 0);
 
   fmt::print("Initialized OpenGL\n");
 }
@@ -342,7 +332,7 @@ void RecreateFramebuffer() {
                             g_renderbuffer);
   glDrawBuffers(2, g_attachments.data());
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    fmt::print("Failed to recreate framebuffer!\n");
+    std::runtime_error("Failed to recreate framebuffer!\n");
     glDeleteRenderbuffers(1, &g_renderbuffer);
     glDeleteFramebuffers(1, &g_framebuffer);
   }
@@ -362,7 +352,7 @@ void RecreateFramebuffer() {
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                            g_pingpong_colorbuffer[i], 0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-      fmt::print("Failed to recreate pingpong framebuffer!\n");
+      std::runtime_error("Failed to recreate pingpong framebuffer!");
     }
   }
 }
