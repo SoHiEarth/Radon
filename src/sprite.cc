@@ -24,3 +24,6 @@ void Sprite::Render() {
 void Sprite::Quit() {
   material_->Free();
 }
+
+void Sprite::Load(pugi::xml_node& node) {}
+void Sprite::Save(pugi::xml_node& node) const {}

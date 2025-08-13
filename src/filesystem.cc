@@ -158,6 +158,7 @@ Texture* f::LoadTexture(const std::string_view kPath) {
   }
   auto* texture = new Texture(kPath);
   glGenTextures(1, &texture->id_);
+  stbi_set_flip_vertically_on_load(1);
   unsigned char* data = stbi_load(kPath.data(), &texture->w_, &texture->h_, &texture->channels_, 0);
   if (data != nullptr) {
     GLenum format;
@@ -178,8 +179,8 @@ Texture* f::LoadTexture(const std::string_view kPath) {
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     stbi_image_free(data);
   } else {
     std::runtime_error(std::format("Failed to load texture. Details: {}", kPath));

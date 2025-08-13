@@ -53,6 +53,7 @@ vec3 CalculatePointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewD
 vec3 CalculateSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 void main() {
+  vec4 texDiffuse = texture(material.diffuse, TexCoord);
   vec3 norm = normalize(Normal);
   vec3 viewDir = normalize(viewPos - FragPos);
   vec3 result = CalculateDirectionalLight(directional_light, norm, viewDir);
@@ -62,7 +63,7 @@ void main() {
   for (int i = 0; i < NUM_SPOT_LIGHTS; i++) {
     result += CalculateSpotLight(spot_lights[i], norm, FragPos, viewDir);
   }
-  FragColor = vec4(result, 1.0);
+  FragColor = vec4(result, texDiffuse.a);
 }
 
 vec3 CalculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir) {

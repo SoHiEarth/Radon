@@ -80,6 +80,8 @@ void r::Init() {
   }
 
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_MULTISAMPLE);
   glViewport(0, 0, Engine::g_width, Engine::g_height);
   glGenVertexArrays(1, &g_vao);

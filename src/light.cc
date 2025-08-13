@@ -13,6 +13,9 @@ void DirectionalLight::Quit() {
   r::RemoveLight(this);
 }
 
+void DirectionalLight::Load(pugi::xml_node& node) {}
+void DirectionalLight::Save(pugi::xml_node& node) const {}
+
 void DirectionalLight::SetUniforms(const Shader* shader) {
   shader->SetVec3("directional_light.direction", static_cast<glm::vec3>(direction_));
   shader->SetVec3("directional_light.ambient", static_cast<glm::vec3>(ambient_));
@@ -27,6 +30,9 @@ void PointLight::Init() {
 void PointLight::Quit() {
   r::RemoveLight(this);
 }
+
+void PointLight::Load(pugi::xml_node& node) {}
+void PointLight::Save(pugi::xml_node& node) const {}
 
 void PointLight::SetUniforms(const Shader* shader, const int kPos) {
   std::string prefix = "point_lights[" + std::to_string(kPos) + "]";
@@ -46,6 +52,9 @@ void SpotLight::Init() {
 void SpotLight::Quit() {
   r::RemoveLight(this);
 }
+
+void SpotLight::Load(pugi::xml_node& node) {}
+void SpotLight::Save(pugi::xml_node& node) const {}
 
 void SpotLight::SetUniforms(const Shader* shader, const int kPos) {
   std::string prefix = "spot_lights[" + std::to_string(kPos) + "]";
