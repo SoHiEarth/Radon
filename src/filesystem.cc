@@ -7,63 +7,26 @@
 #include <classes/object.h>
 #include <classes/shader.h>
 #include <classes/texture.h>
+#include <classes/dynamic_data.h>
 #include <engine/filesystem.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-Texture* f::LoadTexture(const std::string_view path) {
-  if (!std::filesystem::exists(path)) {
-    fmt::print("Requested texture: {} doesn't exist\n", path);
-    return nullptr;
-  }
-  Texture* texture = new Texture(path);
-  glGenTextures(1, &texture->id);
-  unsigned char* data = stbi_load(path.data(), &texture->w, &texture->h, &texture->channels, 0);
-  if (data) {
-    GLenum format;
-    switch (texture->channels) {
-      case 1:
-        format = GL_RED;
-        break;
-      case 3:
-        format = GL_RGB;
-        break;
-      case 4:
-        format = GL_RGBA;
-        break;
-    }
-    glBindTexture(GL_TEXTURE_2D, texture->id);
-    glTexImage2D(GL_TEXTURE_2D, 0, format, texture->w, texture->h, 0, format, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    stbi_image_free(data);
-  } else {
-    fmt::print("Failed to load texture {}\n", path);
-    stbi_image_free(data);
-  }
-  return texture;
-}
-
-void f::FreeTexture(Texture *texture) {
-  if (texture == nullptr) return;
-  glDeleteTextures(1, &texture->id);
-  delete texture;
-}
-
 Level* f::LoadLevel(const std::string_view path) {
   Level* level = new Level();
+  level->path = path;
+  // Load objects from path
   return level;
 }
 
-void f::LoadLevelDynamicData(const Level* level, const std::string_view path) {
-
+void f::LoadLevelDynamicData(Level* level, const std::string_view path) {
+  DynamicData* dynamic_data = new DynamicData();
+  dynamic_data->target_level = level->path;
+  // Load dynamic objects from path (XML)
+  dynamic_data->Apply(level);
 }
 
 void f::SaveLevel(const Level* level, const std::string_view path) {
-
 }
 
 void f::SaveLevelDynamicData(const Level* level, const std::string_view path) {
@@ -145,3 +108,46 @@ void f::FreeShader(Shader *shader) {
   glDeleteProgram(shader->id);
   delete shader;
 }
+
+Texture* f::LoadTexture(const std::string_view path) {
+  if (!std::filesystem::exists(path)) {
+    fmt::print("Requested texture: {} doesn't exist\n", path);
+    return nullptr;
+  }
+  Texture* texture = new Texture(path);
+  glGenTextures(1, &texture->id);
+  unsigned char* data = stbi_load(path.data(), &texture->w, &texture->h, &texture->channels, 0);
+  if (data) {
+    GLenum format;
+    switch (texture->channels) {
+      case 1:
+        format = GL_RED;
+        break;
+      case 3:
+        format = GL_RGB;
+        break;
+      case 4:
+        format = GL_RGBA;
+        break;
+    }
+    glBindTexture(GL_TEXTURE_2D, texture->id);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, texture->w, texture->h, 0, format, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    stbi_image_free(data);
+  } else {
+    fmt::print("Failed to load texture {}\n", path);
+    stbi_image_free(data);
+  }
+  return texture;
+}
+
+void f::FreeTexture(Texture *texture) {
+  if (texture == nullptr) return;
+  glDeleteTextures(1, &texture->id);
+  delete texture;
+}
+

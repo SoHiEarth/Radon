@@ -2,6 +2,7 @@
 #define LEVEL_H
 
 #include <vector>
+#include <string>
 
 class Object;
 class Level {
@@ -11,6 +12,7 @@ class Level {
     void Render();
     void Quit();
     void AddObject(Object* object);
+    std::string path;
     std::vector<Object*> objects;
 };
 

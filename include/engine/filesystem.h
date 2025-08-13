@@ -13,7 +13,7 @@ namespace f {
   void FreeTexture(Texture* texture);
 
   Level* LoadLevel(const std::string_view path);
-  void LoadLevelDynamicData(const Level* level, const std::string_view path);
+  void LoadLevelDynamicData(Level* level, const std::string_view path);
   void SaveLevel(const Level* level, const std::string_view path);
   void SaveLevelDynamicData(const Level* level, const std::string_view path);
 
