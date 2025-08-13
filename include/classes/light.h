@@ -21,7 +21,7 @@ public:
   void Quit() override;
   void Load(pugi::xml_node& node) override;
   void Save(pugi::xml_node& node) const override;
-  void SetUniforms(const Shader* shader);
+  void SetUniforms(const Shader* shader, int kPos);
 };
 
 class PointLight : public Light {
@@ -32,7 +32,7 @@ public:
   void Quit() override;
   void Load(pugi::xml_node& node) override;
   void Save(pugi::xml_node& node) const override;
-  void SetUniforms(const Shader* shader, int k_pos);
+  void SetUniforms(const Shader* shader, int kPos);
 };
 
 class SpotLight : public Light {
@@ -45,7 +45,7 @@ public:
   void Quit() override;
   void Load(pugi::xml_node& node) override;
   void Save(pugi::xml_node& node) const override;
-  void SetUniforms(const Shader* shader, int k_pos);
+  void SetUniforms(const Shader* shader, int kPos);
 };
 
 #endif  // LIGHT_H

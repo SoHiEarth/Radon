@@ -16,11 +16,12 @@ void DirectionalLight::Quit() {
 void DirectionalLight::Load(pugi::xml_node& node) {}
 void DirectionalLight::Save(pugi::xml_node& node) const {}
 
-void DirectionalLight::SetUniforms(const Shader* shader) {
-  shader->SetVec3("directional_light.direction", static_cast<glm::vec3>(direction_));
-  shader->SetVec3("directional_light.ambient", static_cast<glm::vec3>(ambient_));
-  shader->SetVec3("directional_light.diffuse", static_cast<glm::vec3>(diffuse_));
-  shader->SetVec3("directional_light.specular", static_cast<glm::vec3>(specular_));
+void DirectionalLight::SetUniforms(const Shader* shader, const int kPos) {
+  std::string prefix = "directional_lights[" + std::to_string(kPos) + "]";
+  shader->SetVec3(prefix + ".direction", static_cast<glm::vec3>(direction_));
+  shader->SetVec3(prefix + ".ambient", static_cast<glm::vec3>(ambient_));
+  shader->SetVec3(prefix + ".diffuse", static_cast<glm::vec3>(diffuse_));
+  shader->SetVec3(prefix + ".specular", static_cast<glm::vec3>(specular_));
 }
 
 void PointLight::Init() {

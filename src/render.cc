@@ -24,33 +24,78 @@
 enum : std::uint8_t { kNumColorbuffers = 2, kDefaultBloomAmount = 10, kPingPongCount = 2 };
 using ImGui::TextColored;
 
-DirectionalLight *r::g_directional_light = nullptr;
+std::vector<DirectionalLight *> r::g_directional_lights;
 std::vector<PointLight *> r::g_point_lights;
 std::vector<SpotLight *> r::g_spot_lights;
-unsigned int g_vao, g_vbo, g_ebo;
+unsigned int g_vao, g_vbo;
 unsigned int g_framebuffer, g_renderbuffer;
 std::array<unsigned int, kNumColorbuffers> g_colorbuffers;
 std::array<unsigned int, kPingPongCount> g_pingpong_framebuffer, g_pingpong_colorbuffer;
 std::vector<unsigned int> g_attachments;
 unsigned int g_screen_vao, g_screen_vbo;
 Shader *g_screen_shader = nullptr, *g_screen_shader_blur;
-float g_render_factor = 4, g_prev_render_factor;
+float g_render_factor = 1, g_prev_render_factor = g_render_factor;
 float g_screen_exposure = 1.0;
 int g_bloom_amount = kDefaultBloomAmount;
-bool g_bloom = true, g_antialias = true;
+bool g_bloom = true;
+bool g_dithering = false, g_scanlines = false;
+;
+float g_pixelation, g_brightness, g_scanline_intensity;
 
-const std::array<unsigned int, 6> kGIndices = {0, 1, 3, 1, 2, 3};
-const std::array<float, 32> kGVertices = {0.5F,  0.5F,  0.0F, 0.0F, 0.0F, -1.0F, 1.0F, 1.0F,
-                                          0.5F,  -0.5F, 0.0F, 0.0F, 0.0F, -1.0F, 1.0F, 0.0F,
-                                          -0.5F, -0.5F, 0.0F, 0.0F, 0.0F, -1.0F, 0.0F, 0.0F,
-                                          -0.5F, 0.5F,  0.0F, 0.0F, 0.0F, -1.0F, 0.0F, 1.0F};
-const std::array<float, 24> kGScreenVertices = {-1.0F, 1.0F,  0.0F, 1.0F, -1.0F, -1.0F, 0.0F, 0.0F,
-                                                1.0F,  -1.0F, 1.0F, 0.0F, -1.0F, 1.0F,  0.0F, 1.0F,
-                                                1.0F,  -1.0F, 1.0F, 0.0F, 1.0F,  1.0F,  1.0F, 1.0F};
+const std::array<float, 32> kGVertices = {-0.5F, 0.5F,  0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 1.0F,
+                                          -0.5F, -0.5F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
+                                          0.5F,  0.5F,  0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F,
+                                          0.5F,  -0.5F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 0.0F};
+
+const std::array<float, 20> kGScreenVertices = {
+    -1.0F, 1.0F, 0.0F, 0.0F, 1.0F, -1.0F, -1.0F, 0.0F, 0.0F, 0.0F,
+    1.0F,  1.0F, 0.0F, 1.0F, 1.0F, 1.0F,  -1.0F, 0.0F, 1.0F, 0.0F,
+};
+
+void DrawRendererStatus() {
+  if (dev::g_hud_enabled) {
+    ImGui::Begin("Renderer Status");
+    ImGui::Text("Directional light status: %d", static_cast<int>(r::g_directional_lights.size()));
+    ImGui::Text("Point light count: %d", static_cast<int>(r::g_point_lights.size()));
+    ImGui::Text("Spot light count: %d", static_cast<int>(r::g_spot_lights.size()));
+    ImGui::DragFloat3("Camera Position", glm::value_ptr(Engine::g_camera.position_));
+    ImGui::SeparatorText("Screen Shader");
+    ImGui::InputFloat("Pixelation Factor", &g_pixelation, 0.1F);
+    ImGui::Checkbox("Dithering", &g_dithering);
+    ImGui::InputFloat("Brightness Levels", &g_brightness, 0.1F);
+    ImGui::Checkbox("Scanlines", &g_scanlines);
+    ImGui::InputFloat("Scanline Intensity", &g_scanline_intensity, 0.1F);
+    ImGui::InputFloat("Exposure", &g_screen_exposure, 0.1F);
+    ImGui::Checkbox("Bloom", &g_bloom);
+    ImGui::InputInt("Bloom Amount", &g_bloom_amount);
+    if (g_bloom_amount <= 0) {
+      g_bloom_amount = 1;
+    }
+    ImGui::InputFloat("Render Factor", &g_render_factor, 0.5F);
+    if (g_render_factor < 1) {
+      TextColored(TEXT_COLOR_RED, "Downscaling");
+    }
+    if (g_render_factor > 1) {
+      TextColored(TEXT_COLOR_RED, "Upscaling");
+    }
+    if (g_render_factor <= 0) {
+      g_render_factor = g_prev_render_factor;
+    }
+    ImGui::Text("Colorbuffer");
+    for (unsigned int g_colorbuffer : g_colorbuffers) {
+      ImGui::Image(g_colorbuffer, ImVec2(100, 100));
+    }
+    ImGui::Text("Ping Pong Colorbuffer");
+    for (unsigned int g_colorbuffer : g_pingpong_colorbuffer) {
+      ImGui::Image(g_colorbuffer, ImVec2(100, 100));
+    }
+    ImGui::End();
+  }
+}
 
 void RecreateFramebuffer();
 void FBSizeCallback(GLFWwindow *window, int width, int height) {
-  glViewport(0, 0, width, height);
+  glViewport(0, 0, Engine::g_width, Engine::g_height);
   Engine::g_width = width;
   Engine::g_height = height;
   RecreateFramebuffer();
@@ -86,40 +131,36 @@ void r::Init() {
   glViewport(0, 0, Engine::g_width, Engine::g_height);
   glGenVertexArrays(1, &g_vao);
   glGenBuffers(1, &g_vbo);
-  glGenBuffers(1, &g_ebo);
   glBindVertexArray(g_vao);
   glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(kGVertices), kGVertices.data(), GL_STATIC_DRAW);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kGIndices), kGIndices.data(), GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) nullptr);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) nullptr);
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (6 * sizeof(float)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
   glEnableVertexAttribArray(2);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (6 * sizeof(float)));
 
   glGenVertexArrays(1, &g_screen_vao);
   glGenBuffers(1, &g_screen_vbo);
   glBindVertexArray(g_screen_vao);
   glBindBuffer(GL_ARRAY_BUFFER, g_screen_vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(kGScreenVertices), kGScreenVertices.data(), GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) nullptr);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) (2 * sizeof(float)));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) nullptr);
   glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) (3 * sizeof(float)));
 
   RecreateFramebuffer();
-  g_prev_render_factor = g_render_factor;
+
+  g_screen_shader_blur = f::LoadShader("screen_blur/vert.glsl", "screen_blur/frag.glsl");
+  g_screen_shader_blur->Use();
+  g_screen_shader_blur->SetInt("image", 0);
 
   g_screen_shader = f::LoadShader("screen_shader/vert.glsl", "screen_shader/frag.glsl");
   g_screen_shader->Use();
   g_screen_shader->SetInt("scene", 0);
   g_screen_shader->SetInt("blur", 1);
-
-  g_screen_shader_blur = f::LoadShader("screen_blur/vert.glsl", "screen_blur/frag.glsl");
-  g_screen_shader_blur->Use();
-  g_screen_shader_blur->SetInt("image", 0);
 
   fmt::print("Initialized OpenGL\n");
 }
@@ -130,59 +171,15 @@ void r::Update() {
   }
   if (g_render_factor != g_prev_render_factor) {
     RecreateFramebuffer();
-    g_prev_render_factor = g_render_factor;
   }
-  glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
   glViewport(0, 0, Engine::g_width / g_render_factor, Engine::g_height / g_render_factor);
-  if (g_directional_light != nullptr) {
-    glClearColor(g_directional_light->ambient_->x, g_directional_light->ambient_->y,
-                 g_directional_light->ambient_->z, 1.0F);
-  } else {
-    glClearColor(1.0F, 1.0F, 1.0F, 1.0F);
-  }
+  glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
+  glClearColor(0.1F, 0.1F, 0.1F, 1.0F);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void r::Render() {
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  // glViewport(0, 0, Engine::g_width, Engine::g_height);
-
-  dev::Update();
-  if (dev::g_hud_enabled) {
-    ImGui::Begin("Renderer Status");
-    ImGui::Text("Directional light status: %d", static_cast<int>(g_directional_light != nullptr));
-    ImGui::Text("Point light count: %d", static_cast<int>(g_point_lights.size()));
-    ImGui::Text("Spot light count: %d", static_cast<int>(g_spot_lights.size()));
-    ImGui::DragFloat3("Camera Position", glm::value_ptr(Engine::g_camera.position_));
-    ImGui::SeparatorText("Screen Shader");
-    ImGui::InputFloat("Exposure", &g_screen_exposure, 0.1F);
-    ImGui::Checkbox("Anti-Alias", &g_antialias);
-    ImGui::Checkbox("Bloom", &g_bloom);
-    ImGui::InputInt("Bloom Amount", &g_bloom_amount);
-    if (g_bloom_amount <= 0) {
-      g_bloom_amount = 1;
-    }
-    ImGui::InputFloat("Render Factor", &g_render_factor, 0.5F);
-    if (g_render_factor < 1) {
-      TextColored(TEXT_COLOR_RED, "Downscaling");
-    }
-    if (g_render_factor > 1) {
-      TextColored(TEXT_COLOR_RED, "Upscaling");
-    }
-    if (g_render_factor <= 0) {
-      g_render_factor = g_prev_render_factor;
-    }
-    ImGui::Text("Colorbuffer");
-    for (unsigned int g_colorbuffer : g_colorbuffers) {
-      ImGui::Image(g_colorbuffer, ImVec2(100, 100));
-    }
-    ImGui::Text("Ping Pong Colorbuffer");
-    for (unsigned int g_colorbuffer : g_pingpong_colorbuffer) {
-      ImGui::Image(g_colorbuffer, ImVec2(100, 100));
-    }
-    ImGui::End();
-  }
-
+  // Bloom Start
   bool horizontal = true;
   bool first_iteration = true;
   g_screen_shader_blur->Use();
@@ -194,21 +191,20 @@ void r::Render() {
                                      ? g_colorbuffers[1]
                                      : g_pingpong_colorbuffer[static_cast<size_t>(!horizontal)]);
     glBindVertexArray(g_screen_vao);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
     horizontal = !horizontal;
     if (first_iteration) {
       first_iteration = false;
     }
   }
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  if (g_antialias) {
-    glEnable(GL_MULTISAMPLE);
-  } else {
-    glDisable(GL_MULTISAMPLE);
-  }
+  // Bloom End
   glViewport(0, 0, Engine::g_width, Engine::g_height);
-  glClearColor(1.0F, 1.0F, 1.0F, 1.0F);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  dev::Update();
+  DrawRendererStatus();
+
   g_screen_shader->Use();
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, g_colorbuffers[0]);
@@ -216,8 +212,14 @@ void r::Render() {
   glBindTexture(GL_TEXTURE_2D, g_pingpong_colorbuffer[static_cast<size_t>(!horizontal)]);
   g_screen_shader->SetInt("bloom", static_cast<int>(g_bloom));
   g_screen_shader->SetFloat("exposure", g_screen_exposure);
+  g_screen_shader->SetFloat("pixelation_factor", g_pixelation);
+  g_screen_shader->SetInt("enable_dithering", static_cast<int>(g_dithering));
+  g_screen_shader->SetFloat("brightness_levels", g_brightness);
+  g_screen_shader->SetInt("enable_scanlines", static_cast<int>(g_scanlines));
+  g_screen_shader->SetFloat("scanline_intensity", g_scanline_intensity);
   glBindVertexArray(g_screen_vao);
-  glDrawArrays(GL_TRIANGLES, 0, 6);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glBindVertexArray(0);
   dev::Render();
   glfwSwapBuffers(Engine::g_window);
 }
@@ -225,9 +227,21 @@ void r::Render() {
 void r::Quit() {
   glDeleteVertexArrays(1, &g_vao);
   glDeleteBuffers(1, &g_vbo);
-  glDeleteBuffers(1, &g_ebo);
-  glDeleteRenderbuffers(1, &g_renderbuffer);
-  glDeleteFramebuffers(1, &g_framebuffer);
+  if (g_renderbuffer != 0) {
+    glDeleteRenderbuffers(1, &g_renderbuffer);
+    g_renderbuffer = 0;
+  }
+  for (unsigned int &g_colorbuffer : g_colorbuffers) {
+    if (g_colorbuffer != 0) {
+      glDeleteTextures(1, &g_colorbuffer);
+      g_colorbuffer = 0;
+    }
+  }
+  if (g_framebuffer != 0) {
+    glDeleteFramebuffers(1, &g_framebuffer);
+    g_framebuffer = 0;
+  }
+
   if (Engine::g_window != nullptr) {
     glfwDestroyWindow(Engine::g_window);
     Engine::g_window = nullptr;
@@ -238,8 +252,8 @@ void r::Quit() {
 
 glm::mat4 GetTransform(const glm::vec3 &pos, const glm::vec2 &scale, float rot) {
   auto transform = glm::mat4(1.0F);
-  transform = glm::rotate(transform, glm::radians(rot), glm::vec3(0.0, 0.0, 1.0));
   transform = glm::translate(transform, pos);
+  transform = glm::rotate(transform, glm::radians(rot), glm::vec3(0.0, 0.0, 1.0));
   transform = glm::scale(transform, glm::vec3(scale, 1));
   return transform;
 }
@@ -254,7 +268,7 @@ void r::RenderTexture(const Material *material, const glm::vec3 &pos, const glm:
   }
 
   glm::mat4 model = GetTransform(pos, size, rot);
-  glm::mat4 view = glm::translate(glm::mat4(1.0F), Engine::g_camera.position_);
+  glm::mat4 view = glm::translate(glm::mat4(1.0F), -Engine::g_camera.position_);
   glm::mat4 projection = glm::perspective(
       glm::radians(60.0F),
       (static_cast<float>(Engine::g_width) / static_cast<float>(Engine::g_height)), 0.1F, 100.0F);
@@ -262,11 +276,15 @@ void r::RenderTexture(const Material *material, const glm::vec3 &pos, const glm:
   material->Bind();
   material->shader_->SetMat4("model", model);
   material->shader_->SetMat4("view", view);
-  material->shader_->SetVec3("viewPos", Engine::g_camera.position_);
   material->shader_->SetMat4("projection", projection);
+  material->shader_->SetVec3("viewPos", Engine::g_camera.position_);
 
-  if (g_directional_light != nullptr) {
-    g_directional_light->SetUniforms(material->shader_);
+  material->shader_->SetInt("NUM_DIRECTIONAL_LIGHTS",
+                            static_cast<int>(g_directional_lights.size()));
+  for (int i = 0; i < g_directional_lights.size(); i++) {
+    if (g_directional_lights[i] != nullptr) {
+      g_directional_lights[i]->SetUniforms(material->shader_, i);
+    }
   }
 
   material->shader_->SetInt("NUM_POINT_LIGHTS", static_cast<int>(g_point_lights.size()));
@@ -284,9 +302,8 @@ void r::RenderTexture(const Material *material, const glm::vec3 &pos, const glm:
   }
 
   glBindVertexArray(g_vao);
-  glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ebo);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glBindVertexArray(0);
 }
 
 void RecreateFramebuffer() {
@@ -310,6 +327,7 @@ void RecreateFramebuffer() {
 
   int framebuffer_width = Engine::g_width / g_render_factor;
   int framebuffer_height = Engine::g_height / g_render_factor;
+
   glGenFramebuffers(1, &g_framebuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
   glGenTextures(kNumColorbuffers, g_colorbuffers.data());
@@ -319,6 +337,8 @@ void RecreateFramebuffer() {
                  GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D,
                            g_colorbuffers[i], 0);
     g_attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
@@ -326,17 +346,11 @@ void RecreateFramebuffer() {
 
   glGenRenderbuffers(1, &g_renderbuffer);
   glBindRenderbuffer(GL_RENDERBUFFER, g_renderbuffer);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, framebuffer_width,
-                        framebuffer_height);
-
-  glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,
-                            g_renderbuffer);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, framebuffer_width, framebuffer_height);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, g_renderbuffer);
   glDrawBuffers(2, g_attachments.data());
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
     std::runtime_error("Failed to recreate framebuffer!\n");
-    glDeleteRenderbuffers(1, &g_renderbuffer);
-    glDeleteFramebuffers(1, &g_framebuffer);
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -357,4 +371,5 @@ void RecreateFramebuffer() {
       std::runtime_error("Failed to recreate pingpong framebuffer!");
     }
   }
+  g_prev_render_factor = g_render_factor;
 }

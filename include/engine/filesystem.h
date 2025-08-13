@@ -20,7 +20,7 @@ void SaveLevelDynamicData(const Level* level, std::string_view path);
 Object* LoadObject(pugi::xml_node& base_node);
 void SaveObject(const Object* object, pugi::xml_node& base_node);
 
-Shader* LoadShader(std::string_view k_vert_path, std::string_view k_frag_path);
+Shader* LoadShader(std::string_view kVertPath, std::string_view kFragPath);
 void FreeShader(Shader* shader);
 }  // namespace f
 

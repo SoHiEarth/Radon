@@ -45,16 +45,16 @@ int main(int argc, char** argv) {
              []() { dev::g_hud_enabled = !dev::g_hud_enabled; });
 
   i::AddHook({GLFW_KEY_W, ButtonState::kHold},
-             []() { Engine::g_camera.position_.y -= CAMERA_SPEED; });
-
-  i::AddHook({GLFW_KEY_S, ButtonState::kHold},
              []() { Engine::g_camera.position_.y += CAMERA_SPEED; });
 
+  i::AddHook({GLFW_KEY_S, ButtonState::kHold},
+             []() { Engine::g_camera.position_.y -= CAMERA_SPEED; });
+
   i::AddHook({GLFW_KEY_A, ButtonState::kHold},
-             []() { Engine::g_camera.position_.x += CAMERA_SPEED; });
+             []() { Engine::g_camera.position_.x -= CAMERA_SPEED; });
 
   i::AddHook({GLFW_KEY_D, ButtonState::kHold},
-             []() { Engine::g_camera.position_.x -= CAMERA_SPEED; });
+             []() { Engine::g_camera.position_.x += CAMERA_SPEED; });
 
   while (glfwWindowShouldClose(Engine::g_window) == 0) {
     i::Update();

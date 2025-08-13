@@ -1,38 +1,38 @@
 #include <classes/dynamic_data.h>
 #include <classes/level.h>
+#include <classes/light.h>
 #include <classes/object.h>
 #include <classes/shader.h>
-#include <classes/texture.h>
 #include <classes/sprite.h>
-#include <classes/light.h>
+#include <classes/texture.h>
 #include <engine/filesystem.h>
 #include <fmt/core.h>
 #include <glad/glad.h>
 #include <filesystem>
+#include <format>
 #include <fstream>
+#include <functional>
 #include <sstream>
 #include <unordered_map>
-#include <functional>
-#include <format>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 enum : std::uint16_t { kLogSize = 512 };
 std::unordered_map<const char*, std::function<Object*()>> g_object_factory = {
-  {"Sprite", {[](){ return new Sprite(); }}},
-  {"DirectionalLight", {[](){ return new DirectionalLight(); }}},
-  {"PointLight", {[](){ return new PointLight(); }}},
-  {"SpotLight", {[](){ return new SpotLight(); }}}
-};
+    {"Sprite", {[]() { return new Sprite(); }}},
+    {"DirectionalLight", {[]() { return new DirectionalLight(); }}},
+    {"PointLight", {[]() { return new PointLight(); }}},
+    {"SpotLight", {[]() { return new SpotLight(); }}}};
 using std::string_view;
 
 Level* f::LoadLevel(const std::string_view kPath) {
   auto* level = new Level();
   level->path_ = kPath;
-  
+
   pugi::xml_document doc;
   pugi::xml_parse_result result = doc.load_file(kPath.data());
   if (!result) {
-    std::runtime_error(std::format("Failed to parse level file. Details: {}, {}", kPath, result.description()));
+    std::runtime_error(
+        std::format("Failed to parse level file. Details: {}, {}", kPath, result.description()));
   }
 
   pugi::xml_node root = doc.child("level");
@@ -51,12 +51,13 @@ void f::LoadLevelDynamicData(Level* level, const std::string_view kPath) {
   pugi::xml_document doc;
   pugi::xml_parse_result result = doc.load_file(kPath.data());
   if (!result) {
-    std::runtime_error(std::format("Failed to parse save data. Details: {}, {}", kPath, result.description()));
+    std::runtime_error(
+        std::format("Failed to parse save data. Details: {}, {}", kPath, result.description()));
   }
   pugi::xml_node root = doc.child("data");
   for (pugi::xml_node& object_node : root.children("object")) {
     Object* object = LoadObject(object_node);
-    for (auto & old : level->objects_) {
+    for (auto& old : level->objects_) {
       if (object->name_ == old->name_) {
         delete old;
         old = object;
@@ -65,13 +66,9 @@ void f::LoadLevelDynamicData(Level* level, const std::string_view kPath) {
   }
 }
 
-void f::SaveLevel(const Level* level, const std::string_view kPath) {
+void f::SaveLevel(const Level* level, const std::string_view kPath) {}
 
-}
-
-void f::SaveLevelDynamicData(const Level* level, const std::string_view kPath) {
-
-}
+void f::SaveLevelDynamicData(const Level* level, const std::string_view kPath) {}
 
 Object* f::LoadObject(pugi::xml_node& base_node) {
   Object* object = g_object_factory[base_node.attribute("type").name()]();
@@ -160,32 +157,30 @@ Texture* f::LoadTexture(const std::string_view kPath) {
   glGenTextures(1, &texture->id_);
   stbi_set_flip_vertically_on_load(1);
   unsigned char* data = stbi_load(kPath.data(), &texture->w_, &texture->h_, &texture->channels_, 0);
-  if (data != nullptr) {
-    GLenum format;
-    switch (texture->channels_) {
-      case 1:
-        format = GL_RED;
-        break;
-      case 3:
-        format = GL_RGB;
-        break;
-      case 4:
-        format = GL_RGBA;
-        break;
-    }
-    glBindTexture(GL_TEXTURE_2D, texture->id_);
-    glTexImage2D(GL_TEXTURE_2D, 0, format, texture->w_, texture->h_, 0, format, GL_UNSIGNED_BYTE,
-                 data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    stbi_image_free(data);
-  } else {
+  if (data == nullptr) {
     std::runtime_error(std::format("Failed to load texture. Details: {}", kPath));
-    stbi_image_free(data);
   }
+  GLenum format;
+  switch (texture->channels_) {
+    case 1:
+      format = GL_RED;
+      break;
+    case 3:
+      format = GL_RGB;
+      break;
+    case 4:
+      format = GL_RGBA;
+      break;
+  }
+  glBindTexture(GL_TEXTURE_2D, texture->id_);
+  glTexImage2D(GL_TEXTURE_2D, 0, format, texture->w_, texture->h_, 0, format, GL_UNSIGNED_BYTE,
+               data);
+  glGenerateMipmap(GL_TEXTURE_2D);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  stbi_image_free(data);
   return texture;
 }
 

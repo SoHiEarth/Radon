@@ -10,7 +10,7 @@ class PointLight;
 class SpotLight;
 
 namespace r {
-extern DirectionalLight* g_directional_light;
+extern std::vector<DirectionalLight*> g_directional_lights;
 extern std::vector<PointLight*> g_point_lights;
 extern std::vector<SpotLight*> g_spot_lights;
 
@@ -28,7 +28,7 @@ void AddLight(T* light) {
     return;
   }
   if constexpr (std::is_same_v<T, DirectionalLight>) {
-    g_directional_light = light;
+    g_directional_lights.push_back(light);
   } else if constexpr (std::is_same_v<T, PointLight>) {
     g_point_lights.push_back(light);
   } else if constexpr (std::is_same_v<T, SpotLight>) {
@@ -42,7 +42,11 @@ void RemoveLight(T* light) {
     return;
   }
   if constexpr (std::is_same_v<T, DirectionalLight>) {
-    g_directional_light = nullptr;
+    for (int i = 0; i < g_directional_lights.size(); i++) {
+      if (g_directional_lights[i] == light) {
+        g_directional_lights.erase(g_directional_lights.begin() + i);
+      }
+    }
   } else if constexpr (std::is_same_v<T, PointLight>) {
     for (int i = 0; i < g_point_lights.size(); i++) {
       if (g_point_lights[i] == light) {
