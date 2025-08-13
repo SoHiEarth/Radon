@@ -7,18 +7,17 @@ class Texture;
 class Shader;
 
 struct Material {
-  Texture* diffuse = nullptr,
-    *specular = nullptr;
-  Shader* shader = nullptr;
-  float shininess = 0;
-  std::string directory;
-  const bool IsValid() const;
+  Texture *diffuse_ = nullptr, *specular_ = nullptr;
+  Shader* shader_ = nullptr;
+  float shininess_ = 0;
+  std::string directory_;
+  [[nodiscard]] bool IsValid() const;
   void Bind() const;
   void Load(const std::string& path);
-  void Free();
-  Material(const std::string& path) {
+  void Free() const;
+  explicit Material(const std::string& path) {
     Load(path);
   }
 };
 
-#endif // MATERIAL_H
+#endif  // MATERIAL_H

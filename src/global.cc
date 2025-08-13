@@ -1,8 +1,9 @@
-#include <engine/global.h>
 #include <classes/camera.h>
+#include <engine/global.h>
+enum { kDefaultWindowWidth = 800, kDefualtWindowHeight = 600 };
 
-GLFWwindow* Engine::window = nullptr;
-int         Engine::width = 800;
-int         Engine::height = 600;
-Level*      Engine::level = nullptr;
-Camera      Engine::camera;
+GLFWwindow* Engine::g_window = nullptr;
+int Engine::g_width = kDefaultWindowWidth;
+int Engine::g_height = kDefualtWindowHeight;
+Level* Engine::g_level = nullptr;
+Camera Engine::g_camera;

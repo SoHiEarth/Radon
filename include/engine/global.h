@@ -6,11 +6,11 @@ class Level;
 class Camera;
 
 namespace Engine {
-  extern GLFWwindow* window;
-  extern int width;
-  extern int height;
-  extern Level* level;
-  extern Camera camera;
-}
+extern GLFWwindow* g_window;
+extern int g_width;
+extern int g_height;
+extern Level* g_level;
+extern Camera g_camera;
+}  // namespace Engine
 
-#endif // GLOBAL_H
+#endif  // GLOBAL_H

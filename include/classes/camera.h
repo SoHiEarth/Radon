@@ -4,8 +4,8 @@
 #include <glm/glm.hpp>
 
 class Camera {
-  public:
-    glm::vec3 position;
+public:
+  glm::vec3 position_;
 };
 
-#endif // CAMERA_H
+#endif  // CAMERA_H

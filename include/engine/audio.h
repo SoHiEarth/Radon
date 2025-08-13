@@ -2,8 +2,8 @@
 #define AUDIO_H
 
 namespace a {
-  void Init();
-  void Quit();
-}
+void Init();
+void Quit();
+}  // namespace a
 
-#endif // AUDIO_H
+#endif  // AUDIO_H

@@ -2,11 +2,11 @@
 #define DEVGUI_H
 
 namespace dev {
-  extern bool hud_enabled;
-  void Init();
-  void Update();
-  void Render();
-  void Quit();
-}
+extern bool g_hud_enabled;
+void Init();
+void Update();
+void Render();
+void Quit();
+}  // namespace dev
 
-#endif // DEVGUI_H
+#endif  // DEVGUI_H

@@ -10,50 +10,53 @@ class PointLight;
 class SpotLight;
 
 namespace r {
-  extern DirectionalLight* directional_light;
-  extern std::vector<PointLight*> point_lights;
-  extern std::vector<SpotLight*> spot_lights;
+extern DirectionalLight* g_directional_light;
+extern std::vector<PointLight*> g_point_lights;
+extern std::vector<SpotLight*> g_spot_lights;
 
-  void Init();
-  void Update();
-  void Render();
-  void Quit();
-  void RenderTexture(const Material* material,
-      const glm::vec3& pos, const glm::vec2& size, float rot);
+void Init();
+void Extracted();
+void Update();
+void Render();
+void Quit();
+void RenderTexture(const Material* material, const glm::vec3& pos, const glm::vec2& size,
+                   float rot);
 
-  template <typename T> void AddLight(T* light) {
-    if (light == nullptr) return;
-    if constexpr (std::is_same_v<T, DirectionalLight>) {
-      directional_light = light;
-    }
-    else if constexpr (std::is_same_v<T, PointLight>) {
-      point_lights.push_back(light);
-    }
-    else if constexpr (std::is_same_v<T, SpotLight>) {
-      spot_lights.push_back(light);
-    }
+template <typename T>
+void AddLight(T* light) {
+  if (light == nullptr) {
+    return;
   }
+  if constexpr (std::is_same_v<T, DirectionalLight>) {
+    g_directional_light = light;
+  } else if constexpr (std::is_same_v<T, PointLight>) {
+    g_point_lights.push_back(light);
+  } else if constexpr (std::is_same_v<T, SpotLight>) {
+    g_spot_lights.push_back(light);
+  }
+}
 
-  template <typename T> void RemoveLight(T* light) {
-    if (light == nullptr) return;
-    if constexpr (std::is_same_v<T, DirectionalLight>) {
-      directional_light = nullptr;
-    }
-    else if constexpr (std::is_same_v<T, PointLight>) {
-      for (int i = 0; i < point_lights.size(); i++) {
-        if (point_lights[i] == light) {
-          point_lights.erase(point_lights.begin() + i);
-        }
+template <typename T>
+void RemoveLight(T* light) {
+  if (light == nullptr) {
+    return;
+  }
+  if constexpr (std::is_same_v<T, DirectionalLight>) {
+    g_directional_light = nullptr;
+  } else if constexpr (std::is_same_v<T, PointLight>) {
+    for (int i = 0; i < g_point_lights.size(); i++) {
+      if (g_point_lights[i] == light) {
+        g_point_lights.erase(g_point_lights.begin() + i);
       }
     }
-    else if constexpr (std::is_same_v<T, SpotLight>) {
-      for (int i = 0; i< spot_lights.size(); i++) {
-        if (spot_lights[i] == light) {
-          spot_lights.erase(spot_lights.begin() + i);
-        }
+  } else if constexpr (std::is_same_v<T, SpotLight>) {
+    for (int i = 0; i < g_spot_lights.size(); i++) {
+      if (g_spot_lights[i] == light) {
+        g_spot_lights.erase(g_spot_lights.begin() + i);
       }
     }
   }
 }
+}  // namespace r
 
-#endif // RENDER_H
+#endif  // RENDER_H

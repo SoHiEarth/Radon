@@ -5,14 +5,15 @@
 #include <string>
 
 class Sprite : public Object {
-  public:
-    void Init() override;
-    void Update() override;
-    void Render() override;
-    void Quit() override;
-    Editable<std::string> path = {"sprite_test", "Path", reg};
-  private:
-    std::string prev_path;
+public:
+  void Init() override;
+  void Update() override;
+  void Render() override;
+  void Quit() override;
+  Editable<std::string> path_ = {"sprite_test", "Path", reg_};
+
+private:
+  std::string prev_path_;
 };
 
-#endif // SPRITE_H
+#endif  // SPRITE_H

@@ -4,11 +4,11 @@
 #include <string>
 
 struct Texture {
-  unsigned int id;
-  int w, h, channels;
-  const std::string path;
+  unsigned int id_;
+  int w_, h_, channels_;
+  const std::string kPath;
   void Use() const;
-  Texture(const std::string_view path) : path(path) {};
+  explicit Texture(const std::string_view kPath) : kPath(kPath) {};
 };
 
-#endif // TEXTURE_H
+#endif  // TEXTURE_H

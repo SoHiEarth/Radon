@@ -1,9 +1,9 @@
 #include <classes/light.h>
-#include <glad/glad.h>
+#include <classes/material.h>
 #include <classes/shader.h>
 #include <engine/render.h>
-#include <classes/material.h>
 #include <fmt/core.h>
+#include <glad/glad.h>
 
 void DirectionalLight::Init() {
   r::AddLight(this);
@@ -14,10 +14,10 @@ void DirectionalLight::Quit() {
 }
 
 void DirectionalLight::SetUniforms(const Shader* shader) {
-  shader->SetVec3("directional_light.direction", direction);
-  shader->SetVec3("directional_light.ambient", ambient);
-  shader->SetVec3("directional_light.diffuse", diffuse);
-  shader->SetVec3("directional_light.specular", specular);
+  shader->SetVec3("directional_light.direction", static_cast<glm::vec3>(direction_));
+  shader->SetVec3("directional_light.ambient", static_cast<glm::vec3>(ambient_));
+  shader->SetVec3("directional_light.diffuse", static_cast<glm::vec3>(diffuse_));
+  shader->SetVec3("directional_light.specular", static_cast<glm::vec3>(specular_));
 }
 
 void PointLight::Init() {
@@ -28,15 +28,15 @@ void PointLight::Quit() {
   r::RemoveLight(this);
 }
 
-void PointLight::SetUniforms(const Shader* shader, const int pos) {
-  std::string prefix = "point_lights[" + std::to_string(pos) + "]";
-  shader->SetVec3(prefix + ".position", position);
-  shader->SetVec3(prefix + ".ambient", ambient);
-  shader->SetVec3(prefix + ".diffuse", diffuse);
-  shader->SetVec3(prefix + ".specular", specular);
-  shader->SetFloat(prefix + ".constant", constant);
-  shader->SetFloat(prefix + ".linear", linear);
-  shader->SetFloat(prefix + ".quadratic", quadratic);
+void PointLight::SetUniforms(const Shader* shader, const int kPos) {
+  std::string prefix = "point_lights[" + std::to_string(kPos) + "]";
+  shader->SetVec3(prefix + ".position", static_cast<glm::vec3>(position_));
+  shader->SetVec3(prefix + ".ambient", static_cast<glm::vec3>(ambient_));
+  shader->SetVec3(prefix + ".diffuse", static_cast<glm::vec3>(diffuse_));
+  shader->SetVec3(prefix + ".specular", static_cast<glm::vec3>(specular_));
+  shader->SetFloat(prefix + ".constant", static_cast<float>(constant_));
+  shader->SetFloat(prefix + ".linear", static_cast<float>(linear_));
+  shader->SetFloat(prefix + ".quadratic", static_cast<float>(quadratic_));
 }
 
 void SpotLight::Init() {
@@ -47,16 +47,17 @@ void SpotLight::Quit() {
   r::RemoveLight(this);
 }
 
-void SpotLight::SetUniforms(const Shader* shader, const int pos) {
-  std::string prefix = "spot_lights[" + std::to_string(pos) + "]";
-  shader->SetVec3(prefix + ".position", position);
-  shader->SetVec3(prefix + ".direction", direction);
-  shader->SetVec3(prefix + ".ambient", ambient);
-  shader->SetVec3(prefix + ".diffuse", diffuse);
-  shader->SetVec3(prefix + ".specular", specular);
-  shader->SetFloat(prefix + ".constant", constant);
-  shader->SetFloat(prefix + ".linear", linear);
-  shader->SetFloat(prefix + ".quadratic", quadratic);
-  shader->SetFloat(prefix + "cutoff", glm::cos(glm::radians(cutOff.i_value)));
-  shader->SetFloat(prefix + "outerCutoff", glm::cos(glm::radians(outerCutOff.i_value)));
+void SpotLight::SetUniforms(const Shader* shader, const int kPos) {
+  std::string prefix = "spot_lights[" + std::to_string(kPos) + "]";
+  shader->SetVec3(prefix + ".position", static_cast<glm::vec3>(position_));
+  shader->SetVec3(prefix + ".direction", static_cast<glm::vec3>(direction_));
+  shader->SetVec3(prefix + ".ambient", static_cast<glm::vec3>(ambient_));
+  shader->SetVec3(prefix + ".diffuse", static_cast<glm::vec3>(diffuse_));
+  shader->SetVec3(prefix + ".specular", static_cast<glm::vec3>(specular_));
+  shader->SetFloat(prefix + ".constant", static_cast<float>(constant_));
+  shader->SetFloat(prefix + ".linear", static_cast<float>(linear_));
+  shader->SetFloat(prefix + ".quadratic", static_cast<float>(quadratic_));
+  shader->SetFloat(prefix + ".cutoff", glm::cos(glm::radians(static_cast<float>(cut_off_))));
+  shader->SetFloat(prefix + ".outerCutoff",
+                   glm::cos(glm::radians(static_cast<float>(outer_cut_off_))));
 }

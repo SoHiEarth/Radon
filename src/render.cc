@@ -1,64 +1,59 @@
+// This should always be at top
 #include <glad/glad.h>
-#include <engine/render.h>
-#include <engine/global.h>
-#include <engine/devgui.h>
-#include <engine/filesystem.h>
+// Ok continue
+
 #include <GLFW/glfw3.h>
-#include <fmt/core.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <imgui.h>
-#include <vector>
-#include <classes/light.h>
 #include <classes/camera.h>
+#include <classes/light.h>
 #include <classes/material.h>
 #include <classes/shader.h>
+#include <engine/devgui.h>
+#include <engine/filesystem.h>
+#include <engine/global.h>
+#include <engine/render.h>
+#include <fmt/core.h>
+#include <imgui.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <utility>
+#include <vector>
 
 #define TEXT_COLOR_RED ImVec4(1.0f, 0.0f, 0.0f, 1.0f)
-#define NUM_COLORBUFFERS 2
-DirectionalLight* r::directional_light = nullptr;
-std::vector<PointLight*> r::point_lights;
-std::vector<SpotLight*> r::spot_lights;
-unsigned int VAO, VBO, EBO;
-unsigned int framebuffer, renderbuffer, colorbuffers[NUM_COLORBUFFERS];
-unsigned int pingpong_framebuffer[2], pingpong_colorbuffer[2];
-std::vector<unsigned int> attachments;
-unsigned int screen_vao, screen_vbo;
-Shader* screen_shader = nullptr, *screen_shader_blur;
-float render_factor = 4, prev_render_factor;
-float screen_exposure = 1.0;
-int bloom_amount = 10;
-bool bloom = true, antialias = true;
+enum { kNumColorbuffers = 2, kDefaultBloomAmount = 10 };
+using ImGui::TextColored;
+
+DirectionalLight *r::g_directional_light = nullptr;
+std::vector<PointLight *> r::g_point_lights;
+std::vector<SpotLight *> r::g_spot_lights;
+unsigned int g_vao, g_vbo, g_ebo;
+unsigned int g_framebuffer, g_renderbuffer, g_colorbuffers[kNumColorbuffers];
+unsigned int g_pingpong_framebuffer[2], g_pingpong_colorbuffer[2];
+std::vector<unsigned int> g_attachments;
+unsigned int g_screen_vao, g_screen_vbo;
+Shader *g_screen_shader = nullptr, *g_screen_shader_blur;
+float g_render_factor = 4, g_prev_render_factor;
+float g_screen_exposure = 1.0;
+int g_bloom_amount = kDefaultBloomAmount;
+bool g_bloom = true, g_antialias = true;
 
 void RecreateFramebuffer();
-void FBSizeCallback(GLFWwindow* window, int width, int height) {
+void FBSizeCallback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
-  Engine::width = width;
-  Engine::height = height;
+  Engine::g_width = width;
+  Engine::g_height = height;
   RecreateFramebuffer();
 }
 
-float vertices[] = {
-     0.5f,  0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
-     0.5f, -0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
-    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
-    -0.5f,  0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f
-};
+float g_vertices[] = {0.5F, 0.5F, 0.0F,  0.0F, 0.0F, -1.0F, 1.0F,  1.0F,  0.5F, -0.5F, 0.0F,
+                      0.0F, 0.0F, -1.0F, 1.0F, 0.0F, -0.5F, -0.5F, 0.0F,  0.0F, 0.0F,  -1.0F,
+                      0.0F, 0.0F, -0.5F, 0.5F, 0.0F, 0.0F,  0.0F,  -1.0F, 0.0F, 1.0F};
 
-unsigned int indices[] = {
-  0, 1, 3,
-  1, 2, 3
-};
+unsigned int g_indices[] = {0, 1, 3, 1, 2, 3};
 
-float screen_vertices[] = {
-  -1.0f,  1.0f,  0.0f, 1.0f,
-  -1.0f, -1.0f,  0.0f, 0.0f,
-   1.0f, -1.0f,  1.0f, 0.0f,
-  -1.0f,  1.0f,  0.0f, 1.0f,
-   1.0f, -1.0f,  1.0f, 0.0f,
-   1.0f,  1.0f,  1.0f, 1.0f
-};
+float g_screen_vertices[] = {-1.0F, 1.0F,  0.0F, 1.0F, -1.0F, -1.0F, 0.0F, 0.0F,
+                             1.0F,  -1.0F, 1.0F, 0.0F, -1.0F, 1.0F,  0.0F, 1.0F,
+                             1.0F,  -1.0F, 1.0F, 0.0F, 1.0F,  1.0F,  1.0F, 1.0F};
 
 void r::Init() {
   glfwInit();
@@ -69,19 +64,17 @@ void r::Init() {
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-  Engine::width = 800;
-  Engine::height = 600;
-  Engine::window = glfwCreateWindow(Engine::width, Engine::height, "Metal", nullptr, nullptr);
-  if (!Engine::window) {
+  Engine::g_window = glfwCreateWindow(Engine::g_width, Engine::g_height, "Metal", nullptr, nullptr);
+  if (Engine::g_window == nullptr) {
     fmt::print("Failed to create GLFW window\n");
     glfwTerminate();
     return;
   }
-  glfwMakeContextCurrent(Engine::window);
-  glfwSetFramebufferSizeCallback(Engine::window, FBSizeCallback);
+  glfwMakeContextCurrent(Engine::g_window);
+  glfwSetFramebufferSizeCallback(Engine::g_window, FBSizeCallback);
   glfwSwapInterval(1);
 
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+  if (0 == gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
     fmt::print("Failed to initialize GLAD\n");
     glfwTerminate();
     return;
@@ -89,249 +82,283 @@ void r::Init() {
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_MULTISAMPLE);
-  glViewport(0, 0, Engine::width, Engine::height);
-  glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &VBO);
-  glGenBuffers(1, &EBO);
-  glBindVertexArray(VAO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+  glViewport(0, 0, Engine::g_width, Engine::g_height);
+  glGenVertexArrays(1, &g_vao);
+  glGenBuffers(1, &g_vbo);
+  glGenBuffers(1, &g_ebo);
+  glBindVertexArray(g_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertices), g_vertices, GL_STATIC_DRAW);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ebo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(g_indices), g_indices, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) nullptr);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (6 * sizeof(float)));
   glEnableVertexAttribArray(2);
 
-  glGenVertexArrays(1, &screen_vao);
-  glGenBuffers(1, &screen_vbo);
-  glBindVertexArray(screen_vao);
-  glBindBuffer(GL_ARRAY_BUFFER, screen_vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(screen_vertices), screen_vertices, GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+  glGenVertexArrays(1, &g_screen_vao);
+  glGenBuffers(1, &g_screen_vbo);
+  glBindVertexArray(g_screen_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, g_screen_vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(g_screen_vertices), g_screen_vertices, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) nullptr);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) (2 * sizeof(float)));
   glEnableVertexAttribArray(1);
 
   RecreateFramebuffer();
-  prev_render_factor = render_factor;
+  g_prev_render_factor = g_render_factor;
 
-  screen_shader = f::LoadShader("screen_shader/vert.glsl", "screen_shader/frag.glsl");
-  if (screen_shader == nullptr) {
+  g_screen_shader = f::LoadShader("screen_shader/vert.glsl", "screen_shader/frag.glsl");
+  if (g_screen_shader == nullptr) {
     fmt::print("Failed to load screen shader.\n");
   } else {
-    screen_shader->Use();
-    screen_shader->SetInt("scene", 0);
-    screen_shader->SetInt("blur", 1);
+    g_screen_shader->Use();
+    g_screen_shader->SetInt("scene", 0);
+    g_screen_shader->SetInt("blur", 1);
   }
 
-  screen_shader_blur = f::LoadShader("screen_blur/vert.glsl", "screen_blur/frag.glsl");
-  if (screen_shader_blur == nullptr) {
+  g_screen_shader_blur = f::LoadShader("screen_blur/vert.glsl", "screen_blur/frag.glsl");
+  if (g_screen_shader_blur == nullptr) {
     fmt::print("Failed to load screen shader.\n");
   } else {
-    screen_shader_blur->Use();
-    screen_shader_blur->SetInt("image", 0);
+    g_screen_shader_blur->Use();
+    g_screen_shader_blur->SetInt("image", 0);
   }
 
   fmt::print("Initialized OpenGL\n");
-  return;
 }
 
 void r::Update() {
-  if (!Engine::window) return;
-  if (render_factor != prev_render_factor) {
-    RecreateFramebuffer();
-    prev_render_factor = render_factor;
+  if (Engine::g_window == nullptr) {
+    return;
   }
-  glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-  glViewport(0, 0, Engine::width/render_factor, Engine::height/render_factor);
-  if (directional_light)
-    glClearColor(directional_light->ambient->x,
-        directional_light->ambient->y,
-        directional_light->ambient->z,
-        1.0f);
-  else
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+  if (g_render_factor != g_prev_render_factor) {
+    RecreateFramebuffer();
+    g_prev_render_factor = g_render_factor;
+  }
+  glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
+  glViewport(0, 0, Engine::g_width / g_render_factor, Engine::g_height / g_render_factor);
+  if (g_directional_light != nullptr) {
+    glClearColor(g_directional_light->ambient_->x, g_directional_light->ambient_->y,
+                 g_directional_light->ambient_->z, 1.0F);
+  } else {
+    glClearColor(1.0F, 1.0F, 1.0F, 1.0F);
+  }
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void r::Render() {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  //glViewport(0, 0, Engine::width, Engine::height);
-  
+  // glViewport(0, 0, Engine::g_width, Engine::g_height);
+
   dev::Update();
-  if (dev::hud_enabled) {
+  if (dev::g_hud_enabled) {
     ImGui::Begin("Renderer Status");
-    ImGui::Text("Directional light status: %d", (int)(directional_light != nullptr));
-    ImGui::Text("Point light count: %d", (int)point_lights.size());
-    ImGui::Text("Spot light count: %d", (int)spot_lights.size());
-    ImGui::DragFloat3("Camera Position", glm::value_ptr(Engine::camera.position));
+    ImGui::Text("Directional light status: %d", static_cast<int>(g_directional_light != nullptr));
+    ImGui::Text("Point light count: %d", static_cast<int>(g_point_lights.size()));
+    ImGui::Text("Spot light count: %d", static_cast<int>(g_spot_lights.size()));
+    ImGui::DragFloat3("Camera Position", glm::value_ptr(Engine::g_camera.position_));
     ImGui::SeparatorText("Screen Shader");
-    ImGui::InputFloat("Exposure", &screen_exposure, 0.1f);
-    ImGui::Checkbox("Anti-Alias", &antialias);
-    ImGui::Checkbox("Bloom", &bloom);
-    ImGui::InputInt("Bloom Amount", &bloom_amount);
-  if (bloom_amount <= 0) bloom_amount = 1;
-    ImGui::InputFloat("Render Factor", &render_factor, 0.5f);
-    if (render_factor < 1) ImGui::TextColored(TEXT_COLOR_RED, "Downscaling");
-    if (render_factor > 1) ImGui::TextColored(TEXT_COLOR_RED, "Upscaling");
-    if (render_factor <= 0) render_factor = prev_render_factor;
+    ImGui::InputFloat("Exposure", &g_screen_exposure, 0.1F);
+    ImGui::Checkbox("Anti-Alias", &g_antialias);
+    ImGui::Checkbox("Bloom", &g_bloom);
+    ImGui::InputInt("Bloom Amount", &g_bloom_amount);
+    if (g_bloom_amount <= 0) {
+      g_bloom_amount = 1;
+    }
+    ImGui::InputFloat("Render Factor", &g_render_factor, 0.5F);
+    if (g_render_factor < 1) {
+      TextColored(TEXT_COLOR_RED, "Downscaling");
+    }
+    if (g_render_factor > 1) {
+      TextColored(TEXT_COLOR_RED, "Upscaling");
+    }
+    if (g_render_factor <= 0) {
+      g_render_factor = g_prev_render_factor;
+    }
     ImGui::Text("Colorbuffer");
-    for (int i = 0; i < NUM_COLORBUFFERS; i++) {
-      ImGui::Image(colorbuffers[i], ImVec2(100, 100));
+    for (unsigned int g_colorbuffer : g_colorbuffers) {
+      ImGui::Image(g_colorbuffer, ImVec2(100, 100));
     }
     ImGui::Text("Ping Pong Colorbuffer");
-    for (int i = 0; i < NUM_COLORBUFFERS; i++) {
-      ImGui::Image(pingpong_colorbuffer[i], ImVec2(100, 100));
+    for (unsigned int i : g_pingpong_colorbuffer) {
+      ImGui::Image(i, ImVec2(100, 100));
     }
     ImGui::End();
   }
 
-  bool horizontal = true, first_iteration = true;
-  screen_shader_blur->Use();
-  for (unsigned int i = 0; i < bloom_amount; i++) {
-    glBindFramebuffer(GL_FRAMEBUFFER, pingpong_framebuffer[horizontal]);
-    screen_shader_blur->SetInt("horizontal", horizontal);
+  bool horizontal = true;
+  bool first_iteration = true;
+  g_screen_shader_blur->Use();
+  for (unsigned int i = 0; std::cmp_less(i, g_bloom_amount); i++) {
+    glBindFramebuffer(GL_FRAMEBUFFER, g_pingpong_framebuffer[horizontal]);
+    g_screen_shader_blur->SetInt("horizontal", static_cast<int>(horizontal));
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, first_iteration ? colorbuffers[1] : pingpong_colorbuffer[!horizontal]);
-    glBindVertexArray(screen_vao);
+    glBindTexture(GL_TEXTURE_2D,
+                  first_iteration ? g_colorbuffers[1] : g_pingpong_colorbuffer[!horizontal]);
+    glBindVertexArray(g_screen_vao);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     horizontal = !horizontal;
-    if (first_iteration) first_iteration = false;
+    if (first_iteration) {
+      first_iteration = false;
+    }
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  if (antialias) glEnable(GL_MULTISAMPLE);
-  else glDisable(GL_MULTISAMPLE);
-  glViewport(0, 0, Engine::width, Engine::height);
-  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+  if (g_antialias) {
+    glEnable(GL_MULTISAMPLE);
+  } else {
+    glDisable(GL_MULTISAMPLE);
+  }
+  glViewport(0, 0, Engine::g_width, Engine::g_height);
+  glClearColor(1.0F, 1.0F, 1.0F, 1.0F);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  screen_shader->Use();
+  g_screen_shader->Use();
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, colorbuffers[0]);
+  glBindTexture(GL_TEXTURE_2D, g_colorbuffers[0]);
   glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, pingpong_colorbuffer[!horizontal]);
-  screen_shader->SetInt("bloom", bloom);
-  screen_shader->SetFloat("exposure", screen_exposure);
-  glBindVertexArray(screen_vao);
+  glBindTexture(GL_TEXTURE_2D, g_pingpong_colorbuffer[!horizontal]);
+  g_screen_shader->SetInt("bloom", static_cast<int>(g_bloom));
+  g_screen_shader->SetFloat("exposure", g_screen_exposure);
+  glBindVertexArray(g_screen_vao);
   glDrawArrays(GL_TRIANGLES, 0, 6);
   dev::Render();
-  glfwSwapBuffers(Engine::window);
+  glfwSwapBuffers(Engine::g_window);
 }
 
 void r::Quit() {
-  glDeleteVertexArrays(1, &VAO);
-  glDeleteBuffers(1, &VBO);
-  glDeleteBuffers(1, &EBO);
-  glDeleteRenderbuffers(1, &renderbuffer);
-  glDeleteFramebuffers(1, &framebuffer);
-  if (Engine::window != nullptr) {
-    glfwDestroyWindow(Engine::window);
-    Engine::window = nullptr;
+  glDeleteVertexArrays(1, &g_vao);
+  glDeleteBuffers(1, &g_vbo);
+  glDeleteBuffers(1, &g_ebo);
+  glDeleteRenderbuffers(1, &g_renderbuffer);
+  glDeleteFramebuffers(1, &g_framebuffer);
+  if (Engine::g_window != nullptr) {
+    glfwDestroyWindow(Engine::g_window);
+    Engine::g_window = nullptr;
   }
   glfwTerminate();
   fmt::print("Terminated OpenGL\n");
 }
 
 glm::mat4 GetTransform(const glm::vec3 &pos, const glm::vec2 &scale, float rot) {
-  glm::mat4 transform = glm::mat4(1.0f);
+  auto transform = glm::mat4(1.0F);
   transform = glm::rotate(transform, glm::radians(rot), glm::vec3(0.0, 0.0, 1.0));
   transform = glm::translate(transform, pos);
   transform = glm::scale(transform, glm::vec3(scale, 1));
   return transform;
 }
 
-void r::RenderTexture(const Material *material, const glm::vec3 &pos, const glm::vec2 &size, float rot) {
-  if (!material) return;
-  if (!material->IsValid()) return;
+void r::RenderTexture(const Material *material, const glm::vec3 &pos, const glm::vec2 &size,
+                      float rot) {
+  if (material == nullptr) {
+    return;
+  }
+  if (!material->IsValid()) {
+    return;
+  }
 
-  glm::mat4 model = GetTransform(pos, size, rot),
-    view = glm::translate(glm::mat4(1.0f), Engine::camera.position),
-    projection = glm::perspective(glm::radians(60.0f), ((float)Engine::width / (float)Engine::height),
-        0.1f, 100.0f);
-  
+  glm::mat4 model = GetTransform(pos, size, rot);
+  glm::mat4 view = glm::translate(glm::mat4(1.0F), Engine::g_camera.position_);
+  glm::mat4 projection = glm::perspective(
+      glm::radians(60.0F),
+      (static_cast<float>(Engine::g_width) / static_cast<float>(Engine::g_height)), 0.1F, 100.0F);
+
   material->Bind();
-  material->shader->SetMat4("model", model);
-  material->shader->SetMat4("view", view);
-  material->shader->SetVec3("viewPos", Engine::camera.position);
-  material->shader->SetMat4("projection", projection);
+  material->shader_->SetMat4("model", model);
+  material->shader_->SetMat4("view", view);
+  material->shader_->SetVec3("viewPos", Engine::g_camera.position_);
+  material->shader_->SetMat4("projection", projection);
 
-  if (directional_light) directional_light->SetUniforms(material->shader);
-  
-  material->shader->SetInt("NUM_POINT_LIGHTS", (int)point_lights.size());
-  for (int i = 0; i < point_lights.size(); i++) {
-    if (point_lights[i]) point_lights[i]->SetUniforms(material->shader, i);
-  }
-  
-  material->shader->SetInt("NUM_SPOT_LIGHTS", (int)spot_lights.size());
-  for (int i = 0; i < spot_lights.size(); i++) {
-    if (spot_lights[i]) spot_lights[i]->SetUniforms(material->shader, i);
+  if (g_directional_light != nullptr) {
+    g_directional_light->SetUniforms(material->shader_);
   }
 
-  glBindVertexArray(VAO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+  material->shader_->SetInt("NUM_POINT_LIGHTS", static_cast<int>(g_point_lights.size()));
+  for (int i = 0; i < g_point_lights.size(); i++) {
+    if (g_point_lights[i] != nullptr) {
+      g_point_lights[i]->SetUniforms(material->shader_, i);
+    }
+  }
+
+  material->shader_->SetInt("NUM_SPOT_LIGHTS", static_cast<int>(g_spot_lights.size()));
+  for (int i = 0; i < g_spot_lights.size(); i++) {
+    if (g_spot_lights[i] != nullptr) {
+      g_spot_lights[i]->SetUniforms(material->shader_, i);
+    }
+  }
+
+  glBindVertexArray(g_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ebo);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 }
 
 void RecreateFramebuffer() {
-  if (!attachments.empty()) attachments.clear();
-  if (renderbuffer != 0) {
-    glDeleteRenderbuffers(1, &renderbuffer);
-    renderbuffer = 0;
+  if (!g_attachments.empty()) {
+    g_attachments.clear();
   }
-  for (int i = 0; i < NUM_COLORBUFFERS; i++) {
-    if (colorbuffers[i] != 0) {
-      glDeleteTextures(1, &colorbuffers[i]);
-      colorbuffers[i] = 0;
+  if (g_renderbuffer != 0) {
+    glDeleteRenderbuffers(1, &g_renderbuffer);
+    g_renderbuffer = 0;
+  }
+  for (unsigned int &g_colorbuffer : g_colorbuffers) {
+    if (g_colorbuffer != 0) {
+      glDeleteTextures(1, &g_colorbuffer);
+      g_colorbuffer = 0;
     }
   }
-  if (framebuffer != 0) {
-    glDeleteFramebuffers(1, &framebuffer);
-    framebuffer = 0;
+  if (g_framebuffer != 0) {
+    glDeleteFramebuffers(1, &g_framebuffer);
+    g_framebuffer = 0;
   }
 
-  int framebuffer_width = Engine::width / render_factor;
-  int framebuffer_height = Engine::height / render_factor;
-  glGenFramebuffers(1, &framebuffer);
-  glBindFramebuffer(GL_FRAMEBUFFER, framebuffer); 
-  glGenTextures(NUM_COLORBUFFERS, colorbuffers);
-  for (unsigned int i = 0; i < NUM_COLORBUFFERS; i++) {
-    glBindTexture(GL_TEXTURE_2D, colorbuffers[i]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, framebuffer_width, framebuffer_height, 0, GL_RGBA, GL_FLOAT, NULL);
+  int framebuffer_width = Engine::g_width / g_render_factor;
+  int framebuffer_height = Engine::g_height / g_render_factor;
+  glGenFramebuffers(1, &g_framebuffer);
+  glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
+  glGenTextures(kNumColorbuffers, g_colorbuffers);
+  for (unsigned int i = 0; i < kNumColorbuffers; i++) {
+    glBindTexture(GL_TEXTURE_2D, g_colorbuffers[i]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, framebuffer_width, framebuffer_height, 0, GL_RGBA,
+                 GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorbuffers[i], 0);
-    attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D,
+                           g_colorbuffers[i], 0);
+    g_attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
   }
 
-  glGenRenderbuffers(1, &renderbuffer);
-  glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-      framebuffer_width, framebuffer_height);
-  
-  glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer);
-  glDrawBuffers(2, attachments.data());
+  glGenRenderbuffers(1, &g_renderbuffer);
+  glBindRenderbuffer(GL_RENDERBUFFER, g_renderbuffer);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, framebuffer_width,
+                        framebuffer_height);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,
+                            g_renderbuffer);
+  glDrawBuffers(2, g_attachments.data());
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
     fmt::print("Failed to recreate framebuffer!\n");
-    glDeleteRenderbuffers(1, &renderbuffer);
-    glDeleteFramebuffers(1, &framebuffer);
+    glDeleteRenderbuffers(1, &g_renderbuffer);
+    glDeleteFramebuffers(1, &g_framebuffer);
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  glGenFramebuffers(2, pingpong_framebuffer);
-  glGenTextures(2, pingpong_colorbuffer);
+  glGenFramebuffers(2, g_pingpong_framebuffer);
+  glGenTextures(2, g_pingpong_colorbuffer);
   for (unsigned int i = 0; i < 2; i++) {
-    glBindFramebuffer(GL_FRAMEBUFFER, pingpong_framebuffer[i]);
-    glBindTexture(GL_TEXTURE_2D, pingpong_colorbuffer[i]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, framebuffer_width, framebuffer_height, 0, GL_RGBA, GL_FLOAT, NULL);
+    glBindFramebuffer(GL_FRAMEBUFFER, g_pingpong_framebuffer[i]);
+    glBindTexture(GL_TEXTURE_2D, g_pingpong_colorbuffer[i]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, framebuffer_width, framebuffer_height, 0, GL_RGBA,
+                 GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpong_colorbuffer[i], 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           g_pingpong_colorbuffer[i], 0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
       fmt::print("Failed to recreate pingpong framebuffer!\n");
     }

@@ -1,91 +1,106 @@
 // Everything in here is probably jank
+#include <GLFW/glfw3.h>
+#include <classes/level.h>
+#include <classes/light.h>
+#include <classes/material.h>
+#include <classes/shader.h>
+#include <classes/sprite.h>
+#include <classes/texture.h>
 #include <engine/devgui.h>
 #include <engine/global.h>
-#include <classes/sprite.h>
-#include <classes/light.h>
-#include <classes/texture.h>
-#include <classes/shader.h>
-#include <classes/level.h>
-#include <classes/material.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
-#include <imgui_stdlib.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
-#include <GLFW/glfw3.h>
+#include <imgui_stdlib.h>
 #include <format>
-
-bool dev::hud_enabled = false;
-Object* current_object = nullptr;
-std::string material_path = "";
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#define IMAGE_PREVIEW_SIZE 100, 100
+bool dev::g_hud_enabled = false;
+Object* g_current_object = nullptr;
+std::string g_material_path;
 
 void MaterialView(Material* material) {
-  if (!material) {
+  if (material == nullptr) {
     ImGui::SeparatorText("Load a Material from disk");
-    ImGui::InputText("Path", &material_path);
-    if (ImGui::Button("Load"))
-      material = new Material(material_path);
+    ImGui::InputText("Path", &g_material_path);
+    if (ImGui::Button("Load")) {
+      material = new Material(g_material_path);
+    }
     return;
   }
-  if (!material->IsValid()) return;
+  if (!material->IsValid()) {
+    return;
+  }
   ImGui::SeparatorText("Material");
   ImGui::Text("Diffuse");
-  ImGui::Image(material->diffuse->id, ImVec2(100, 100));
+  ImGui::Image(material->diffuse_->id_, ImVec2(IMAGE_PREVIEW_SIZE));
   ImGui::Text("Specular");
-  ImGui::Image(material->specular->id, ImVec2(100, 100));
-  ImGui::DragFloat("Shininess", &material->shininess);
+  ImGui::Image(material->specular_->id_, ImVec2(IMAGE_PREVIEW_SIZE));
+  ImGui::DragFloat("Shininess", &material->shininess_);
   ImGui::Text("Shader");
-  ImGui::Text("Vert: %s", material->shader->vert_path.data());
-  ImGui::Text("Frag: %s", material->shader->frag_path.data());
+  ImGui::Text("Vert: %s", material->shader_->kVertPath.data());
+  ImGui::Text("Frag: %s", material->shader_->kFragPath.data());
 }
 
 void dev::Init() {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO();
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
-  ImGui_ImplGlfw_InitForOpenGL(Engine::window, true);
+  ImGuiIO& imgui_io = ImGui::GetIO();
+  imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  imgui_io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  ImGui_ImplGlfw_InitForOpenGL(Engine::g_window, true);
   ImGui_ImplOpenGL3_Init("#version 150");
 }
 
 void dev::Update() {
-  if (!dev::hud_enabled) {
-    glfwSetInputMode(Engine::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  if (!dev::g_hud_enabled) {
+    glfwSetInputMode(Engine::g_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     return;
   }
-  glfwSetInputMode(Engine::window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  glfwSetInputMode(Engine::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
   ImGui::Begin("Scene Management");
-  if (ImGui::Button("Add Sprite")) Engine::level->AddObject(new Sprite);
-  if (ImGui::Button("Add Directional Light")) Engine::level->AddObject(new DirectionalLight);
-  if (ImGui::Button("Add Point Light")) Engine::level->AddObject(new PointLight);
-  if (ImGui::Button("Add Spot Light")) Engine::level->AddObject(new SpotLight);
+  if (ImGui::Button("Add Sprite")) {
+    Engine::g_level->AddObject(new Sprite);
+  }
+  if (ImGui::Button("Add Directional Light")) {
+    Engine::g_level->AddObject(new DirectionalLight);
+  }
+  if (ImGui::Button("Add Point Light")) {
+    Engine::g_level->AddObject(new PointLight);
+  }
+  if (ImGui::Button("Add Spot Light")) {
+    Engine::g_level->AddObject(new SpotLight);
+  }
   ImGui::SeparatorText("Scene Objects");
-  int i = 0;
-  for (const auto& object : Engine::level->objects) {
-    i++;
-    if (ImGui::Button(std::format("{}###{}", object->name->c_str(), i).c_str()))
-      current_object = object;
+  for (int i = 0; i < Engine::g_level->objects_.size(); i++) {
+    if (ImGui::Button(std::format("{}###{}", *Engine::g_level->objects_[i]->name_, i).c_str())) {
+      g_current_object = Engine::g_level->objects_[i];
+    }
   }
   ImGui::End();
 
   ImGui::Begin("Properties");
-  if (!current_object) {
+  if (g_current_object == nullptr) {
     ImGui::Text("Select an Object");
   } else {
-    for (const auto& field : current_object->reg)
-      if (field != nullptr) field->RenderInterface();
-    MaterialView(current_object->material);
+    for (const auto& field : g_current_object->reg_) {
+      if (field != nullptr) {
+        field->RenderInterface();
+      }
+    }
+    MaterialView(g_current_object->material_);
   }
   ImGui::End();
 }
 
 void dev::Render() {
-  if (!dev::hud_enabled) return;
+  if (!dev::g_hud_enabled) {
+    return;
+  }
   ImGui::Render();
   ImGui::EndFrame();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

@@ -1,10 +1,10 @@
 #include <classes/shader.h>
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
-#define GET_LOCATION() glGetUniformLocation(id, name.data()
+#define GET_LOCATION() glGetUniformLocation(id_, name.data()
 
-void Shader::Use() {
-  glUseProgram(id);
+void Shader::Use() const {
+  glUseProgram(id_);
 }
 
 void Shader::SetInt(const std::string_view name, int value) const {
