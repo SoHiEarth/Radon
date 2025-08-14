@@ -9,7 +9,7 @@ class Shader {
 public:
   const std::string kVertPath, kFragPath;
   Shader(std::string vert, std::string frag)
-      : kVertPath(std::move(std::move(vert))), kFragPath(std::move(std::move(frag))) {};
+      : kVertPath(std::move(vert)), kFragPath(std::move(frag)) {};
   unsigned int id_ = 0;
   void Use() const;
   void SetInt(std::string_view k_name, int value) const;

@@ -29,8 +29,8 @@ std::vector<std::thread> workers;
 int main(int argc, char** argv) {
   r::Init();
   i::Init();
-  SPAWN_THREAD(a::Init);
-  SPAWN_THREAD(p::Init);
+  SPAWN_THREAD(a_Init);
+  SPAWN_THREAD(p_Init);
   WAIT_WORKERS();
   dev::Init();
 
@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
       Engine::g_level->Update();
     }
     r::Update();
-    p::Update();
+    p_Update();
     if (Engine::g_level != nullptr) {
       Engine::g_level->Render();
     }
@@ -74,8 +74,8 @@ int main(int argc, char** argv) {
   }
 
   dev::Quit();
-  SPAWN_THREAD(a::Quit);
-  SPAWN_THREAD(p::Quit);
+  SPAWN_THREAD(a_Quit);
+  SPAWN_THREAD(p_Quit);
   WAIT_WORKERS();
   i::Quit();
   r::Quit();
