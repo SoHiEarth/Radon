@@ -7,6 +7,7 @@
 #include <classes/editable.h>
 #include <classes/material.h>
 #include <stdexcept>
+#include <format>
 
 class Object;
 class Texture;
@@ -25,13 +26,13 @@ void SaveLevelDynamicData(const Level* level, std::string_view path);
 Object* LoadObject(pugi::xml_node& base_node);
 void SaveObject(const Object* object, pugi::xml_node& base_node);
 
-Shader* LoadShader(std::string_view kVertPath, std::string_view kFragPath);
+Shader* LoadShader(std::string_view vert_path, std::string_view frag_path);
 void FreeShader(Shader* shader);
 
 template <typename T>
 void LoadSerialized(T* value, pugi::xml_node& base_node, const char* name) {
   if (value == nullptr) {
-    value = new T();
+    throw std::runtime_error(std::format("Null pointer passed as argument to load. Details: {}", name));
   }
   pugi::xml_node node = base_node.child(name);
   if constexpr (std::is_same_v<T, glm::vec3>) {
@@ -71,7 +72,6 @@ void SaveSerialized(const T* value, pugi::xml_node& base_node, const char* name)
   if (!node) {
     node = base_node.append_child(name);
   }
-  fmt::print("f::SaveSerialized: Saving {}.\n", name);
   if constexpr (std::is_same_v<T, glm::vec3>) {
     node.append_attribute("x").set_value(value->x);
     node.append_attribute("y").set_value(value->y);
@@ -98,6 +98,9 @@ template <typename T>
 void SaveEditableSerialized(const Editable<T>& value, pugi::xml_node& base_node) {
   SaveSerialized(&value.i_value_, base_node, value.i_label_);
 }
+
+void LoadMaterial(Material* material, pugi::xml_node& base_node);
+void SaveMaterial(const Material* material, pugi::xml_node& base_node);
 
 }  // namespace f
 

@@ -21,7 +21,13 @@
 #include <vector>
 
 #define TEXT_COLOR_RED ImVec4(1.0f, 0.0f, 0.0f, 1.0f)
-enum : std::uint8_t { kNumColorbuffers = 2, kDefaultBloomAmount = 10, kPingPongCount = 2 };
+#define GUI_DRAG_STEP 0.1F
+#define IMAGE_SIZE ImVec2(100, 100)
+#define CAMERA_FOV 60.0F
+#define CAMERA_NEAR_PLANE 0.1F
+#define CAMERA_FAR_PLANE 100.0F
+
+enum : std::uint8_t { kNumColorbuffers = 2, kDefaultBloomAmount = 10, kPingPongCount = 2, kDefaultExposure = 4 };
 using ImGui::TextColored;
 
 std::vector<DirectionalLight *> r::g_directional_lights;
@@ -35,7 +41,7 @@ std::vector<unsigned int> g_attachments;
 unsigned int g_screen_vao, g_screen_vbo;
 Shader *g_screen_shader = nullptr, *g_screen_shader_blur;
 float g_render_factor = 1, g_prev_render_factor = g_render_factor;
-float g_screen_exposure = 1.0;
+float g_screen_exposure = kDefaultExposure;
 int g_bloom_amount = kDefaultBloomAmount;
 bool g_bloom = true;
 bool g_dithering = false, g_scanlines = false;
@@ -60,18 +66,18 @@ void DrawRendererStatus() {
     ImGui::Text("Spot light count: %d", static_cast<int>(r::g_spot_lights.size()));
     ImGui::DragFloat3("Camera Position", glm::value_ptr(Engine::g_camera.position_));
     ImGui::SeparatorText("Screen Shader");
-    ImGui::InputFloat("Pixelation Factor", &g_pixelation, 0.1F);
+    ImGui::InputFloat("Pixelation Factor", &g_pixelation, GUI_DRAG_STEP);
     ImGui::Checkbox("Dithering", &g_dithering);
-    ImGui::InputFloat("Brightness Levels", &g_brightness, 0.1F);
+    ImGui::InputFloat("Brightness Levels", &g_brightness, GUI_DRAG_STEP);
     ImGui::Checkbox("Scanlines", &g_scanlines);
-    ImGui::InputFloat("Scanline Intensity", &g_scanline_intensity, 0.1F);
-    ImGui::InputFloat("Exposure", &g_screen_exposure, 0.1F);
+    ImGui::InputFloat("Scanline Intensity", &g_scanline_intensity, GUI_DRAG_STEP);
+    ImGui::InputFloat("Exposure", &g_screen_exposure, GUI_DRAG_STEP);
     ImGui::Checkbox("Bloom", &g_bloom);
     ImGui::InputInt("Bloom Amount", &g_bloom_amount);
     if (g_bloom_amount <= 0) {
       g_bloom_amount = 1;
     }
-    ImGui::InputFloat("Render Factor", &g_render_factor, 0.5F);
+    ImGui::InputFloat("Render Factor", &g_render_factor, GUI_DRAG_STEP);
     if (g_render_factor < 1) {
       TextColored(TEXT_COLOR_RED, "Downscaling");
     }
@@ -83,11 +89,11 @@ void DrawRendererStatus() {
     }
     ImGui::Text("Colorbuffer");
     for (unsigned int g_colorbuffer : g_colorbuffers) {
-      ImGui::Image(g_colorbuffer, ImVec2(100, 100));
+      ImGui::Image(g_colorbuffer, IMAGE_SIZE);
     }
     ImGui::Text("Ping Pong Colorbuffer");
     for (unsigned int g_colorbuffer : g_pingpong_colorbuffer) {
-      ImGui::Image(g_colorbuffer, ImVec2(100, 100));
+      ImGui::Image(g_colorbuffer, IMAGE_SIZE);
     }
     ImGui::End();
   }
@@ -135,11 +141,11 @@ void r::Init() {
   glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(kGVertices), kGVertices.data(), GL_STATIC_DRAW);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) nullptr);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), static_cast<void*>(nullptr));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
   glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (6 * sizeof(float)));
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), reinterpret_cast<void*>(6 * sizeof(float)));
 
   glGenVertexArrays(1, &g_screen_vao);
   glGenBuffers(1, &g_screen_vbo);
@@ -147,9 +153,9 @@ void r::Init() {
   glBindBuffer(GL_ARRAY_BUFFER, g_screen_vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(kGScreenVertices), kGScreenVertices.data(), GL_STATIC_DRAW);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) nullptr);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), static_cast<void*>(nullptr));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) (3 * sizeof(float)));
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
 
   RecreateFramebuffer();
 
@@ -270,8 +276,9 @@ void r::RenderTexture(const Material *material, const glm::vec3 &pos, const glm:
   glm::mat4 model = GetTransform(pos, size, rot);
   glm::mat4 view = glm::translate(glm::mat4(1.0F), -Engine::g_camera.position_);
   glm::mat4 projection = glm::perspective(
-      glm::radians(60.0F),
-      (static_cast<float>(Engine::g_width) / static_cast<float>(Engine::g_height)), 0.1F, 100.0F);
+      glm::radians(CAMERA_FOV),
+      (static_cast<float>(Engine::g_width) / static_cast<float>(Engine::g_height)),
+      CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
 
   material->Bind();
   material->shader_->SetMat4("model", model);

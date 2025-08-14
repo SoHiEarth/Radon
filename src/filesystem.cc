@@ -16,6 +16,10 @@
 #include <unordered_map>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#define MATERIAL_KEY_NAME "Material"
+#define MATERIAL_DIRECTORY_KEY_NAME "directory"
+#define MATERIAL_SHININESS_KEY_NAME "shininess"
+
 enum : std::uint16_t { kLogSize = 512 };
 std::unordered_map<std::string, std::function<Object*()>> g_object_factory = {
     {"Sprite", {[]() { return new Sprite(); }}},
@@ -213,4 +217,19 @@ void f::FreeTexture(Texture* texture) {
   }
   glDeleteTextures(1, &texture->id_);
   delete texture;
+}
+
+void f::LoadMaterial(Material *material, pugi::xml_node &base_node) {
+  pugi::xml_node node = base_node.child(MATERIAL_KEY_NAME);
+  material->directory_ = node.attribute(MATERIAL_DIRECTORY_KEY_NAME).as_string();
+  material->shininess_ = node.attribute(MATERIAL_SHININESS_KEY_NAME).as_float(1.0F);
+}
+
+void f::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
+  pugi::xml_node node = base_node.child(MATERIAL_KEY_NAME);
+  if (!node) {
+    base_node.append_child(MATERIAL_KEY_NAME);
+  }
+  node.append_attribute(MATERIAL_DIRECTORY_KEY_NAME).set_name(material->directory_);
+  node.append_attribute(MATERIAL_SHININESS_KEY_NAME).set_value(material->shininess_);
 }

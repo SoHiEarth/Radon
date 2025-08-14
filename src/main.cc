@@ -35,12 +35,16 @@ int main(int argc, char** argv) {
   WAIT_WORKERS();
   dev::Init();
 
-  Engine::g_level = f::LoadLevel("test.xml");
-  /*
-  if (Engine::g_level == nullptr) {
-    Engine::g_level = new Level();
+  try {
+    Engine::g_level = f::LoadLevel("test.xml");
   }
-  */
+  catch (std::exception& e) {
+    fmt::print("Caught exception, falling back to new level. Details: {}\n", e.what());
+    if (Engine::g_level == nullptr) {
+      Engine::g_level = new Level();
+    }
+  }
+
   i::AddHook({GLFW_KEY_ESCAPE, ButtonState::kRelease},
              []() { glfwSetWindowShouldClose(Engine::g_window, true); });
 
