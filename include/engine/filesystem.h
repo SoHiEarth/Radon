@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <fmt/core.h>
 #include <classes/editable.h>
+#include <classes/material.h>
 #include <stdexcept>
 
 class Object;

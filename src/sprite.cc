@@ -10,6 +10,11 @@ void Sprite::Init() {
 }
 
 void Sprite::Update() {
+  if (material_ != nullptr) {
+    if (material_->shininess_ <= 0) {
+      material_->shininess_ = 1;
+    }
+  }
   if (path_ != prev_path_) {
     material_->Free();
     material_->Load(static_cast<std::string>(path_));

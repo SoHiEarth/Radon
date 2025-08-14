@@ -20,6 +20,7 @@ public:
   void Init() override;
   void Quit() override;
   void Load(pugi::xml_node& node) override;
+  [[nodiscard]] std::string GetTypeName() const override { return "DirectionalLight"; }
   void Save(pugi::xml_node& node) const override;
   void SetUniforms(const Shader* shader, int kPos);
 };
@@ -31,6 +32,7 @@ public:
   void Init() override;
   void Quit() override;
   void Load(pugi::xml_node& node) override;
+  [[nodiscard]] std::string GetTypeName() const override { return "PointLight"; }
   void Save(pugi::xml_node& node) const override;
   void SetUniforms(const Shader* shader, int kPos);
 };
@@ -44,6 +46,7 @@ public:
   void Init() override;
   void Quit() override;
   void Load(pugi::xml_node& node) override;
+  [[nodiscard]] std::string GetTypeName() const override { return "SpotLight"; }
   void Save(pugi::xml_node& node) const override;
   void SetUniforms(const Shader* shader, int kPos);
 };

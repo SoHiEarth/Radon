@@ -11,6 +11,7 @@ public:
   void Render() override;
   void Quit() override;
   void Load(pugi::xml_node& node) override;
+  [[nodiscard]] std::string GetTypeName() const override { return "Sprite"; }
   void Save(pugi::xml_node& node) const override;
   Editable<std::string> path_ = {"sprite_test", "Path", reg_};
   ~Sprite() = default;

@@ -36,10 +36,11 @@ int main(int argc, char** argv) {
   dev::Init();
 
   Engine::g_level = f::LoadLevel("test.xml");
+  /*
   if (Engine::g_level == nullptr) {
     Engine::g_level = new Level();
   }
-
+  */
   i::AddHook({GLFW_KEY_ESCAPE, ButtonState::kRelease},
              []() { glfwSetWindowShouldClose(Engine::g_window, true); });
 

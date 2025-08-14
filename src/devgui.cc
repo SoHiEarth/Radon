@@ -80,9 +80,14 @@ void dev::Update() {
     Engine::g_level->AddObject(new SpotLight);
   }
   ImGui::SeparatorText("Scene Objects");
-  for (int i = 0; i < Engine::g_level->objects_.size(); i++) {
-    if (ImGui::Button(std::format("{}###{}", *Engine::g_level->objects_[i]->name_, i).c_str())) {
-      g_current_object = Engine::g_level->objects_[i];
+  if (Engine::g_level->objects_.empty()) {
+    ImGui::Text("Scene is empty.");
+  }
+  else {
+    for (int i = 0; i < Engine::g_level->objects_.size(); i++) {
+      if (ImGui::Button(std::format("{}###{}", *Engine::g_level->objects_[i]->name_, i).c_str())) {
+        g_current_object = Engine::g_level->objects_[i];
+      }
     }
   }
   ImGui::End();

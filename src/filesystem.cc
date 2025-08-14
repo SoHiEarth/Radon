@@ -17,7 +17,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 enum : std::uint16_t { kLogSize = 512 };
-std::unordered_map<const char*, std::function<Object*()>> g_object_factory = {
+std::unordered_map<std::string, std::function<Object*()>> g_object_factory = {
     {"Sprite", {[]() { return new Sprite(); }}},
     {"DirectionalLight", {[]() { return new DirectionalLight(); }}},
     {"PointLight", {[]() { return new PointLight(); }}},
@@ -32,13 +32,13 @@ Level* f::LoadLevel(const std::string_view kPath) {
   pugi::xml_document doc;
   pugi::xml_parse_result result = doc.load_file(kPath.data());
   if (!result) {
-    std::runtime_error(
+    throw std::runtime_error(
         std::format("Failed to parse level file. Details: {}, {}", kPath, result.description()));
   }
 
   pugi::xml_node root = doc.child("level");
   if (!root) {
-    std::runtime_error(std::format("Requested file is not a valid level file. Details {}", kPath));
+    throw std::runtime_error(std::format("Requested file is not a valid level file. Details {}", kPath));
   }
   for (pugi::xml_node object_node : root.children("object")) {
     fmt::print("Adding object\n");
@@ -54,7 +54,7 @@ void f::LoadLevelDynamicData(Level* level, const std::string_view kPath) {
   pugi::xml_document doc;
   pugi::xml_parse_result result = doc.load_file(kPath.data());
   if (!result) {
-    std::runtime_error(
+    throw std::runtime_error(
         std::format("Failed to parse save data. Details: {}, {}", kPath, result.description()));
   }
   pugi::xml_node root = doc.child("data");
@@ -88,12 +88,18 @@ void f::SaveLevel(const Level* level, const std::string_view kPath) {
 void f::SaveLevelDynamicData(const Level* level, const std::string_view kPath) {}
 
 Object* f::LoadObject(pugi::xml_node& base_node) {
-  Object* object = g_object_factory[base_node.attribute("type").name()]();
-  object->Load(base_node);
-  return object;
+    std::string type_value = base_node.attribute("type").value();
+    auto it = g_object_factory.find(type_value);
+    if (it == g_object_factory.end()) {
+        throw std::runtime_error(std::format("Unknown object type: {}", type_value));
+    }
+    Object* object = it->second();
+    object->Load(base_node);
+    return object;
 }
 
 void f::SaveObject(const Object* object, pugi::xml_node& base_node) {
+  base_node.append_attribute("type") = object->GetTypeName();
   object->Save(base_node);
 }
 
@@ -128,7 +134,7 @@ unsigned int CompileShader(const std::string_view kCode, int type) {
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (success == 0) {
     glGetShaderInfoLog(shader, kLogSize, nullptr, log.data());
-    std::runtime_error(std::format("Shader compilation failed. Details: {}", log.data()));
+    throw std::runtime_error(std::format("Shader compilation failed. Details: {}", log.data()));
   }
   return shader;
 }
@@ -138,7 +144,7 @@ Shader* f::LoadShader(const string_view kVertPath, const std::string_view kFragP
   unsigned int vertex = CompileShader(ReadFile(kVertPath), GL_VERTEX_SHADER);
   unsigned int fragment = CompileShader(ReadFile(kFragPath), GL_FRAGMENT_SHADER);
   if (vertex == 0 || fragment == 0) {
-    std::runtime_error(std::format("Unknown shader error. Details: {}, {}", kVertPath, kFragPath));
+    throw std::runtime_error(std::format("Unknown shader error. Details: {}, {}", kVertPath, kFragPath));
   }
   unsigned int program = glCreateProgram();
   glAttachShader(program, vertex);
@@ -149,7 +155,7 @@ Shader* f::LoadShader(const string_view kVertPath, const std::string_view kFragP
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if (success == 0) {
     glGetProgramInfoLog(program, kLogSize, nullptr, log.data());
-    std::runtime_error(std::format("Shader program link failed. Details: {}", log.data()));
+    throw std::runtime_error(std::format("Shader program link failed. Details: {}", log.data()));
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);
@@ -168,14 +174,14 @@ void f::FreeShader(Shader* shader) {
 
 Texture* f::LoadTexture(const std::string_view kPath) {
   if (!std::filesystem::exists(kPath)) {
-    std::runtime_error(std::format("Requested texture doesn't exist. Details: {}", kPath));
+    throw std::runtime_error(std::format("Requested texture doesn't exist. Details: {}", kPath));
   }
   auto* texture = new Texture(kPath);
   glGenTextures(1, &texture->id_);
   stbi_set_flip_vertically_on_load(1);
   unsigned char* data = stbi_load(kPath.data(), &texture->w_, &texture->h_, &texture->channels_, 0);
   if (data == nullptr) {
-    std::runtime_error(std::format("Failed to load texture. Details: {}", kPath));
+    throw std::runtime_error(std::format("Failed to load texture. Details: {}", kPath));
   }
   GLenum format;
   switch (texture->channels_) {

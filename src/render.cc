@@ -174,7 +174,7 @@ void r::Update() {
   }
   glViewport(0, 0, Engine::g_width / g_render_factor, Engine::g_height / g_render_factor);
   glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
-  glClearColor(0.1F, 0.1F, 0.1F, 1.0F);
+  glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 

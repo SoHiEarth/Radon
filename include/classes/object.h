@@ -20,6 +20,7 @@ public:
   virtual void Render() = 0;
   virtual void Quit() = 0;
   virtual void Load(pugi::xml_node& node) = 0;
+  [[nodiscard]] virtual std::string GetTypeName() const = 0;
   virtual void Save(pugi::xml_node& node) const = 0;
   virtual ~Object() = default;
 };
