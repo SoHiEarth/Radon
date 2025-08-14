@@ -6,6 +6,7 @@
 #include <engine/global.h>
 #include <engine/input.h>
 #include <engine/physics.h>
+#include <engine/filesystem.h>
 #include <engine/render.h>
 #include <fmt/core.h>
 #include <thread>
@@ -34,6 +35,7 @@ int main(int argc, char** argv) {
   WAIT_WORKERS();
   dev::Init();
 
+  Engine::g_level = f::LoadLevel("test.xml");
   if (Engine::g_level == nullptr) {
     Engine::g_level = new Level();
   }

@@ -25,6 +25,7 @@ std::unordered_map<const char*, std::function<Object*()>> g_object_factory = {
 using std::string_view;
 
 Level* f::LoadLevel(const std::string_view kPath) {
+  fmt::print("Loading level {}\n", kPath);
   auto* level = new Level();
   level->path_ = kPath;
 
@@ -40,8 +41,10 @@ Level* f::LoadLevel(const std::string_view kPath) {
     std::runtime_error(std::format("Requested file is not a valid level file. Details {}", kPath));
   }
   for (pugi::xml_node object_node : root.children("object")) {
+    fmt::print("Adding object\n");
     level->AddObject(LoadObject(object_node));
   }
+  fmt::print("Successfully loaded level {}\n", kPath);
   return level;
 }
 
@@ -66,7 +69,21 @@ void f::LoadLevelDynamicData(Level* level, const std::string_view kPath) {
   }
 }
 
-void f::SaveLevel(const Level* level, const std::string_view kPath) {}
+void f::SaveLevel(const Level* level, const std::string_view kPath) {
+    pugi::xml_document doc;
+    pugi::xml_node root = doc.append_child("level");
+
+    for (const auto& object : level->objects_) {
+      pugi::xml_node object_node = root.append_child("object");
+      SaveObject(object, object_node);
+    }
+
+    bool save_result = doc.save_file(kPath.data());
+    if (!save_result) {
+      throw std::runtime_error(
+          std::format("Failed to save level file. Details: {}", kPath));
+    }
+}
 
 void f::SaveLevelDynamicData(const Level* level, const std::string_view kPath) {}
 

@@ -2,6 +2,7 @@
 #include <classes/sprite.h>
 #include <engine/render.h>
 #include <fmt/core.h>
+#include "engine/filesystem.h"
 
 void Sprite::Init() {
   material_ = new Material(static_cast<std::string>(path_));
@@ -25,5 +26,15 @@ void Sprite::Quit() {
   material_->Free();
 }
 
-void Sprite::Load(pugi::xml_node& node) {}
-void Sprite::Save(pugi::xml_node& node) const {}
+void Sprite::Load(pugi::xml_node& node) {
+  f::LoadEditableSerialized(&position_, node);
+  f::LoadEditableSerialized(&rotation_, node);
+  f::LoadEditableSerialized(&scale_, node);
+  f::LoadEditableSerialized(&path_, node);
+}
+void Sprite::Save(pugi::xml_node& node) const {
+  f::SaveEditableSerialized(position_, node);
+  f::SaveEditableSerialized(rotation_, node);
+  f::SaveEditableSerialized(scale_, node);
+  f::SaveEditableSerialized(path_, node);
+}

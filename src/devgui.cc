@@ -8,6 +8,7 @@
 #include <classes/texture.h>
 #include <engine/devgui.h>
 #include <engine/global.h>
+#include <engine/filesystem.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -63,6 +64,9 @@ void dev::Update() {
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
   ImGui::Begin("Scene Management");
+  if (ImGui::Button("Save Level")) {
+    f::SaveLevel(Engine::g_level, "test.xml");
+  }
   if (ImGui::Button("Add Sprite")) {
     Engine::g_level->AddObject(new Sprite);
   }
