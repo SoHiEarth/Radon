@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
-void p_Init();
-void p_Update();
-void p_Quit();
+void PInit();
+void PUpdate();
+void PQuit();
 
 #ifdef __cplusplus
 }

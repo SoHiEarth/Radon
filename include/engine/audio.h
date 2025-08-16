@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-void a_Init();
-void a_Quit();
+void AInit();
+void AQuit();
 
 #ifdef __cplusplus
 }

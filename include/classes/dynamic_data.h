@@ -9,7 +9,7 @@ class Level;
 struct DynamicData {
   std::string target_level_;
   std::vector<Object*> dynamic_objects_;
-  void Apply(Level* level);
+  void Apply(Level*);
 };
 
 #endif  // DYNAMIC_DATA_H

@@ -20,7 +20,7 @@ static void GetAudioDevices(const ALCchar* devices) {
   }
 }
 
-void a_Init() {
+void AInit() {
   ALboolean enumeration = alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT");
   if (enumeration == AL_TRUE) {
     GetAudioDevices(alcGetString(NULL, ALC_DEVICE_SPECIFIER));
@@ -37,7 +37,7 @@ void a_Init() {
   printf("Initialized OpenAL\n");
 }
 
-void a_Quit() {
+void AQuit() {
   if (g_context != NULL) {
     alcMakeContextCurrent(NULL);
     alcDestroyContext(g_context);

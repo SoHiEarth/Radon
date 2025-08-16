@@ -1,8 +1,8 @@
 #include <classes/light.h>
 #include <classes/material.h>
 #include <classes/shader.h>
-#include <engine/render.h>
 #include <engine/filesystem.h>
+#include <engine/render.h>
 #include <fmt/core.h>
 #include <glad/glad.h>
 #include <glm/fwd.hpp>
@@ -51,7 +51,8 @@ void PointLight::Load(pugi::xml_node& node) {
   f::LoadEditableSerialized(&specular_, node);
   f::LoadEditableSerialized(&constant_, node);
   f::LoadEditableSerialized(&linear_, node);
-  f::LoadEditableSerialized(&quadratic_, node);}
+  f::LoadEditableSerialized(&quadratic_, node);
+}
 void PointLight::Save(pugi::xml_node& node) const {
   f::SaveEditableSerialized(position_, node);
   f::SaveEditableSerialized(ambient_, node);

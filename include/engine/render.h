@@ -1,6 +1,7 @@
 #ifndef RENDER_H
 #define RENDER_H
 
+#include <cstdint>
 #include <glm/glm.hpp>
 #include <vector>
 
@@ -9,18 +10,30 @@ class DirectionalLight;
 class PointLight;
 class SpotLight;
 
+struct RenderSettings {
+  float render_factor_ = 1;
+  float exposure_ = 1.0F;
+  bool bloom_ = false;
+  int bloom_amount_ = 10;
+  bool dithering_ = false;
+  float pixelation_ = 1.0F;
+  bool scanlines_ = false;
+  float scanline_intensity_ = 1.0F;
+  float brightness_ = 1.0F;
+};
+
 namespace r {
 extern std::vector<DirectionalLight*> g_directional_lights;
 extern std::vector<PointLight*> g_point_lights;
 extern std::vector<SpotLight*> g_spot_lights;
+extern RenderSettings g_render_settings;
 
 void Init();
 void Extracted();
 void Update();
 void Render();
 void Quit();
-void RenderTexture(const Material* material, const glm::vec3& pos, const glm::vec2& size,
-                   float rot);
+void RenderTexture(const Material*, const glm::vec3&, const glm::vec2&, const float&);
 
 template <typename T>
 void AddLight(T* light) {

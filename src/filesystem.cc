@@ -28,38 +28,39 @@ std::unordered_map<std::string, std::function<Object*()>> g_object_factory = {
     {"SpotLight", {[]() { return new SpotLight(); }}}};
 using std::string_view;
 
-Level* f::LoadLevel(const std::string_view kPath) {
-  fmt::print("Loading level {}\n", kPath);
+Level* f::LoadLevel(std::string_view path) {
+  fmt::print("Loading level {}\n", path);
   auto* level = new Level();
-  level->path_ = kPath;
+  level->path_ = path;
 
   pugi::xml_document doc;
-  pugi::xml_parse_result result = doc.load_file(kPath.data());
+  pugi::xml_parse_result result = doc.load_file(path.data());
   if (!result) {
     throw std::runtime_error(
-        std::format("Failed to parse level file. Details: {}, {}", kPath, result.description()));
+        std::format("Failed to parse level file. Details: {}, {}", path, result.description()));
   }
 
   pugi::xml_node root = doc.child("level");
   if (!root) {
-    throw std::runtime_error(std::format("Requested file is not a valid level file. Details {}", kPath));
+    throw std::runtime_error(
+        std::format("Requested file is not a valid level file. Details {}", path));
   }
   for (pugi::xml_node object_node : root.children("object")) {
     fmt::print("Adding object\n");
     level->AddObject(LoadObject(object_node));
   }
-  fmt::print("Successfully loaded level {}\n", kPath);
+  fmt::print("Successfully loaded level {}\n", path);
   return level;
 }
 
-void f::LoadLevelDynamicData(Level* level, const std::string_view kPath) {
+void f::LoadLevelDynamicData(Level* level, std::string_view path) {
   auto* dynamic_data = new DynamicData();
   dynamic_data->target_level_ = level->path_;
   pugi::xml_document doc;
-  pugi::xml_parse_result result = doc.load_file(kPath.data());
+  pugi::xml_parse_result result = doc.load_file(path.data());
   if (!result) {
     throw std::runtime_error(
-        std::format("Failed to parse save data. Details: {}, {}", kPath, result.description()));
+        std::format("Failed to parse save data. Details: {}, {}", path, result.description()));
   }
   pugi::xml_node root = doc.child("data");
   for (pugi::xml_node& object_node : root.children("object")) {
@@ -73,33 +74,32 @@ void f::LoadLevelDynamicData(Level* level, const std::string_view kPath) {
   }
 }
 
-void f::SaveLevel(const Level* level, const std::string_view kPath) {
-    pugi::xml_document doc;
-    pugi::xml_node root = doc.append_child("level");
+void f::SaveLevel(const Level* level, std::string_view path) {
+  pugi::xml_document doc;
+  pugi::xml_node root = doc.append_child("level");
 
-    for (const auto& object : level->objects_) {
-      pugi::xml_node object_node = root.append_child("object");
-      SaveObject(object, object_node);
-    }
+  for (const auto& object : level->objects_) {
+    pugi::xml_node object_node = root.append_child("object");
+    SaveObject(object, object_node);
+  }
 
-    bool save_result = doc.save_file(kPath.data());
-    if (!save_result) {
-      throw std::runtime_error(
-          std::format("Failed to save level file. Details: {}", kPath));
-    }
+  bool save_result = doc.save_file(path.data());
+  if (!save_result) {
+    throw std::runtime_error(std::format("Failed to save level file. Details: {}", path));
+  }
 }
 
-void f::SaveLevelDynamicData(const Level* level, const std::string_view kPath) {}
+void f::SaveLevelDynamicData(const Level* level, std::string_view path) {}
 
 Object* f::LoadObject(pugi::xml_node& base_node) {
-    std::string type_value = base_node.attribute("type").value();
-    auto it = g_object_factory.find(type_value);
-    if (it == g_object_factory.end()) {
-        throw std::runtime_error(std::format("Unknown object type: {}", type_value));
-    }
-    Object* object = it->second();
-    object->Load(base_node);
-    return object;
+  std::string type_value = base_node.attribute("type").value();
+  auto iterator = g_object_factory.find(type_value);
+  if (iterator == g_object_factory.end()) {
+    throw std::runtime_error(std::format("Unknown object type: {}", type_value));
+  }
+  Object* object = iterator->second();
+  object->Load(base_node);
+  return object;
 }
 
 void f::SaveObject(const Object* object, pugi::xml_node& base_node) {
@@ -107,28 +107,28 @@ void f::SaveObject(const Object* object, pugi::xml_node& base_node) {
   object->Save(base_node);
 }
 
-std::string ReadFile(const std::string_view kPath) {
-  if (!std::filesystem::exists(kPath)) {
-    throw std::runtime_error(std::format("Requested file does not exist. Details: {}", kPath));
+std::string ReadFile(std::string_view path) {
+  if (!std::filesystem::exists(path)) {
+    throw std::runtime_error(std::format("Requested file does not exist. Details: {}", path));
   }
   std::ifstream file;
   file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
   try {
-    file.open(kPath.data());
+    file.open(path.data());
     std::stringstream stream;
     stream << file.rdbuf();
     file.close();
     return stream.str();
   } catch (std::ifstream::failure e) {
-    throw std::runtime_error(std::format("Failed to load file. Details: {}", kPath));
+    throw std::runtime_error(std::format("Failed to load file. Details: {}", path));
   }
 }
 
-unsigned int CompileShader(const std::string_view kCode, int type) {
-  if (kCode.empty()) {
+unsigned int CompileShader(std::string_view code, int type) {
+  if (code.empty()) {
     throw std::runtime_error(std::format("Got empty code."));
   }
-  const char* code_data = kCode.data();
+  const char* code_data = code.data();
   unsigned int shader;
   int success;
   std::array<char, kLogSize> log;
@@ -143,12 +143,13 @@ unsigned int CompileShader(const std::string_view kCode, int type) {
   return shader;
 }
 
-Shader* f::LoadShader(const string_view kVertPath, const std::string_view kFragPath) {
-  auto* shader = new Shader(kVertPath.data(), kFragPath.data());
-  unsigned int vertex = CompileShader(ReadFile(kVertPath), GL_VERTEX_SHADER);
-  unsigned int fragment = CompileShader(ReadFile(kFragPath), GL_FRAGMENT_SHADER);
+Shader* f::LoadShader(string_view vertex_path, std::string_view fragment_path) {
+  auto* shader = new Shader(vertex_path.data(), fragment_path.data());
+  unsigned int vertex = CompileShader(ReadFile(vertex_path), GL_VERTEX_SHADER);
+  unsigned int fragment = CompileShader(ReadFile(fragment_path), GL_FRAGMENT_SHADER);
   if (vertex == 0 || fragment == 0) {
-    throw std::runtime_error(std::format("Unknown shader error. Details: {}, {}", kVertPath, kFragPath));
+    throw std::runtime_error(
+        std::format("Unknown shader error. Details: {}, {}", vertex_path, fragment_path));
   }
   unsigned int program = glCreateProgram();
   glAttachShader(program, vertex);
@@ -163,7 +164,7 @@ Shader* f::LoadShader(const string_view kVertPath, const std::string_view kFragP
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);
-  fmt::print("Successfully loaded shader. Vert: {}, Frag: {}\n", kVertPath, kFragPath);
+  fmt::print("Successfully loaded shader. Vert: {}, Frag: {}\n", vertex_path, fragment_path);
   shader->id_ = program;
   return shader;
 }
@@ -176,16 +177,16 @@ void f::FreeShader(Shader* shader) {
   delete shader;
 }
 
-Texture* f::LoadTexture(const std::string_view kPath) {
-  if (!std::filesystem::exists(kPath)) {
-    throw std::runtime_error(std::format("Requested texture doesn't exist. Details: {}", kPath));
+Texture* f::LoadTexture(std::string_view path) {
+  if (!std::filesystem::exists(path)) {
+    throw std::runtime_error(std::format("Requested texture doesn't exist. Details: {}", path));
   }
-  auto* texture = new Texture(kPath);
+  auto* texture = new Texture(path);
   glGenTextures(1, &texture->id_);
   stbi_set_flip_vertically_on_load(1);
-  unsigned char* data = stbi_load(kPath.data(), &texture->w_, &texture->h_, &texture->channels_, 0);
+  unsigned char* data = stbi_load(path.data(), &texture->w_, &texture->h_, &texture->channels_, 0);
   if (data == nullptr) {
-    throw std::runtime_error(std::format("Failed to load texture. Details: {}", kPath));
+    throw std::runtime_error(std::format("Failed to load texture. Details: {}", path));
   }
   GLenum format;
   switch (texture->channels_) {
@@ -219,7 +220,7 @@ void f::FreeTexture(Texture* texture) {
   delete texture;
 }
 
-void f::LoadMaterial(Material *material, pugi::xml_node &base_node) {
+void f::LoadMaterial(Material* material, pugi::xml_node& base_node) {
   pugi::xml_node node = base_node.child(MATERIAL_KEY_NAME);
   material->directory_ = node.attribute(MATERIAL_DIRECTORY_KEY_NAME).as_string();
   material->shininess_ = node.attribute(MATERIAL_SHININESS_KEY_NAME).as_float(1.0F);

@@ -19,10 +19,12 @@ public:
   Editable<glm::vec3> direction_ = {glm::vec3(0.0F), "Direction", reg_};
   void Init() override;
   void Quit() override;
-  void Load(pugi::xml_node& node) override;
-  [[nodiscard]] std::string GetTypeName() const override { return "DirectionalLight"; }
-  void Save(pugi::xml_node& node) const override;
-  void SetUniforms(const Shader* shader, int kPos);
+  void Load(pugi::xml_node&) override;
+  [[nodiscard]] std::string GetTypeName() const override {
+    return "DirectionalLight";
+  }
+  void Save(pugi::xml_node&) const override;
+  void SetUniforms(const Shader*, int);
 };
 
 class PointLight : public Light {
@@ -31,10 +33,12 @@ public:
                   quadratic_ = {0.0F, "Quadratic", reg_};
   void Init() override;
   void Quit() override;
-  void Load(pugi::xml_node& node) override;
-  [[nodiscard]] std::string GetTypeName() const override { return "PointLight"; }
-  void Save(pugi::xml_node& node) const override;
-  void SetUniforms(const Shader* shader, int kPos);
+  void Load(pugi::xml_node&) override;
+  [[nodiscard]] std::string GetTypeName() const override {
+    return "PointLight";
+  }
+  void Save(pugi::xml_node&) const override;
+  void SetUniforms(const Shader*, int);
 };
 
 class SpotLight : public Light {
@@ -45,10 +49,12 @@ public:
                   outer_cut_off_ = {25.0F, "Outer Cutoff", reg_};
   void Init() override;
   void Quit() override;
-  void Load(pugi::xml_node& node) override;
-  [[nodiscard]] std::string GetTypeName() const override { return "SpotLight"; }
-  void Save(pugi::xml_node& node) const override;
-  void SetUniforms(const Shader* shader, int kPos);
+  void Load(pugi::xml_node&) override;
+  [[nodiscard]] std::string GetTypeName() const override {
+    return "SpotLight";
+  }
+  void Save(pugi::xml_node&) const override;
+  void SetUniforms(const Shader*, int);
 };
 
 #endif  // LIGHT_H

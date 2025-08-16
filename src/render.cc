@@ -27,7 +27,10 @@
 #define CAMERA_NEAR_PLANE 0.1F
 #define CAMERA_FAR_PLANE 100.0F
 
-enum : std::uint8_t { kNumColorbuffers = 2, kDefaultBloomAmount = 10, kPingPongCount = 2, kDefaultExposure = 4 };
+enum : std::uint8_t {
+  kNumColorbuffers = 2,
+  kPingPongCount = 2,
+};
 using ImGui::TextColored;
 
 std::vector<DirectionalLight *> r::g_directional_lights;
@@ -40,13 +43,8 @@ std::array<unsigned int, kPingPongCount> g_pingpong_framebuffer, g_pingpong_colo
 std::vector<unsigned int> g_attachments;
 unsigned int g_screen_vao, g_screen_vbo;
 Shader *g_screen_shader = nullptr, *g_screen_shader_blur;
-float g_render_factor = 1, g_prev_render_factor = g_render_factor;
-float g_screen_exposure = kDefaultExposure;
-int g_bloom_amount = kDefaultBloomAmount;
-bool g_bloom = true;
-bool g_dithering = false, g_scanlines = false;
-;
-float g_pixelation, g_brightness, g_scanline_intensity;
+float g_prev_render_factor = r::g_render_settings.render_factor_;
+RenderSettings r::g_render_settings{};
 
 const std::array<float, 32> kGVertices = {-0.5F, 0.5F,  0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 1.0F,
                                           -0.5F, -0.5F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
@@ -66,27 +64,17 @@ void DrawRendererStatus() {
     ImGui::Text("Spot light count: %d", static_cast<int>(r::g_spot_lights.size()));
     ImGui::DragFloat3("Camera Position", glm::value_ptr(Engine::g_camera.position_));
     ImGui::SeparatorText("Screen Shader");
-    ImGui::InputFloat("Pixelation Factor", &g_pixelation, GUI_DRAG_STEP);
-    ImGui::Checkbox("Dithering", &g_dithering);
-    ImGui::InputFloat("Brightness Levels", &g_brightness, GUI_DRAG_STEP);
-    ImGui::Checkbox("Scanlines", &g_scanlines);
-    ImGui::InputFloat("Scanline Intensity", &g_scanline_intensity, GUI_DRAG_STEP);
-    ImGui::InputFloat("Exposure", &g_screen_exposure, GUI_DRAG_STEP);
-    ImGui::Checkbox("Bloom", &g_bloom);
-    ImGui::InputInt("Bloom Amount", &g_bloom_amount);
-    if (g_bloom_amount <= 0) {
-      g_bloom_amount = 1;
-    }
-    ImGui::InputFloat("Render Factor", &g_render_factor, GUI_DRAG_STEP);
-    if (g_render_factor < 1) {
-      TextColored(TEXT_COLOR_RED, "Downscaling");
-    }
-    if (g_render_factor > 1) {
-      TextColored(TEXT_COLOR_RED, "Upscaling");
-    }
-    if (g_render_factor <= 0) {
-      g_render_factor = g_prev_render_factor;
-    }
+    ImGui::InputFloat("Pixelation Factor", &r::g_render_settings.pixelation_, GUI_DRAG_STEP);
+    ImGui::Checkbox("Dithering", &r::g_render_settings.dithering_);
+    ImGui::InputFloat("Brightness Levels", &r::g_render_settings.brightness_, GUI_DRAG_STEP);
+    ImGui::Checkbox("Scanlines", &r::g_render_settings.scanlines_);
+    ImGui::InputFloat("Scanline Intensity", &r::g_render_settings.scanline_intensity_, GUI_DRAG_STEP);
+    ImGui::InputFloat("Exposure", &r::g_render_settings.exposure_, GUI_DRAG_STEP);
+    ImGui::Checkbox("Bloom", &r::g_render_settings.bloom_);
+    ImGui::InputInt("Bloom Amount", &r::g_render_settings.bloom_amount_);
+    r::g_render_settings.bloom_amount_ = std::max(r::g_render_settings.bloom_amount_, 1);
+    ImGui::InputFloat("Render Factor", &r::g_render_settings.render_factor_, GUI_DRAG_STEP);
+    r::g_render_settings.render_factor_ = std::max(r::g_render_settings.render_factor_, g_prev_render_factor);
     ImGui::Text("Colorbuffer");
     for (unsigned int g_colorbuffer : g_colorbuffers) {
       ImGui::Image(g_colorbuffer, IMAGE_SIZE);
@@ -141,11 +129,13 @@ void r::Init() {
   glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(kGVertices), kGVertices.data(), GL_STATIC_DRAW);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), static_cast<void*>(nullptr));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), static_cast<void *>(nullptr));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+                        reinterpret_cast<void *>(3 * sizeof(float)));
   glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), reinterpret_cast<void*>(6 * sizeof(float)));
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+                        reinterpret_cast<void *>(6 * sizeof(float)));
 
   glGenVertexArrays(1, &g_screen_vao);
   glGenBuffers(1, &g_screen_vbo);
@@ -153,9 +143,10 @@ void r::Init() {
   glBindBuffer(GL_ARRAY_BUFFER, g_screen_vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(kGScreenVertices), kGScreenVertices.data(), GL_STATIC_DRAW);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), static_cast<void*>(nullptr));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), static_cast<void *>(nullptr));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+                        reinterpret_cast<void *>(3 * sizeof(float)));
 
   RecreateFramebuffer();
 
@@ -168,17 +159,17 @@ void r::Init() {
   g_screen_shader->SetInt("scene", 0);
   g_screen_shader->SetInt("blur", 1);
 
-  fmt::print("Initialized OpenGL\n");
+  fmt::println("Initialized OpenGL");
 }
 
 void r::Update() {
   if (Engine::g_window == nullptr) {
     return;
   }
-  if (g_render_factor != g_prev_render_factor) {
+  if (g_render_settings.render_factor_ != g_prev_render_factor) {
     RecreateFramebuffer();
   }
-  glViewport(0, 0, Engine::g_width / g_render_factor, Engine::g_height / g_render_factor);
+  glViewport(0, 0, Engine::g_width / g_render_settings.render_factor_, Engine::g_height / g_render_settings.render_factor_);
   glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
   glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -189,7 +180,7 @@ void r::Render() {
   bool horizontal = true;
   bool first_iteration = true;
   g_screen_shader_blur->Use();
-  for (unsigned int i = 0; std::cmp_less(i, g_bloom_amount); i++) {
+  for (unsigned int i = 0; std::cmp_less(i, g_render_settings.bloom_amount_); i++) {
     glBindFramebuffer(GL_FRAMEBUFFER, g_pingpong_framebuffer[static_cast<size_t>(horizontal)]);
     g_screen_shader_blur->SetInt("horizontal", static_cast<int>(horizontal));
     glActiveTexture(GL_TEXTURE0);
@@ -216,13 +207,13 @@ void r::Render() {
   glBindTexture(GL_TEXTURE_2D, g_colorbuffers[0]);
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, g_pingpong_colorbuffer[static_cast<size_t>(!horizontal)]);
-  g_screen_shader->SetInt("bloom", static_cast<int>(g_bloom));
-  g_screen_shader->SetFloat("exposure", g_screen_exposure);
-  g_screen_shader->SetFloat("pixelation_factor", g_pixelation);
-  g_screen_shader->SetInt("enable_dithering", static_cast<int>(g_dithering));
-  g_screen_shader->SetFloat("brightness_levels", g_brightness);
-  g_screen_shader->SetInt("enable_scanlines", static_cast<int>(g_scanlines));
-  g_screen_shader->SetFloat("scanline_intensity", g_scanline_intensity);
+  g_screen_shader->SetInt("bloom", static_cast<int>(g_render_settings.bloom_));
+  g_screen_shader->SetFloat("exposure", g_render_settings.exposure_);
+  g_screen_shader->SetFloat("pixelation_factor", g_render_settings.pixelation_);
+  g_screen_shader->SetInt("enable_dithering", static_cast<int>(g_render_settings.dithering_));
+  g_screen_shader->SetFloat("brightness_levels", g_render_settings.brightness_);
+  g_screen_shader->SetInt("enable_scanlines", static_cast<int>(g_render_settings.scanlines_));
+  g_screen_shader->SetFloat("scanline_intensity", g_render_settings.scanline_intensity_);
   glBindVertexArray(g_screen_vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   glBindVertexArray(0);
@@ -265,7 +256,7 @@ glm::mat4 GetTransform(const glm::vec3 &pos, const glm::vec2 &scale, float rot) 
 }
 
 void r::RenderTexture(const Material *material, const glm::vec3 &pos, const glm::vec2 &size,
-                      float rot) {
+                      const float& rot) {
   if (material == nullptr) {
     return;
   }
@@ -275,10 +266,10 @@ void r::RenderTexture(const Material *material, const glm::vec3 &pos, const glm:
 
   glm::mat4 model = GetTransform(pos, size, rot);
   glm::mat4 view = glm::translate(glm::mat4(1.0F), -Engine::g_camera.position_);
-  glm::mat4 projection = glm::perspective(
-      glm::radians(CAMERA_FOV),
-      (static_cast<float>(Engine::g_width) / static_cast<float>(Engine::g_height)),
-      CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
+  glm::mat4 projection =
+      glm::perspective(glm::radians(CAMERA_FOV),
+                       (static_cast<float>(Engine::g_width) / static_cast<float>(Engine::g_height)),
+                       CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
 
   material->Bind();
   material->shader_->SetMat4("model", model);
@@ -332,8 +323,8 @@ void RecreateFramebuffer() {
     g_framebuffer = 0;
   }
 
-  int framebuffer_width = Engine::g_width / g_render_factor;
-  int framebuffer_height = Engine::g_height / g_render_factor;
+  int framebuffer_width = Engine::g_width / r::g_render_settings.render_factor_;
+  int framebuffer_height = Engine::g_height / r::g_render_settings.render_factor_;
 
   glGenFramebuffers(1, &g_framebuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
@@ -378,5 +369,5 @@ void RecreateFramebuffer() {
       std::runtime_error("Failed to recreate pingpong framebuffer!");
     }
   }
-  g_prev_render_factor = g_render_factor;
+  g_prev_render_factor = r::g_render_settings.render_factor_;
 }

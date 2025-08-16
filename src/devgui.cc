@@ -7,8 +7,8 @@
 #include <classes/sprite.h>
 #include <classes/texture.h>
 #include <engine/devgui.h>
-#include <engine/global.h>
 #include <engine/filesystem.h>
+#include <engine/global.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -82,8 +82,7 @@ void dev::Update() {
   ImGui::SeparatorText("Scene Objects");
   if (Engine::g_level->objects_.empty()) {
     ImGui::Text("Scene is empty.");
-  }
-  else {
+  } else {
     for (int i = 0; i < Engine::g_level->objects_.size(); i++) {
       if (ImGui::Button(std::format("{}###{}", *Engine::g_level->objects_[i]->name_, i).c_str())) {
         g_current_object = Engine::g_level->objects_[i];

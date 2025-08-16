@@ -12,8 +12,8 @@ enum class ButtonState : std::uint8_t {
 };
 
 namespace i {
-void AddHook(const Trigger& key, const std::function<void()>& hook);
-void RemoveHook(const Trigger& key);
+void AddHook(const Trigger&, const std::function<void()>&);
+void RemoveHook(const Trigger&);
 void Init();
 void Update();
 void Quit();

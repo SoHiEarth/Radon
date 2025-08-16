@@ -3,10 +3,10 @@
 #include <classes/level.h>
 #include <engine/audio.h>
 #include <engine/devgui.h>
+#include <engine/filesystem.h>
 #include <engine/global.h>
 #include <engine/input.h>
 #include <engine/physics.h>
-#include <engine/filesystem.h>
 #include <engine/render.h>
 #include <fmt/core.h>
 #include <thread>
@@ -30,15 +30,14 @@ std::vector<std::thread> workers;
 int main(int argc, char** argv) {
   r::Init();
   i::Init();
-  SPAWN_THREAD(a_Init);
-  SPAWN_THREAD(p_Init);
+  SPAWN_THREAD(AInit);
+  SPAWN_THREAD(PInit);
   WAIT_WORKERS();
   dev::Init();
 
   try {
     Engine::g_level = f::LoadLevel("test.xml");
-  }
-  catch (std::exception& e) {
+  } catch (std::exception& e) {
     fmt::print("Caught exception, falling back to new level. Details: {}\n", e.what());
     if (Engine::g_level == nullptr) {
       Engine::g_level = new Level();
@@ -69,7 +68,7 @@ int main(int argc, char** argv) {
       Engine::g_level->Update();
     }
     r::Update();
-    p_Update();
+    PUpdate();
     if (Engine::g_level != nullptr) {
       Engine::g_level->Render();
     }
@@ -81,8 +80,8 @@ int main(int argc, char** argv) {
   }
 
   dev::Quit();
-  SPAWN_THREAD(a_Quit);
-  SPAWN_THREAD(p_Quit);
+  SPAWN_THREAD(AQuit);
+  SPAWN_THREAD(PQuit);
   WAIT_WORKERS();
   i::Quit();
   r::Quit();
