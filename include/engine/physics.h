@@ -1,16 +1,8 @@
 #ifndef PHYSICS_H
 #define PHYSICS_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void PInit();
-void PUpdate();
-void PQuit();
-
-#ifdef __cplusplus
-}
-#endif
-
+namespace physics {
+void Init();
+void Update();
+void Quit();
+}; // namespace physics
 #endif  // PHYSICS_H

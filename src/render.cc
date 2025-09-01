@@ -9,7 +9,6 @@
 #include <classes/shader.h>
 #include <engine/devgui.h>
 #include <engine/filesystem.h>
-#include <engine/global.h>
 #include <engine/render.h>
 #include <fmt/core.h>
 #include <imgui.h>
@@ -33,9 +32,9 @@ enum : std::uint8_t {
 };
 using ImGui::TextColored;
 
-std::vector<DirectionalLight *> r::g_directional_lights;
-std::vector<PointLight *> r::g_point_lights;
-std::vector<SpotLight *> r::g_spot_lights;
+std::vector<DirectionalLight *> render::g_directional_lights;
+std::vector<PointLight *> render::g_point_lights;
+std::vector<SpotLight *> render::g_spot_lights;
 unsigned int g_vao, g_vbo;
 unsigned int g_framebuffer, g_renderbuffer;
 std::array<unsigned int, kNumColorbuffers> g_colorbuffers;
@@ -43,8 +42,11 @@ std::array<unsigned int, kPingPongCount> g_pingpong_framebuffer, g_pingpong_colo
 std::vector<unsigned int> g_attachments;
 unsigned int g_screen_vao, g_screen_vbo;
 Shader *g_screen_shader = nullptr, *g_screen_shader_blur;
-float g_prev_render_factor = r::g_render_settings.render_factor_;
-RenderSettings r::g_render_settings{};
+float g_prev_render_factor = render::g_render_settings.render_factor_;
+RenderSettings render::g_render_settings{};
+GLFWwindow* render::g_window = nullptr;
+int render::g_width = 800, render::g_height = 600;
+Camera render::g_camera;
 
 const std::array<float, 32> kGVertices = {-0.5F, 0.5F,  0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 1.0F,
                                           -0.5F, -0.5F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
@@ -59,22 +61,24 @@ const std::array<float, 20> kGScreenVertices = {
 void DrawRendererStatus() {
   if (dev::g_hud_enabled) {
     ImGui::Begin("Renderer Status");
-    ImGui::Text("Directional light status: %d", static_cast<int>(r::g_directional_lights.size()));
-    ImGui::Text("Point light count: %d", static_cast<int>(r::g_point_lights.size()));
-    ImGui::Text("Spot light count: %d", static_cast<int>(r::g_spot_lights.size()));
-    ImGui::DragFloat3("Camera Position", glm::value_ptr(Engine::g_camera.position_));
+    ImGui::Text("Directional light status: %d", static_cast<int>(render::g_directional_lights.size()));
+    ImGui::Text("Point light count: %d", static_cast<int>(render::g_point_lights.size()));
+    ImGui::Text("Spot light count: %d", static_cast<int>(render::g_spot_lights.size()));
+    ImGui::DragFloat3("Camera Position", glm::value_ptr(render::g_camera.position_));
     ImGui::SeparatorText("Screen Shader");
-    ImGui::InputFloat("Pixelation Factor", &r::g_render_settings.pixelation_, GUI_DRAG_STEP);
-    ImGui::Checkbox("Dithering", &r::g_render_settings.dithering_);
-    ImGui::InputFloat("Brightness Levels", &r::g_render_settings.brightness_, GUI_DRAG_STEP);
-    ImGui::Checkbox("Scanlines", &r::g_render_settings.scanlines_);
-    ImGui::InputFloat("Scanline Intensity", &r::g_render_settings.scanline_intensity_, GUI_DRAG_STEP);
-    ImGui::InputFloat("Exposure", &r::g_render_settings.exposure_, GUI_DRAG_STEP);
-    ImGui::Checkbox("Bloom", &r::g_render_settings.bloom_);
-    ImGui::InputInt("Bloom Amount", &r::g_render_settings.bloom_amount_);
-    r::g_render_settings.bloom_amount_ = std::max(r::g_render_settings.bloom_amount_, 1);
-    ImGui::InputFloat("Render Factor", &r::g_render_settings.render_factor_, GUI_DRAG_STEP);
-    r::g_render_settings.render_factor_ = std::max(r::g_render_settings.render_factor_, g_prev_render_factor);
+    ImGui::InputFloat("Pixelation Factor", &render::g_render_settings.pixelation_, GUI_DRAG_STEP);
+    ImGui::Checkbox("Dithering", &render::g_render_settings.dithering_);
+    ImGui::InputFloat("Brightness Levels", &render::g_render_settings.brightness_, GUI_DRAG_STEP);
+    ImGui::Checkbox("Scanlines", &render::g_render_settings.scanlines_);
+    ImGui::InputFloat("Scanline Intensity", &render::g_render_settings.scanline_intensity_,
+                      GUI_DRAG_STEP);
+    ImGui::InputFloat("Exposure", &render::g_render_settings.exposure_, GUI_DRAG_STEP);
+    ImGui::Checkbox("Bloom", &render::g_render_settings.bloom_);
+    ImGui::InputInt("Bloom Amount", &render::g_render_settings.bloom_amount_);
+    render::g_render_settings.bloom_amount_ = std::max(render::g_render_settings.bloom_amount_, 1);
+    ImGui::InputFloat("Render Factor", &render::g_render_settings.render_factor_, GUI_DRAG_STEP);
+    render::g_render_settings.render_factor_ =
+        std::max(render::g_render_settings.render_factor_, g_prev_render_factor);
     ImGui::Text("Colorbuffer");
     for (unsigned int g_colorbuffer : g_colorbuffers) {
       ImGui::Image(g_colorbuffer, IMAGE_SIZE);
@@ -89,13 +93,13 @@ void DrawRendererStatus() {
 
 void RecreateFramebuffer();
 void FBSizeCallback(GLFWwindow *window, int width, int height) {
-  glViewport(0, 0, Engine::g_width, Engine::g_height);
-  Engine::g_width = width;
-  Engine::g_height = height;
+  glViewport(0, 0, render::g_width, render::g_height);
+  render::g_width = width;
+  render::g_height = height;
   RecreateFramebuffer();
 }
 
-void r::Init() {
+void render::Init() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -104,12 +108,12 @@ void r::Init() {
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-  Engine::g_window = glfwCreateWindow(Engine::g_width, Engine::g_height, "Metal", nullptr, nullptr);
-  if (Engine::g_window == nullptr) {
+  render::g_window = glfwCreateWindow(render::g_width, render::g_height, "Metal", nullptr, nullptr);
+  if (render::g_window == nullptr) {
     std::runtime_error("Failed to create GLFW window");
   }
-  glfwMakeContextCurrent(Engine::g_window);
-  glfwSetFramebufferSizeCallback(Engine::g_window, FBSizeCallback);
+  glfwMakeContextCurrent(render::g_window);
+  glfwSetFramebufferSizeCallback(render::g_window, FBSizeCallback);
   glfwSwapInterval(1);
 
   if (0 == gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
@@ -122,7 +126,7 @@ void r::Init() {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_MULTISAMPLE);
-  glViewport(0, 0, Engine::g_width, Engine::g_height);
+  glViewport(0, 0, render::g_width, render::g_height);
   glGenVertexArrays(1, &g_vao);
   glGenBuffers(1, &g_vbo);
   glBindVertexArray(g_vao);
@@ -150,11 +154,11 @@ void r::Init() {
 
   RecreateFramebuffer();
 
-  g_screen_shader_blur = f::LoadShader("screen_blur/vert.glsl", "screen_blur/frag.glsl");
+  g_screen_shader_blur = filesystem::LoadShader("screen_blur/vert.glsl", "screen_blur/frag.glsl");
   g_screen_shader_blur->Use();
   g_screen_shader_blur->SetInt("image", 0);
 
-  g_screen_shader = f::LoadShader("screen_shader/vert.glsl", "screen_shader/frag.glsl");
+  g_screen_shader = filesystem::LoadShader("screen_shader/vert.glsl", "screen_shader/frag.glsl");
   g_screen_shader->Use();
   g_screen_shader->SetInt("scene", 0);
   g_screen_shader->SetInt("blur", 1);
@@ -162,20 +166,21 @@ void r::Init() {
   fmt::println("Initialized OpenGL");
 }
 
-void r::Update() {
-  if (Engine::g_window == nullptr) {
+void render::Update() {
+  if (render::g_window == nullptr) {
     return;
   }
   if (g_render_settings.render_factor_ != g_prev_render_factor) {
     RecreateFramebuffer();
   }
-  glViewport(0, 0, Engine::g_width / g_render_settings.render_factor_, Engine::g_height / g_render_settings.render_factor_);
+  glViewport(0, 0, render::g_width / g_render_settings.render_factor_,
+             render::g_height / g_render_settings.render_factor_);
   glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
   glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void r::Render() {
+void render::Render() {
   // Bloom Start
   bool horizontal = true;
   bool first_iteration = true;
@@ -196,7 +201,7 @@ void r::Render() {
     }
   }
   // Bloom End
-  glViewport(0, 0, Engine::g_width, Engine::g_height);
+  glViewport(0, 0, render::g_width, render::g_height);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   dev::Update();
@@ -218,10 +223,10 @@ void r::Render() {
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   glBindVertexArray(0);
   dev::Render();
-  glfwSwapBuffers(Engine::g_window);
+  glfwSwapBuffers(render::g_window);
 }
 
-void r::Quit() {
+void render::Quit() {
   glDeleteVertexArrays(1, &g_vao);
   glDeleteBuffers(1, &g_vbo);
   if (g_renderbuffer != 0) {
@@ -239,9 +244,9 @@ void r::Quit() {
     g_framebuffer = 0;
   }
 
-  if (Engine::g_window != nullptr) {
-    glfwDestroyWindow(Engine::g_window);
-    Engine::g_window = nullptr;
+  if (render::g_window != nullptr) {
+    glfwDestroyWindow(render::g_window);
+    render::g_window = nullptr;
   }
   glfwTerminate();
   fmt::print("Terminated OpenGL\n");
@@ -255,8 +260,8 @@ glm::mat4 GetTransform(const glm::vec3 &pos, const glm::vec2 &scale, float rot) 
   return transform;
 }
 
-void r::RenderTexture(const Material *material, const glm::vec3 &pos, const glm::vec2 &size,
-                      const float& rot) {
+void render::RenderTexture(const Material *material, const glm::vec3 &pos, const glm::vec2 &size,
+                      const float &rot) {
   if (material == nullptr) {
     return;
   }
@@ -265,17 +270,17 @@ void r::RenderTexture(const Material *material, const glm::vec3 &pos, const glm:
   }
 
   glm::mat4 model = GetTransform(pos, size, rot);
-  glm::mat4 view = glm::translate(glm::mat4(1.0F), -Engine::g_camera.position_);
+  glm::mat4 view = glm::translate(glm::mat4(1.0F), -render::g_camera.position_);
   glm::mat4 projection =
       glm::perspective(glm::radians(CAMERA_FOV),
-                       (static_cast<float>(Engine::g_width) / static_cast<float>(Engine::g_height)),
+                       (static_cast<float>(render::g_width) / static_cast<float>(render::g_height)),
                        CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
 
   material->Bind();
   material->shader_->SetMat4("model", model);
   material->shader_->SetMat4("view", view);
   material->shader_->SetMat4("projection", projection);
-  material->shader_->SetVec3("viewPos", Engine::g_camera.position_);
+  material->shader_->SetVec3("viewPos", render::g_camera.position_);
 
   material->shader_->SetInt("NUM_DIRECTIONAL_LIGHTS",
                             static_cast<int>(g_directional_lights.size()));
@@ -323,8 +328,8 @@ void RecreateFramebuffer() {
     g_framebuffer = 0;
   }
 
-  int framebuffer_width = Engine::g_width / r::g_render_settings.render_factor_;
-  int framebuffer_height = Engine::g_height / r::g_render_settings.render_factor_;
+  int framebuffer_width = render::g_width / render::g_render_settings.render_factor_;
+  int framebuffer_height = render::g_height / render::g_render_settings.render_factor_;
 
   glGenFramebuffers(1, &g_framebuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
@@ -369,5 +374,5 @@ void RecreateFramebuffer() {
       std::runtime_error("Failed to recreate pingpong framebuffer!");
     }
   }
-  g_prev_render_factor = r::g_render_settings.render_factor_;
+  g_prev_render_factor = render::g_render_settings.render_factor_;
 }

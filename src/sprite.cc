@@ -1,8 +1,8 @@
 #include <classes/material.h>
 #include <classes/sprite.h>
 #include <engine/render.h>
+#include <engine/filesystem.h>
 #include <fmt/core.h>
-#include "engine/filesystem.h"
 
 void Sprite::Init() {
   material_ = new Material(static_cast<std::string>(path_));
@@ -23,7 +23,7 @@ void Sprite::Update() {
 }
 
 void Sprite::Render() {
-  r::RenderTexture(material_, static_cast<glm::vec3>(position_), static_cast<glm::vec2>(scale_),
+  render::RenderTexture(material_, static_cast<glm::vec3>(position_), static_cast<glm::vec2>(scale_),
                    static_cast<float>(rotation_));
 }
 
@@ -32,14 +32,14 @@ void Sprite::Quit() {
 }
 
 void Sprite::Load(pugi::xml_node& node) {
-  f::LoadEditableSerialized(&position_, node);
-  f::LoadEditableSerialized(&rotation_, node);
-  f::LoadEditableSerialized(&scale_, node);
-  f::LoadEditableSerialized(&path_, node);
+  filesystem::LoadEditableSerialized(&position_, node);
+  filesystem::LoadEditableSerialized(&rotation_, node);
+  filesystem::LoadEditableSerialized(&scale_, node);
+  filesystem::LoadEditableSerialized(&path_, node);
 }
 void Sprite::Save(pugi::xml_node& node) const {
-  f::SaveEditableSerialized(position_, node);
-  f::SaveEditableSerialized(rotation_, node);
-  f::SaveEditableSerialized(scale_, node);
-  f::SaveEditableSerialized(path_, node);
+  filesystem::SaveEditableSerialized(position_, node);
+  filesystem::SaveEditableSerialized(rotation_, node);
+  filesystem::SaveEditableSerialized(scale_, node);
+  filesystem::SaveEditableSerialized(path_, node);
 }

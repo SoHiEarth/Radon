@@ -2,8 +2,6 @@
 #define FILESYSTEM_H
 
 #include <classes/editable.h>
-#include <classes/material.h>
-#include <fmt/core.h>
 #include <format>
 #include <glm/glm.hpp>
 #include <pugixml.hpp>
@@ -13,12 +11,13 @@ class Object;
 class Texture;
 class Level;
 class Shader;
+class Level;
 
-namespace f {
+namespace filesystem {
+extern Level* g_level;
+
 Level* LoadLevel(std::string_view);
-void LoadLevelDynamicData(Level*, std::string_view);
 void SaveLevel(const Level*, std::string_view);
-void SaveLevelDynamicData(const Level*, std::string_view);
 
 Object* LoadObject(pugi::xml_node&);
 void SaveObject(const Object*, pugi::xml_node&);
@@ -93,6 +92,6 @@ template <typename T>
 void SaveEditableSerialized(const Editable<T>& value, pugi::xml_node& base_node) {
   SaveSerialized(&value.i_value_, base_node, value.i_label_);
 }
-}  // namespace f
+}  // namespace filesystem
 
 #endif  // FILESYSTEM_H

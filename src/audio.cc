@@ -1,8 +1,8 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <engine/audio.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 ALCdevice* g_device;
 ALCcontext* g_context;
@@ -12,7 +12,7 @@ static void GetAudioDevices(const ALCchar* devices) {
   const ALCchar* next = devices + 1;
   size_t len = 0;
   printf("Available Audio Devices\n");
-  while ((device != NULL) && *device != '\0' && (next != NULL) && *next != '\0') {
+  while ((device != nullptr) && *device != '\0' && (next != nullptr) && *next != '\0') {
     printf("%s\n", device);
     len = strlen(device);
     device += (len + 1);
@@ -20,16 +20,16 @@ static void GetAudioDevices(const ALCchar* devices) {
   }
 }
 
-void AInit() {
-  ALboolean enumeration = alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT");
+void audio::Init() {
+  ALboolean enumeration = alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT");
   if (enumeration == AL_TRUE) {
-    GetAudioDevices(alcGetString(NULL, ALC_DEVICE_SPECIFIER));
+    GetAudioDevices(alcGetString(nullptr, ALC_DEVICE_SPECIFIER));
   } else {
     printf("AL: Cannot get devices as AL instance does not support enumeration.\n");
   }
-  g_device = alcOpenDevice(NULL);
+  g_device = alcOpenDevice(nullptr);
   alGetError();
-  g_context = alcCreateContext(g_device, NULL);
+  g_context = alcCreateContext(g_device, nullptr);
   if (alcMakeContextCurrent(g_context) == 0) {
     printf("AL: Failed to make context current");
     return;
@@ -37,15 +37,15 @@ void AInit() {
   printf("Initialized OpenAL\n");
 }
 
-void AQuit() {
-  if (g_context != NULL) {
-    alcMakeContextCurrent(NULL);
+void audio::Quit() {
+  if (g_context != nullptr) {
+    alcMakeContextCurrent(nullptr);
     alcDestroyContext(g_context);
-    g_context = NULL;
+    g_context = nullptr;
   }
-  if (g_device != NULL) {
+  if (g_device != nullptr) {
     alcCloseDevice(g_device);
-    g_device = NULL;
+    g_device = nullptr;
   }
   printf("Terminated OpenAL\n");
 }

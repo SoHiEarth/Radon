@@ -19,16 +19,17 @@
 #define MATERIAL_KEY_NAME "Material"
 #define MATERIAL_DIRECTORY_KEY_NAME "directory"
 #define MATERIAL_SHININESS_KEY_NAME "shininess"
-
+#define OBJECT_FACTORY_KEY(Object) {#Object, {[]() { return new Object(); }}}
+Level* filesystem::g_level = nullptr;
 enum : std::uint16_t { kLogSize = 512 };
 std::unordered_map<std::string, std::function<Object*()>> g_object_factory = {
-    {"Sprite", {[]() { return new Sprite(); }}},
-    {"DirectionalLight", {[]() { return new DirectionalLight(); }}},
-    {"PointLight", {[]() { return new PointLight(); }}},
-    {"SpotLight", {[]() { return new SpotLight(); }}}};
-using std::string_view;
+  OBJECT_FACTORY_KEY(Sprite),
+  OBJECT_FACTORY_KEY(DirectionalLight),
+  OBJECT_FACTORY_KEY(PointLight),
+  OBJECT_FACTORY_KEY(SpotLight)
+};
 
-Level* f::LoadLevel(std::string_view path) {
+Level* filesystem::LoadLevel(std::string_view path) {
   fmt::print("Loading level {}\n", path);
   auto* level = new Level();
   level->path_ = path;
@@ -53,28 +54,7 @@ Level* f::LoadLevel(std::string_view path) {
   return level;
 }
 
-void f::LoadLevelDynamicData(Level* level, std::string_view path) {
-  auto* dynamic_data = new DynamicData();
-  dynamic_data->target_level_ = level->path_;
-  pugi::xml_document doc;
-  pugi::xml_parse_result result = doc.load_file(path.data());
-  if (!result) {
-    throw std::runtime_error(
-        std::format("Failed to parse save data. Details: {}, {}", path, result.description()));
-  }
-  pugi::xml_node root = doc.child("data");
-  for (pugi::xml_node& object_node : root.children("object")) {
-    Object* object = LoadObject(object_node);
-    for (auto& old : level->objects_) {
-      if (object->name_ == old->name_) {
-        delete old;
-        old = object;
-      }
-    }
-  }
-}
-
-void f::SaveLevel(const Level* level, std::string_view path) {
+void filesystem::SaveLevel(const Level* level, std::string_view path) {
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child("level");
 
@@ -89,9 +69,7 @@ void f::SaveLevel(const Level* level, std::string_view path) {
   }
 }
 
-void f::SaveLevelDynamicData(const Level* level, std::string_view path) {}
-
-Object* f::LoadObject(pugi::xml_node& base_node) {
+Object* filesystem::LoadObject(pugi::xml_node& base_node) {
   std::string type_value = base_node.attribute("type").value();
   auto iterator = g_object_factory.find(type_value);
   if (iterator == g_object_factory.end()) {
@@ -102,7 +80,7 @@ Object* f::LoadObject(pugi::xml_node& base_node) {
   return object;
 }
 
-void f::SaveObject(const Object* object, pugi::xml_node& base_node) {
+void filesystem::SaveObject(const Object* object, pugi::xml_node& base_node) {
   base_node.append_attribute("type") = object->GetTypeName();
   object->Save(base_node);
 }
@@ -143,7 +121,7 @@ unsigned int CompileShader(std::string_view code, int type) {
   return shader;
 }
 
-Shader* f::LoadShader(string_view vertex_path, std::string_view fragment_path) {
+Shader* filesystem::LoadShader(std::string_view vertex_path, std::string_view fragment_path) {
   auto* shader = new Shader(vertex_path.data(), fragment_path.data());
   unsigned int vertex = CompileShader(ReadFile(vertex_path), GL_VERTEX_SHADER);
   unsigned int fragment = CompileShader(ReadFile(fragment_path), GL_FRAGMENT_SHADER);
@@ -169,7 +147,7 @@ Shader* f::LoadShader(string_view vertex_path, std::string_view fragment_path) {
   return shader;
 }
 
-void f::FreeShader(Shader* shader) {
+void filesystem::FreeShader(Shader* shader) {
   if (shader == nullptr) {
     return;
   }
@@ -177,19 +155,22 @@ void f::FreeShader(Shader* shader) {
   delete shader;
 }
 
-Texture* f::LoadTexture(std::string_view path) {
+Texture* filesystem::LoadTexture(std::string_view path) {
   if (!std::filesystem::exists(path)) {
     throw std::runtime_error(std::format("Requested texture doesn't exist. Details: {}", path));
   }
-  auto* texture = new Texture(path);
+  auto* texture = new Texture();
   glGenTextures(1, &texture->id_);
   stbi_set_flip_vertically_on_load(1);
-  unsigned char* data = stbi_load(path.data(), &texture->w_, &texture->h_, &texture->channels_, 0);
+  int width;
+  int height;
+  int channels;
+  unsigned char* data = stbi_load(path.data(), &width, &height, &channels, 0);
   if (data == nullptr) {
     throw std::runtime_error(std::format("Failed to load texture. Details: {}", path));
   }
   GLenum format;
-  switch (texture->channels_) {
+  switch (channels) {
     case 1:
       format = GL_RED;
       break;
@@ -201,7 +182,7 @@ Texture* f::LoadTexture(std::string_view path) {
       break;
   }
   glBindTexture(GL_TEXTURE_2D, texture->id_);
-  glTexImage2D(GL_TEXTURE_2D, 0, format, texture->w_, texture->h_, 0, format, GL_UNSIGNED_BYTE,
+  glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE,
                data);
   glGenerateMipmap(GL_TEXTURE_2D);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -212,7 +193,7 @@ Texture* f::LoadTexture(std::string_view path) {
   return texture;
 }
 
-void f::FreeTexture(Texture* texture) {
+void filesystem::FreeTexture(Texture* texture) {
   if (texture == nullptr) {
     return;
   }
@@ -220,13 +201,13 @@ void f::FreeTexture(Texture* texture) {
   delete texture;
 }
 
-void f::LoadMaterial(Material* material, pugi::xml_node& base_node) {
+void filesystem::LoadMaterial(Material* material, pugi::xml_node& base_node) {
   pugi::xml_node node = base_node.child(MATERIAL_KEY_NAME);
   material->directory_ = node.attribute(MATERIAL_DIRECTORY_KEY_NAME).as_string();
   material->shininess_ = node.attribute(MATERIAL_SHININESS_KEY_NAME).as_float(1.0F);
 }
 
-void f::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
+void filesystem::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
   pugi::xml_node node = base_node.child(MATERIAL_KEY_NAME);
   if (!node) {
     base_node.append_child(MATERIAL_KEY_NAME);

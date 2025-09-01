@@ -8,7 +8,7 @@
 #include <classes/texture.h>
 #include <engine/devgui.h>
 #include <engine/filesystem.h>
-#include <engine/global.h>
+#include <engine/render.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -50,42 +50,42 @@ void dev::Init() {
   ImGuiIO& imgui_io = ImGui::GetIO();
   imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   imgui_io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-  ImGui_ImplGlfw_InitForOpenGL(Engine::g_window, true);
+  ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
   ImGui_ImplOpenGL3_Init("#version 150");
 }
 
 void dev::Update() {
   if (!dev::g_hud_enabled) {
-    glfwSetInputMode(Engine::g_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     return;
   }
-  glfwSetInputMode(Engine::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
   ImGui::Begin("Scene Management");
   if (ImGui::Button("Save Level")) {
-    f::SaveLevel(Engine::g_level, "test.xml");
+    filesystem::SaveLevel(filesystem::g_level, "test.xml");
   }
   if (ImGui::Button("Add Sprite")) {
-    Engine::g_level->AddObject(new Sprite);
+    filesystem::g_level->AddObject(new Sprite);
   }
   if (ImGui::Button("Add Directional Light")) {
-    Engine::g_level->AddObject(new DirectionalLight);
+    filesystem::g_level->AddObject(new DirectionalLight);
   }
   if (ImGui::Button("Add Point Light")) {
-    Engine::g_level->AddObject(new PointLight);
+    filesystem::g_level->AddObject(new PointLight);
   }
   if (ImGui::Button("Add Spot Light")) {
-    Engine::g_level->AddObject(new SpotLight);
+    filesystem::g_level->AddObject(new SpotLight);
   }
   ImGui::SeparatorText("Scene Objects");
-  if (Engine::g_level->objects_.empty()) {
+  if (filesystem::g_level->objects_.empty()) {
     ImGui::Text("Scene is empty.");
   } else {
-    for (int i = 0; i < Engine::g_level->objects_.size(); i++) {
-      if (ImGui::Button(std::format("{}###{}", *Engine::g_level->objects_[i]->name_, i).c_str())) {
-        g_current_object = Engine::g_level->objects_[i];
+    for (int i = 0; i < filesystem::g_level->objects_.size(); i++) {
+      if (ImGui::Button(std::format("{}###{}", *filesystem::g_level->objects_[i]->name_, i).c_str())) {
+        g_current_object = filesystem::g_level->objects_[i];
       }
     }
   }

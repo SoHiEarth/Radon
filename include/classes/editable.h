@@ -11,7 +11,6 @@
 #define FLOAT_STEP 0.1F
 
 void MaterialView(Material*);
-
 class IEditable {
 public:
   virtual void RenderInterface() = 0;
@@ -19,7 +18,6 @@ public:
     registry.push_back(this);
   }
 };
-
 template <typename T>
 class Editable : public IEditable {
 public:

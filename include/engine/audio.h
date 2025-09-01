@@ -1,15 +1,9 @@
 #ifndef AUDIO_H
 #define AUDIO_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void AInit();
-void AQuit();
-
-#ifdef __cplusplus
-}
-#endif
+namespace audio {
+void Init();
+void Quit();
+}; // namespace audio
 
 #endif  // AUDIO_H

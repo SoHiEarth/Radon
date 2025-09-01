@@ -11,12 +11,12 @@ enum class ButtonState : std::uint8_t {
   kRelease  // Button was released this frame
 };
 
-namespace i {
-void AddHook(const Trigger&, const std::function<void()>&);
-void RemoveHook(const Trigger&);
+namespace input {
 void Init();
 void Update();
 void Quit();
-}  // namespace i
+void AddHook(const Trigger&, const std::function<void()>&);
+void RemoveHook(const Trigger&);
+}  // namespace input
 
 #endif  // INPUT_H

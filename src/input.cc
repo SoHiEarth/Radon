@@ -1,9 +1,9 @@
 #include <GLFW/glfw3.h>
-#include <engine/global.h>
 #include <engine/input.h>
 #include <fmt/core.h>
 #include <functional>
 #include <map>
+#include "engine/render.h"
 
 static const std::map<ButtonState, const char*> kButtonStateMap = {
     {ButtonState::kHold, "Hold"},
@@ -13,7 +13,7 @@ static const std::map<ButtonState, const char*> kButtonStateMap = {
 std::map<Trigger, std::function<void()>> g_event_hooks;
 std::map<int, bool> g_prev_frame_key_states;
 
-void i::AddHook(const Trigger& key, const std::function<void()>& hook) {
+void input::AddHook(const Trigger& key, const std::function<void()>& hook) {
   if (glfwGetCurrentContext() == nullptr) {
     std::runtime_error("No GLFW context to add input hook");
   } else {
@@ -23,7 +23,7 @@ void i::AddHook(const Trigger& key, const std::function<void()>& hook) {
   }
 }
 
-void i::RemoveHook(const Trigger& key) {
+void input::RemoveHook(const Trigger& key) {
   if (glfwGetCurrentContext() == nullptr) {
     std::runtime_error("No GLFW context to remove input hook");
     return;
@@ -33,7 +33,7 @@ void i::RemoveHook(const Trigger& key) {
              kButtonStateMap.at(key.second));
 }
 
-void i::Init() {
+void input::Init() {
   if (glfwGetCurrentContext() == nullptr) {
     std::runtime_error("No GLFW context to initialize input");
   } else {
@@ -42,7 +42,7 @@ void i::Init() {
   }
 }
 
-void i::Update() {
+void input::Update() {
   glfwPollEvents();
   for (const auto& [key, hook] : g_event_hooks) {
     bool is_pressed = (glfwGetKey(glfwGetCurrentContext(), key.first) == GLFW_PRESS);
@@ -58,11 +58,11 @@ void i::Update() {
   }
 }
 
-void i::Quit() {
-  if (Engine::g_window == nullptr) {
+void input::Quit() {
+  if (render::g_window == nullptr) {
     std::runtime_error("No GLFW context to quit input");
   } else {
-    glfwSetInputMode(Engine::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   }
   fmt::print("Terminated Input\n");
 }

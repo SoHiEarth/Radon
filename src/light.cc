@@ -8,24 +8,24 @@
 #include <glm/fwd.hpp>
 
 void DirectionalLight::Init() {
-  r::AddLight(this);
+  render::AddLight(this);
 }
 
 void DirectionalLight::Quit() {
-  r::RemoveLight(this);
+  render::RemoveLight(this);
 }
 
 void DirectionalLight::Load(pugi::xml_node& node) {
-  f::LoadEditableSerialized(&direction_, node);
-  f::LoadEditableSerialized(&ambient_, node);
-  f::LoadEditableSerialized(&diffuse_, node);
-  f::LoadEditableSerialized(&specular_, node);
+  filesystem::LoadEditableSerialized(&direction_, node);
+  filesystem::LoadEditableSerialized(&ambient_, node);
+  filesystem::LoadEditableSerialized(&diffuse_, node);
+  filesystem::LoadEditableSerialized(&specular_, node);
 }
 void DirectionalLight::Save(pugi::xml_node& node) const {
-  f::SaveEditableSerialized(direction_, node);
-  f::SaveEditableSerialized(ambient_, node);
-  f::SaveEditableSerialized(diffuse_, node);
-  f::SaveEditableSerialized(specular_, node);
+  filesystem::SaveEditableSerialized(direction_, node);
+  filesystem::SaveEditableSerialized(ambient_, node);
+  filesystem::SaveEditableSerialized(diffuse_, node);
+  filesystem::SaveEditableSerialized(specular_, node);
 }
 
 void DirectionalLight::SetUniforms(const Shader* shader, const int kPos) {
@@ -37,30 +37,30 @@ void DirectionalLight::SetUniforms(const Shader* shader, const int kPos) {
 }
 
 void PointLight::Init() {
-  r::AddLight(this);
+  render::AddLight(this);
 }
 
 void PointLight::Quit() {
-  r::RemoveLight(this);
+  render::RemoveLight(this);
 }
 
 void PointLight::Load(pugi::xml_node& node) {
-  f::LoadEditableSerialized(&position_, node);
-  f::LoadEditableSerialized(&ambient_, node);
-  f::LoadEditableSerialized(&diffuse_, node);
-  f::LoadEditableSerialized(&specular_, node);
-  f::LoadEditableSerialized(&constant_, node);
-  f::LoadEditableSerialized(&linear_, node);
-  f::LoadEditableSerialized(&quadratic_, node);
+  filesystem::LoadEditableSerialized(&position_, node);
+  filesystem::LoadEditableSerialized(&ambient_, node);
+  filesystem::LoadEditableSerialized(&diffuse_, node);
+  filesystem::LoadEditableSerialized(&specular_, node);
+  filesystem::LoadEditableSerialized(&constant_, node);
+  filesystem::LoadEditableSerialized(&linear_, node);
+  filesystem::LoadEditableSerialized(&quadratic_, node);
 }
 void PointLight::Save(pugi::xml_node& node) const {
-  f::SaveEditableSerialized(position_, node);
-  f::SaveEditableSerialized(ambient_, node);
-  f::SaveEditableSerialized(diffuse_, node);
-  f::SaveEditableSerialized(specular_, node);
-  f::SaveEditableSerialized(constant_, node);
-  f::SaveEditableSerialized(linear_, node);
-  f::SaveEditableSerialized(quadratic_, node);
+  filesystem::SaveEditableSerialized(position_, node);
+  filesystem::SaveEditableSerialized(ambient_, node);
+  filesystem::SaveEditableSerialized(diffuse_, node);
+  filesystem::SaveEditableSerialized(specular_, node);
+  filesystem::SaveEditableSerialized(constant_, node);
+  filesystem::SaveEditableSerialized(linear_, node);
+  filesystem::SaveEditableSerialized(quadratic_, node);
 }
 
 void PointLight::SetUniforms(const Shader* shader, const int kPos) {
@@ -75,36 +75,36 @@ void PointLight::SetUniforms(const Shader* shader, const int kPos) {
 }
 
 void SpotLight::Init() {
-  r::AddLight(this);
+  render::AddLight(this);
 }
 
 void SpotLight::Quit() {
-  r::RemoveLight(this);
+  render::RemoveLight(this);
 }
 
 void SpotLight::Load(pugi::xml_node& node) {
-  f::LoadEditableSerialized(&position_, node);
-  f::LoadEditableSerialized(&direction_, node);
-  f::LoadEditableSerialized(&ambient_, node);
-  f::LoadEditableSerialized(&diffuse_, node);
-  f::LoadEditableSerialized(&specular_, node);
-  f::LoadEditableSerialized(&constant_, node);
-  f::LoadEditableSerialized(&linear_, node);
-  f::LoadEditableSerialized(&quadratic_, node);
-  f::LoadEditableSerialized(&cut_off_, node);
-  f::LoadEditableSerialized(&outer_cut_off_, node);
+  filesystem::LoadEditableSerialized(&position_, node);
+  filesystem::LoadEditableSerialized(&direction_, node);
+  filesystem::LoadEditableSerialized(&ambient_, node);
+  filesystem::LoadEditableSerialized(&diffuse_, node);
+  filesystem::LoadEditableSerialized(&specular_, node);
+  filesystem::LoadEditableSerialized(&constant_, node);
+  filesystem::LoadEditableSerialized(&linear_, node);
+  filesystem::LoadEditableSerialized(&quadratic_, node);
+  filesystem::LoadEditableSerialized(&cut_off_, node);
+  filesystem::LoadEditableSerialized(&outer_cut_off_, node);
 }
 void SpotLight::Save(pugi::xml_node& node) const {
-  f::SaveEditableSerialized(position_, node);
-  f::SaveEditableSerialized(direction_, node);
-  f::SaveEditableSerialized(ambient_, node);
-  f::SaveEditableSerialized(diffuse_, node);
-  f::SaveEditableSerialized(specular_, node);
-  f::SaveEditableSerialized(constant_, node);
-  f::SaveEditableSerialized(linear_, node);
-  f::SaveEditableSerialized(quadratic_, node);
-  f::SaveEditableSerialized(cut_off_, node);
-  f::SaveEditableSerialized(outer_cut_off_, node);
+  filesystem::SaveEditableSerialized(position_, node);
+  filesystem::SaveEditableSerialized(direction_, node);
+  filesystem::SaveEditableSerialized(ambient_, node);
+  filesystem::SaveEditableSerialized(diffuse_, node);
+  filesystem::SaveEditableSerialized(specular_, node);
+  filesystem::SaveEditableSerialized(constant_, node);
+  filesystem::SaveEditableSerialized(linear_, node);
+  filesystem::SaveEditableSerialized(quadratic_, node);
+  filesystem::SaveEditableSerialized(cut_off_, node);
+  filesystem::SaveEditableSerialized(outer_cut_off_, node);
 }
 
 void SpotLight::SetUniforms(const Shader* shader, const int kPos) {

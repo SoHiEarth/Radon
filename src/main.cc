@@ -4,86 +4,67 @@
 #include <engine/audio.h>
 #include <engine/devgui.h>
 #include <engine/filesystem.h>
-#include <engine/global.h>
 #include <engine/input.h>
 #include <engine/physics.h>
 #include <engine/render.h>
 #include <fmt/core.h>
-#include <thread>
-#include <vector>
 #define CAMERA_SPEED 0.1
-std::vector<std::thread> workers;
-
-#define SPAWN_THREAD(func)                        \
-  {                                               \
-    std::thread thread(func);                     \
-    workers.push_back(std::move(thread));         \
-    fmt::print("Spawned thread for {}\n", #func); \
-  }
-
-#define WAIT_WORKERS()           \
-  for (auto& worker : workers) { \
-    worker.join();               \
-  }                              \
-  workers.clear();
 
 int main(int argc, char** argv) {
-  r::Init();
-  i::Init();
-  SPAWN_THREAD(AInit);
-  SPAWN_THREAD(PInit);
-  WAIT_WORKERS();
+  render::Init();
+  input::Init();
+  audio::Init();
+  physics::Init();
   dev::Init();
 
   try {
-    Engine::g_level = f::LoadLevel("test.xml");
+    filesystem::g_level = filesystem::LoadLevel("test.xml");
   } catch (std::exception& e) {
     fmt::print("Caught exception, falling back to new level. Details: {}\n", e.what());
-    if (Engine::g_level == nullptr) {
-      Engine::g_level = new Level();
+    if (filesystem::g_level == nullptr) {
+      filesystem::g_level = new Level();
     }
   }
 
-  i::AddHook({GLFW_KEY_ESCAPE, ButtonState::kRelease},
-             []() { glfwSetWindowShouldClose(Engine::g_window, true); });
+  input::AddHook({GLFW_KEY_ESCAPE, ButtonState::kRelease},
+             []() { glfwSetWindowShouldClose(render::g_window, true); });
 
-  i::AddHook({GLFW_KEY_F1, ButtonState::kPress},
+  input::AddHook({GLFW_KEY_F1, ButtonState::kPress},
              []() { dev::g_hud_enabled = !dev::g_hud_enabled; });
 
-  i::AddHook({GLFW_KEY_W, ButtonState::kHold},
-             []() { Engine::g_camera.position_.y += CAMERA_SPEED; });
+  input::AddHook({GLFW_KEY_W, ButtonState::kHold},
+             []() { render::g_camera.position_.y += CAMERA_SPEED; });
 
-  i::AddHook({GLFW_KEY_S, ButtonState::kHold},
-             []() { Engine::g_camera.position_.y -= CAMERA_SPEED; });
+  input::AddHook({GLFW_KEY_S, ButtonState::kHold},
+             []() { render::g_camera.position_.y -= CAMERA_SPEED; });
 
-  i::AddHook({GLFW_KEY_A, ButtonState::kHold},
-             []() { Engine::g_camera.position_.x -= CAMERA_SPEED; });
+  input::AddHook({GLFW_KEY_A, ButtonState::kHold},
+             []() { render::g_camera.position_.x -= CAMERA_SPEED; });
 
-  i::AddHook({GLFW_KEY_D, ButtonState::kHold},
-             []() { Engine::g_camera.position_.x += CAMERA_SPEED; });
+  input::AddHook({GLFW_KEY_D, ButtonState::kHold},
+             []() { render::g_camera.position_.x += CAMERA_SPEED; });
 
-  while (glfwWindowShouldClose(Engine::g_window) == 0) {
-    i::Update();
-    if (Engine::g_level != nullptr) {
-      Engine::g_level->Update();
+  while (glfwWindowShouldClose(render::g_window) == 0) {
+    input::Update();
+    if (filesystem::g_level != nullptr) {
+      filesystem::g_level->Update();
     }
-    r::Update();
-    PUpdate();
-    if (Engine::g_level != nullptr) {
-      Engine::g_level->Render();
+    render::Update();
+    physics::Update();
+    if (filesystem::g_level != nullptr) {
+      filesystem::g_level->Render();
     }
-    r::Render();
+    render::Render();
   }
 
-  if (Engine::g_level != nullptr) {
-    Engine::g_level->Quit();
+  if (filesystem::g_level != nullptr) {
+    filesystem::g_level->Quit();
   }
 
   dev::Quit();
-  SPAWN_THREAD(AQuit);
-  SPAWN_THREAD(PQuit);
-  WAIT_WORKERS();
-  i::Quit();
-  r::Quit();
+  audio::Quit();
+  physics::Quit();
+  input::Quit();
+  render::Quit();
   return 0;
 }

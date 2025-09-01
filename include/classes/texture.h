@@ -1,14 +1,19 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include <string>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct Texture {
   unsigned int id_;
-  int w_, h_, channels_;
-  const std::string kPath;
-  void Use() const;
-  explicit Texture(const std::string_view kPath) : kPath(kPath) {};
+//  int w_, h_, channels_;
+  const char* type_;
+  const char* path_;
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  // TEXTURE_H

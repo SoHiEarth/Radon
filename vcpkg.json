@@ -1,5 +1,6 @@
 {
   "dependencies": [
+    "assimp",
     "box2d",
     "fmt",
     "freetype",

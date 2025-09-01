@@ -1,10 +1,11 @@
 #ifndef RENDER_H
 #define RENDER_H
 
-#include <cstdint>
 #include <glm/glm.hpp>
 #include <vector>
 
+class GLFWwindow;
+class Camera;
 class Material;
 class DirectionalLight;
 class PointLight;
@@ -22,14 +23,17 @@ struct RenderSettings {
   float brightness_ = 1.0F;
 };
 
-namespace r {
+namespace render {
 extern std::vector<DirectionalLight*> g_directional_lights;
 extern std::vector<PointLight*> g_point_lights;
 extern std::vector<SpotLight*> g_spot_lights;
 extern RenderSettings g_render_settings;
+extern GLFWwindow* g_window;
+extern int g_width;
+extern int g_height;
+extern Camera g_camera;
 
 void Init();
-void Extracted();
 void Update();
 void Render();
 void Quit();
@@ -74,6 +78,6 @@ void RemoveLight(T* light) {
     }
   }
 }
-}  // namespace r
+}  // namespace render
 
 #endif  // RENDER_H
