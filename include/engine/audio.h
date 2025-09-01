@@ -4,6 +4,6 @@
 namespace audio {
 void Init();
 void Quit();
-}; // namespace audio
+};  // namespace audio
 
 #endif  // AUDIO_H

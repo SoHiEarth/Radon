@@ -27,22 +27,22 @@ int main(int argc, char** argv) {
   }
 
   input::AddHook({GLFW_KEY_ESCAPE, ButtonState::kRelease},
-             []() { glfwSetWindowShouldClose(render::g_window, true); });
+                 []() { glfwSetWindowShouldClose(render::g_window, true); });
 
   input::AddHook({GLFW_KEY_F1, ButtonState::kPress},
-             []() { dev::g_hud_enabled = !dev::g_hud_enabled; });
+                 []() { dev::g_hud_enabled = !dev::g_hud_enabled; });
 
   input::AddHook({GLFW_KEY_W, ButtonState::kHold},
-             []() { render::g_camera.position_.y += CAMERA_SPEED; });
+                 []() { render::g_camera.position_.y += CAMERA_SPEED; });
 
   input::AddHook({GLFW_KEY_S, ButtonState::kHold},
-             []() { render::g_camera.position_.y -= CAMERA_SPEED; });
+                 []() { render::g_camera.position_.y -= CAMERA_SPEED; });
 
   input::AddHook({GLFW_KEY_A, ButtonState::kHold},
-             []() { render::g_camera.position_.x -= CAMERA_SPEED; });
+                 []() { render::g_camera.position_.x -= CAMERA_SPEED; });
 
   input::AddHook({GLFW_KEY_D, ButtonState::kHold},
-             []() { render::g_camera.position_.x += CAMERA_SPEED; });
+                 []() { render::g_camera.position_.x += CAMERA_SPEED; });
 
   while (glfwWindowShouldClose(render::g_window) == 0) {
     input::Update();

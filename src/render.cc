@@ -44,7 +44,7 @@ unsigned int g_screen_vao, g_screen_vbo;
 Shader *g_screen_shader = nullptr, *g_screen_shader_blur;
 float g_prev_render_factor = render::g_render_settings.render_factor_;
 RenderSettings render::g_render_settings{};
-GLFWwindow* render::g_window = nullptr;
+GLFWwindow *render::g_window = nullptr;
 int render::g_width = 800, render::g_height = 600;
 Camera render::g_camera;
 
@@ -61,7 +61,8 @@ const std::array<float, 20> kGScreenVertices = {
 void DrawRendererStatus() {
   if (dev::g_hud_enabled) {
     ImGui::Begin("Renderer Status");
-    ImGui::Text("Directional light status: %d", static_cast<int>(render::g_directional_lights.size()));
+    ImGui::Text("Directional light status: %d",
+                static_cast<int>(render::g_directional_lights.size()));
     ImGui::Text("Point light count: %d", static_cast<int>(render::g_point_lights.size()));
     ImGui::Text("Spot light count: %d", static_cast<int>(render::g_spot_lights.size()));
     ImGui::DragFloat3("Camera Position", glm::value_ptr(render::g_camera.position_));
@@ -261,7 +262,7 @@ glm::mat4 GetTransform(const glm::vec3 &pos, const glm::vec2 &scale, float rot) 
 }
 
 void render::RenderTexture(const Material *material, const glm::vec3 &pos, const glm::vec2 &size,
-                      const float &rot) {
+                           const float &rot) {
   if (material == nullptr) {
     return;
   }

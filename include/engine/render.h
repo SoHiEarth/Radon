@@ -37,7 +37,8 @@ void Init();
 void Update();
 void Render();
 void Quit();
-void RenderTexture(const Material*, const glm::vec3&, const glm::vec2&, const float&);
+void RenderTexture(const Material* /*material*/, const glm::vec3& /*pos*/,
+                   const glm::vec2& /*size*/, const float& /*rot*/);
 
 template <typename T>
 void AddLight(T* light) {

@@ -10,7 +10,7 @@
 #include <vector>
 #define FLOAT_STEP 0.1F
 
-void MaterialView(Material*);
+void MaterialView(Material* /*material*/);
 class IEditable {
 public:
   virtual void RenderInterface() = 0;

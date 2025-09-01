@@ -1,4 +1,3 @@
-#include <classes/dynamic_data.h>
 #include <classes/level.h>
 #include <classes/light.h>
 #include <classes/object.h>
@@ -19,15 +18,17 @@
 #define MATERIAL_KEY_NAME "Material"
 #define MATERIAL_DIRECTORY_KEY_NAME "directory"
 #define MATERIAL_SHININESS_KEY_NAME "shininess"
-#define OBJECT_FACTORY_KEY(Object) {#Object, {[]() { return new Object(); }}}
+#define OBJECT_FACTORY_KEY(Object)  \
+  {                                 \
+    #Object, {                      \
+      []() { return new Object(); } \
+    }                               \
+  }
 Level* filesystem::g_level = nullptr;
 enum : std::uint16_t { kLogSize = 512 };
 std::unordered_map<std::string, std::function<Object*()>> g_object_factory = {
-  OBJECT_FACTORY_KEY(Sprite),
-  OBJECT_FACTORY_KEY(DirectionalLight),
-  OBJECT_FACTORY_KEY(PointLight),
-  OBJECT_FACTORY_KEY(SpotLight)
-};
+    OBJECT_FACTORY_KEY(Sprite), OBJECT_FACTORY_KEY(DirectionalLight),
+    OBJECT_FACTORY_KEY(PointLight), OBJECT_FACTORY_KEY(SpotLight)};
 
 Level* filesystem::LoadLevel(std::string_view path) {
   fmt::print("Loading level {}\n", path);
@@ -162,15 +163,13 @@ Texture* filesystem::LoadTexture(std::string_view path) {
   auto* texture = new Texture();
   glGenTextures(1, &texture->id_);
   stbi_set_flip_vertically_on_load(1);
-  int width;
-  int height;
-  int channels;
-  unsigned char* data = stbi_load(path.data(), &width, &height, &channels, 0);
+  unsigned char* data =
+      stbi_load(path.data(), &texture->width_, &texture->height_, &texture->channels_, 0);
   if (data == nullptr) {
     throw std::runtime_error(std::format("Failed to load texture. Details: {}", path));
   }
   GLenum format;
-  switch (channels) {
+  switch (texture->channels_) {
     case 1:
       format = GL_RED;
       break;
@@ -182,8 +181,8 @@ Texture* filesystem::LoadTexture(std::string_view path) {
       break;
   }
   glBindTexture(GL_TEXTURE_2D, texture->id_);
-  glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE,
-               data);
+  glTexImage2D(GL_TEXTURE_2D, 0, format, texture->width_, texture->height_, 0, format,
+               GL_UNSIGNED_BYTE, data);
   glGenerateMipmap(GL_TEXTURE_2D);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);

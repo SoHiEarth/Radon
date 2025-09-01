@@ -1,7 +1,7 @@
 #include <classes/material.h>
 #include <classes/sprite.h>
-#include <engine/render.h>
 #include <engine/filesystem.h>
+#include <engine/render.h>
 #include <fmt/core.h>
 
 void Sprite::Init() {
@@ -23,8 +23,8 @@ void Sprite::Update() {
 }
 
 void Sprite::Render() {
-  render::RenderTexture(material_, static_cast<glm::vec3>(position_), static_cast<glm::vec2>(scale_),
-                   static_cast<float>(rotation_));
+  render::RenderTexture(material_, static_cast<glm::vec3>(position_),
+                        static_cast<glm::vec2>(scale_), static_cast<float>(rotation_));
 }
 
 void Sprite::Quit() {

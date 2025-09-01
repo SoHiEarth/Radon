@@ -1,8 +1,8 @@
+#include <assimp/postprocess.h>
 #include <classes/model.h>
 #include <engine/filesystem.h>
 #include <fmt/core.h>
 #include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
 
 void Model::Draw(Shader& shader) {
   for (auto& mesh : meshes_) {
@@ -79,7 +79,7 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene) {
   }
   aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
   std::vector<Texture*> diffuse_maps =
-    LoadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+      LoadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
   textures.insert(textures.end(), diffuse_maps.begin(), diffuse_maps.end());
   std::vector<Texture*> specular_maps =
       LoadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
@@ -94,7 +94,7 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene) {
 }
 
 std::vector<Texture*> Model::LoadMaterialTextures(aiMaterial* mat, aiTextureType type,
-                                                 std::string_view type_name) {
+                                                  std::string_view type_name) {
   std::vector<Texture*> textures;
   for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
     aiString str;

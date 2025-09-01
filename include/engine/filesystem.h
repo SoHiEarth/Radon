@@ -16,20 +16,20 @@ class Level;
 namespace filesystem {
 extern Level* g_level;
 
-Level* LoadLevel(std::string_view);
-void SaveLevel(const Level*, std::string_view);
+Level* LoadLevel(std::string_view /*path*/);
+void SaveLevel(const Level* /*level*/, std::string_view /*path*/);
 
-Object* LoadObject(pugi::xml_node&);
-void SaveObject(const Object*, pugi::xml_node&);
+Object* LoadObject(pugi::xml_node& /*base_node*/);
+void SaveObject(const Object* /*object*/, pugi::xml_node& /*base_node*/);
 
-Shader* LoadShader(std::string_view, std::string_view);
-void FreeShader(Shader*);
+Shader* LoadShader(std::string_view /*vertex_path*/, std::string_view /*fragment_path*/);
+void FreeShader(Shader* /*shader*/);
 
-Texture* LoadTexture(std::string_view);
-void FreeTexture(Texture*);
+Texture* LoadTexture(std::string_view /*path*/);
+void FreeTexture(Texture* /*texture*/);
 
-void LoadMaterial(Material*, pugi::xml_node&);
-void SaveMaterial(const Material*, pugi::xml_node&);
+void LoadMaterial(Material* /*material*/, pugi::xml_node& /*base_node*/);
+void SaveMaterial(const Material* /*material*/, pugi::xml_node& /*base_node*/);
 
 template <typename T>
 void LoadSerialized(T* value, pugi::xml_node& base_node, const char* name) {

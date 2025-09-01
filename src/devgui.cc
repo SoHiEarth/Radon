@@ -84,7 +84,8 @@ void dev::Update() {
     ImGui::Text("Scene is empty.");
   } else {
     for (int i = 0; i < filesystem::g_level->objects_.size(); i++) {
-      if (ImGui::Button(std::format("{}###{}", *filesystem::g_level->objects_[i]->name_, i).c_str())) {
+      if (ImGui::Button(
+              std::format("{}###{}", *filesystem::g_level->objects_[i]->name_, i).c_str())) {
         g_current_object = filesystem::g_level->objects_[i];
       }
     }

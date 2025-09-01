@@ -9,6 +9,7 @@ public:
     LoadModel(path);
   }
   void Draw(Shader& shader);
+
 private:
   std::vector<Mesh> meshes_;
   std::vector<Texture*> textures_loaded_;
@@ -17,6 +18,6 @@ private:
   void ProcessNode(aiNode* node, const aiScene* scene);
   Mesh ProcessMesh(aiMesh* mesh, const aiScene* scene);
   std::vector<Texture*> LoadMaterialTextures(aiMaterial* material, aiTextureType type,
-                                            std::string_view type_name);
+                                             std::string_view type_name);
 };
 #endif

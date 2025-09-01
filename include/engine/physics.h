@@ -4,5 +4,5 @@ namespace physics {
 void Init();
 void Update();
 void Quit();
-}; // namespace physics
+};  // namespace physics
 #endif  // PHYSICS_H

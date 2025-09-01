@@ -11,7 +11,7 @@ public:
   void Update();
   void Render();
   void Quit();
-  void AddObject(Object*);
+  void AddObject(Object* /*object*/);
   std::string path_;
   std::vector<Object*> objects_;
 };

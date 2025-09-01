@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
-set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
-project(Metal VERSION 0.1.0 LANGUAGES C CXX)
+project(Metal VERSION 0.1.0 LANGUAGES CXX)
 file(GLOB_RECURSE SOURCES "src/*.cc" "src/*.c")
 file(GLOB_RECURSE HEADERS "include/*.h" "include/*.hpp")
 find_package(assimp CONFIG REQUIRED)

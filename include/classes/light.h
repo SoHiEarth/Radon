@@ -24,7 +24,7 @@ public:
     return "DirectionalLight";
   }
   void Save(pugi::xml_node& /*unused*/) const override;
-  void SetUniforms(const Shader*, int /*kPos*/);
+  void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
 };
 
 class PointLight : public Light {

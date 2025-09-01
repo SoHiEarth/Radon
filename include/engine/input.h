@@ -15,8 +15,8 @@ namespace input {
 void Init();
 void Update();
 void Quit();
-void AddHook(const Trigger&, const std::function<void()>&);
-void RemoveHook(const Trigger&);
+void AddHook(const Trigger& /*key*/, const std::function<void()>& /*hook*/);
+void RemoveHook(const Trigger& /*key*/);
 }  // namespace input
 
 #endif  // INPUT_H
