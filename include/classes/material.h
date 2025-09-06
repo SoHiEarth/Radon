@@ -13,11 +13,6 @@ struct Material {
   std::string directory_;
   [[nodiscard]] bool IsValid() const;
   void Bind() const;
-  void Load(const std::string& /*path*/);
-  void Free() const;
-  explicit Material(const std::string& path) {
-    Load(path);
-  }
 };
 
 #endif  // MATERIAL_H

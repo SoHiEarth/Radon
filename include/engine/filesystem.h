@@ -28,11 +28,15 @@ void FreeShader(Shader* /*shader*/);
 Texture* LoadTexture(std::string_view /*path*/);
 void FreeTexture(Texture* /*texture*/);
 
+Material* LoadMaterial(std::string_view /*path*/);
+void FreeMaterial(Material* /*material*/);
+
+namespace serialized {
 void LoadMaterial(Material* /*material*/, pugi::xml_node& /*base_node*/);
 void SaveMaterial(const Material* /*material*/, pugi::xml_node& /*base_node*/);
 
 template <typename T>
-void LoadSerialized(T* value, pugi::xml_node& base_node, const char* name) {
+void Load(T* value, pugi::xml_node& base_node, const char* name) {
   if (value == nullptr) {
     throw std::runtime_error(
         std::format("Null pointer passed as argument to load. Details: {}", name));
@@ -57,15 +61,15 @@ void LoadSerialized(T* value, pugi::xml_node& base_node, const char* name) {
 }
 
 template <typename T>
-void LoadEditableSerialized(Editable<T>* value, pugi::xml_node& base_node) {
+void LoadEditable(Editable<T>* value, pugi::xml_node& base_node) {
   if (value == nullptr) {
     return;
   }
-  LoadSerialized(&value->i_value_, base_node, value->i_label_);
+  Load(&value->i_value_, base_node, value->i_label_);
 }
 
 template <typename T>
-void SaveSerialized(const T* value, pugi::xml_node& base_node, const char* name) {
+void Save(const T* value, pugi::xml_node& base_node, const char* name) {
   pugi::xml_node node = base_node.child(name);
   if (!node) {
     node = base_node.append_child(name);
@@ -89,9 +93,10 @@ void SaveSerialized(const T* value, pugi::xml_node& base_node, const char* name)
 }
 
 template <typename T>
-void SaveEditableSerialized(const Editable<T>& value, pugi::xml_node& base_node) {
-  SaveSerialized(&value.i_value_, base_node, value.i_label_);
+void SaveEditable(const Editable<T>& value, pugi::xml_node& base_node) {
+  Save(&value.i_value_, base_node, value.i_label_);
 }
+}  // namespace serialized
 }  // namespace filesystem
 
 #endif  // FILESYSTEM_H

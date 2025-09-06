@@ -5,8 +5,6 @@
 #include <fmt/core.h>
 
 void Sprite::Init() {
-  material_ = new Material(static_cast<std::string>(path_));
-  prev_path_ = static_cast<std::string>(path_);
 }
 
 void Sprite::Update() {
@@ -14,11 +12,6 @@ void Sprite::Update() {
     if (material_->shininess_ <= 0) {
       material_->shininess_ = 1;
     }
-  }
-  if (path_ != prev_path_) {
-    material_->Free();
-    material_->Load(static_cast<std::string>(path_));
-    prev_path_ = static_cast<std::string>(path_);
   }
 }
 
@@ -28,18 +21,18 @@ void Sprite::Render() {
 }
 
 void Sprite::Quit() {
-  material_->Free();
+  filesystem::FreeMaterial(material_);
 }
 
 void Sprite::Load(pugi::xml_node& node) {
-  filesystem::LoadEditableSerialized(&position_, node);
-  filesystem::LoadEditableSerialized(&rotation_, node);
-  filesystem::LoadEditableSerialized(&scale_, node);
-  filesystem::LoadEditableSerialized(&path_, node);
+  filesystem::serialized::LoadEditable(&position_, node);
+  filesystem::serialized::LoadEditable(&rotation_, node);
+  filesystem::serialized::LoadEditable(&scale_, node);
+  filesystem::serialized::LoadMaterial(material_, node);
 }
 void Sprite::Save(pugi::xml_node& node) const {
-  filesystem::SaveEditableSerialized(position_, node);
-  filesystem::SaveEditableSerialized(rotation_, node);
-  filesystem::SaveEditableSerialized(scale_, node);
-  filesystem::SaveEditableSerialized(path_, node);
+  filesystem::serialized::SaveEditable(position_, node);
+  filesystem::serialized::SaveEditable(rotation_, node);
+  filesystem::serialized::SaveEditable(scale_, node);
+  filesystem::serialized::SaveMaterial(material_, node);
 }

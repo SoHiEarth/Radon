@@ -22,18 +22,16 @@ Object* g_current_object = nullptr;
 std::string g_material_path;
 
 void MaterialView(Material* material) {
-  if (material == nullptr) {
-    ImGui::SeparatorText("Load a Material from disk");
-    ImGui::InputText("Path", &g_material_path);
-    if (ImGui::Button("Load")) {
-      material = new Material(g_material_path);
-    }
-    return;
-  }
-  if (!material->IsValid()) {
-    return;
-  }
   ImGui::SeparatorText("Material");
+  ImGui::SeparatorText("Load a Material from disk");
+  ImGui::InputText("Material Path", &g_material_path);
+  if (ImGui::Button("Load")) {
+    material = filesystem::LoadMaterial(g_material_path);
+  }
+  if (material == nullptr) {
+    ImGui::TextColored({1, 0, 0, 1}, "Material not loaded");
+    return;
+  }
   ImGui::Text("Diffuse");
   ImGui::Image(material->diffuse_->id_, ImVec2(IMAGE_PREVIEW_SIZE));
   ImGui::Text("Specular");
@@ -63,7 +61,10 @@ void dev::Update() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
-  ImGui::Begin("Scene Management");
+  ImGui::Begin("Level Management");
+  if (ImGui::Button("Load Level")) {
+    filesystem::g_level = filesystem::LoadLevel("test.xml");
+  }
   if (ImGui::Button("Save Level")) {
     filesystem::SaveLevel(filesystem::g_level, "test.xml");
   }

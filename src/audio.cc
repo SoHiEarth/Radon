@@ -25,16 +25,16 @@ void audio::Init() {
   if (enumeration == AL_TRUE) {
     GetAudioDevices(alcGetString(nullptr, ALC_DEVICE_SPECIFIER));
   } else {
-    printf("AL: Cannot get devices as AL instance does not support enumeration.\n");
+    printf("audio: Cannot get devices as AL instance does not support enumeration.\n");
   }
   g_device = alcOpenDevice(nullptr);
   alGetError();
   g_context = alcCreateContext(g_device, nullptr);
   if (alcMakeContextCurrent(g_context) == 0) {
-    printf("AL: Failed to make context current");
+    printf("audio: Failed to make context current");
     return;
   }
-  printf("Initialized OpenAL\n");
+  printf("Initialized audio\n");
 }
 
 void audio::Quit() {
@@ -47,5 +47,5 @@ void audio::Quit() {
     alcCloseDevice(g_device);
     g_device = nullptr;
   }
-  printf("Terminated OpenAL\n");
+  printf("Terminated audio\n");
 }

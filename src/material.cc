@@ -21,22 +21,3 @@ void Material::Bind() const {
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, specular_->id_);
 }
-
-void Material::Load(const std::string& path) {
-  directory_ = path;
-  diffuse_ = filesystem::LoadTexture(path + "/diffuse.png");
-  specular_ = filesystem::LoadTexture(path + "/specular.png");
-  shader_ = filesystem::LoadShader(path + "/vert.glsl", path + "/frag.glsl");
-  if (!IsValid()) {
-    return;
-  }
-  shader_->Use();
-  shader_->SetInt("material.diffuse", 0);
-  shader_->SetInt("material.specular", 1);
-}
-
-void Material::Free() const {
-  filesystem::FreeTexture(diffuse_);
-  filesystem::FreeTexture(specular_);
-  filesystem::FreeShader(shader_);
-}

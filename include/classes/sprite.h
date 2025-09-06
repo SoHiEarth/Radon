@@ -15,11 +15,9 @@ public:
     return "Sprite";
   }
   void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
-  Editable<std::string> path_ = {"sprite_test", "Path", reg_};
   ~Sprite() = default;
 
 private:
-  std::string prev_path_;
 };
 
 #endif  // SPRITE_H

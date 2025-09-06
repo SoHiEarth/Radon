@@ -143,7 +143,6 @@ Shader* filesystem::LoadShader(std::string_view vertex_path, std::string_view fr
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);
-  fmt::print("Successfully loaded shader. Vert: {}, Frag: {}\n", vertex_path, fragment_path);
   shader->id_ = program;
   return shader;
 }
@@ -200,13 +199,37 @@ void filesystem::FreeTexture(Texture* texture) {
   delete texture;
 }
 
-void filesystem::LoadMaterial(Material* material, pugi::xml_node& base_node) {
+Material* filesystem::LoadMaterial(std::string_view path) {
+  auto* material = new Material();
+  material->directory_ = path;
+  material->diffuse_ = filesystem::LoadTexture(std::string(path) + "/diffuse.png");
+  material->specular_ = filesystem::LoadTexture(std::string(path) + "/specular.png");
+  material->shader_ = filesystem::LoadShader(std::string(path) + "/vert.glsl",
+      std::string(path) + "/frag.glsl");
+  material->shader_->Use();
+  material->shader_->SetInt("material.diffuse", 0);
+  material->shader_->SetInt("material.specular", 1);
+  fmt::print("Material {} loaded successfully\n", path);
+  return material;
+}
+
+void filesystem::FreeMaterial(Material* material) {
+  if (material == nullptr) {
+    return;
+  }
+  filesystem::FreeTexture(material->diffuse_);
+  filesystem::FreeTexture(material->specular_);
+  filesystem::FreeShader(material->shader_);
+  material = nullptr;
+}
+
+void filesystem::serialized::LoadMaterial(Material* material, pugi::xml_node& base_node) {
   pugi::xml_node node = base_node.child(MATERIAL_KEY_NAME);
   material->directory_ = node.attribute(MATERIAL_DIRECTORY_KEY_NAME).as_string();
   material->shininess_ = node.attribute(MATERIAL_SHININESS_KEY_NAME).as_float(1.0F);
 }
 
-void filesystem::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
+void filesystem::serialized::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
   pugi::xml_node node = base_node.child(MATERIAL_KEY_NAME);
   if (!node) {
     base_node.append_child(MATERIAL_KEY_NAME);
