@@ -27,10 +27,11 @@ void main() {
   if (bloom)
     hdrColor += bloomColor;
 
-  vec3 result = vec3(1.0) - exp(-hdrColor * exposure);
-  result = pow(result, vec3(1.0 / gamma));
-  result = ApplyRetroEffects(result, coord);
-  FragColor = vec4(result, 1.0);
+//  vec3 result = vec3(1.0) - exp(-hdrColor * exposure);
+//  result = pow(result, vec3(1.0 / gamma));
+//  result = ApplyRetroEffects(result, coord);
+//  FragColor = vec4(result, 1.0);
+  FragColor = vec4(hdrColor, 1.0);
 }
 
 vec3 ApplyRetroEffects(vec3 color, vec2 texCoord) {

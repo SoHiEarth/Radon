@@ -78,8 +78,6 @@ void DrawRendererStatus() {
     ImGui::InputInt("Bloom Amount", &render::g_render_settings.bloom_amount_);
     render::g_render_settings.bloom_amount_ = std::max(render::g_render_settings.bloom_amount_, 1);
     ImGui::InputFloat("Render Factor", &render::g_render_settings.render_factor_, GUI_DRAG_STEP);
-    render::g_render_settings.render_factor_ =
-        std::max(render::g_render_settings.render_factor_, g_prev_render_factor);
     ImGui::Text("Colorbuffer");
     for (unsigned int g_colorbuffer : g_colorbuffers) {
       ImGui::Image(g_colorbuffer, IMAGE_SIZE);
