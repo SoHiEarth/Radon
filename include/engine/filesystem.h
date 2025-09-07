@@ -38,7 +38,7 @@ void FreeMaterial(Material* /*material*/);
 namespace serialized {
 Level* LoadLevel(std::string_view /*path*/);
 Object* LoadObject(pugi::xml_node& /*base_node*/);
-Material* LoadMaterial(pugi::xml_node& /*base_node*/, std::string /*name*/ = "material");
+Material* LoadMaterial(pugi::xml_node& /*base_node*/);
 glm::vec3 LoadVec3(pugi::xml_node& /*base_node*/, std::string /*name*/);
 glm::vec2 LoadVec2(pugi::xml_node& /*base_node*/, std::string /*name*/);
 std::string LoadString(pugi::xml_node& /*base_node*/, std::string /*name*/);

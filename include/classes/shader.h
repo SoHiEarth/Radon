@@ -2,12 +2,12 @@
 #define SHADER_H
 
 #include <glm/glm.hpp>
-#include <string_view>
+#include <string>
 #include <utility>
 
 class Shader {
 public:
-  std::string_view vertex_path_, fragment_path_;
+  std::string vertex_path_, fragment_path_;
   unsigned int id_ = 0;
   void Use() const;
   void SetInt(std::string_view /*name*/, int /*value*/) const;

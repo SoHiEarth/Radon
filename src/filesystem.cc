@@ -164,6 +164,7 @@ void filesystem::FreeShader(Shader* shader) {
 
 Texture* filesystem::LoadTexture(std::string_view path) {
   auto* texture = new Texture();
+  texture->path_ = path;
   glGenTextures(1, &texture->id_);
   stbi_set_flip_vertically_on_load(1);
   unsigned char* data = stbi_load(path.data(), &texture->width_, &texture->height_, &texture->channels_, 0);
@@ -237,12 +238,9 @@ void filesystem::FreeMaterial(Material* material) {
   material = nullptr;
 }
 
-Material* filesystem::serialized::LoadMaterial(pugi::xml_node& node, std::string name) {
-  std::string validatedName = ValidateName(name);
-  name = validatedName.c_str();
-  pugi::xml_node material_node = node.child(name);
+Material* filesystem::serialized::LoadMaterial(pugi::xml_node& node) {
+  pugi::xml_node material_node = node.child(MATERIAL_KEY_NAME);
   if (!material_node) {
-    fmt::print("Material node not found\n");
     return nullptr;
   }
   Material* material = filesystem::LoadMaterial(
@@ -260,15 +258,26 @@ void filesystem::serialized::SaveMaterial(const Material* material, pugi::xml_no
     fmt::print("Material is null, skipping save\n");
     return;
   }
+
+  if (!material->IsValid()) {
+    fmt::print("Material is invalid (missing texture or shader), skipping save\n");
+    return;
+  }
+
   pugi::xml_node node = base_node.child(MATERIAL_KEY_NAME);
   if (!node) {
-    base_node.append_child(MATERIAL_KEY_NAME);
+    node = base_node.append_child(MATERIAL_KEY_NAME);
   }
-  node.append_attribute(MATERIAL_DIFFUSE_KEY_NAME).set_value(material->diffuse_->path_);
-  node.append_attribute(MATERIAL_SPECULAR_KEY_NAME).set_value(material->specular_->path_);
-  node.append_attribute(MATERIAL_VERTEX_KEY_NAME).set_value(material->shader_->vertex_path_);
-  node.append_attribute(MATERIAL_FRAGMENT_KEY_NAME).set_value(material->shader_->fragment_path_);
-  node.append_attribute(MATERIAL_SHININESS_KEY_NAME).set_value(material->shininess_);
+  auto diffuse_node = node.append_child(MATERIAL_DIFFUSE_KEY_NAME);
+  diffuse_node.text().set(material->diffuse_->path_);
+  auto specular_node = node.append_child(MATERIAL_SPECULAR_KEY_NAME);
+  specular_node.text().set(material->specular_->path_);
+  auto vertex_node = node.append_child(MATERIAL_VERTEX_KEY_NAME);
+  vertex_node.text().set(material->shader_->vertex_path_);
+  auto fragment_node = node.append_child(MATERIAL_FRAGMENT_KEY_NAME);
+  fragment_node.text().set(material->shader_->fragment_path_);
+  auto shininess_node = node.append_child(MATERIAL_SHININESS_KEY_NAME);
+  shininess_node.text().set(material->shininess_);
 }
 
 ///////////////////////////////

@@ -16,6 +16,7 @@ void DirectionalLight::Quit() {
 }
 
 void DirectionalLight::Load(pugi::xml_node& node) {
+  name_ = filesystem::serialized::LoadString(node, name_.i_label_);
   direction_ = filesystem::serialized::LoadVec3(node, direction_.i_label_);
   ambient_ = filesystem::serialized::LoadVec3(node, ambient_.i_label_);
   diffuse_ = filesystem::serialized::LoadVec3(node, diffuse_.i_label_);
@@ -23,6 +24,7 @@ void DirectionalLight::Load(pugi::xml_node& node) {
 }
 
 void DirectionalLight::Save(pugi::xml_node& node) const {
+  filesystem::serialized::SaveString(&name_.i_value_, node, name_.i_label_);
   filesystem::serialized::SaveVec3(&direction_.i_value_, node, direction_.i_label_);
   filesystem::serialized::SaveVec3(&ambient_.i_value_, node, ambient_.i_label_);
   filesystem::serialized::SaveVec3(&diffuse_.i_value_, node, diffuse_.i_label_);
@@ -46,6 +48,7 @@ void PointLight::Quit() {
 }
 
 void PointLight::Load(pugi::xml_node& node) {
+  name_ = filesystem::serialized::LoadString(node, name_.i_label_);
   position_ = filesystem::serialized::LoadVec3(node, position_.i_label_);
   ambient_ = filesystem::serialized::LoadVec3(node, ambient_.i_label_);
   diffuse_ = filesystem::serialized::LoadVec3(node, diffuse_.i_label_);
@@ -55,6 +58,7 @@ void PointLight::Load(pugi::xml_node& node) {
   quadratic_ = filesystem::serialized::LoadFloat(node, quadratic_.i_label_);
 }
 void PointLight::Save(pugi::xml_node& node) const {
+  filesystem::serialized::SaveString(&name_.i_value_, node, name_.i_label_);
   filesystem::serialized::SaveVec3(&position_.i_value_, node, position_.i_label_);
   filesystem::serialized::SaveVec3(&ambient_.i_value_, node, ambient_.i_label_);
   filesystem::serialized::SaveVec3(&diffuse_.i_value_, node, diffuse_.i_label_);
@@ -84,6 +88,7 @@ void SpotLight::Quit() {
 }
 
 void SpotLight::Load(pugi::xml_node& node) {
+  name_ = filesystem::serialized::LoadString(node, name_.i_label_);
   position_ = filesystem::serialized::LoadVec3(node, position_.i_label_);
   direction_ = filesystem::serialized::LoadVec3(node, direction_.i_label_);
   ambient_ = filesystem::serialized::LoadVec3(node, ambient_.i_label_);
@@ -97,6 +102,7 @@ void SpotLight::Load(pugi::xml_node& node) {
 }
 
 void SpotLight::Save(pugi::xml_node& node) const {
+  filesystem::serialized::SaveString(&name_.i_value_, node, name_.i_label_);
   filesystem::serialized::SaveVec3(&position_.i_value_, node, position_.i_label_);
   filesystem::serialized::SaveVec3(&direction_.i_value_, node, direction_.i_label_);
   filesystem::serialized::SaveVec3(&ambient_.i_value_, node, ambient_.i_label_);
