@@ -21,15 +21,16 @@ bool dev::g_hud_enabled = false;
 Object* g_current_object = nullptr;
 std::string g_material_path;
 
-void MaterialView(Material* material) {
+void MaterialView(Material*& material) {
   ImGui::SeparatorText("Material");
   ImGui::InputText("Material Path", &g_material_path);
   if (ImGui::Button("Load")) {
+    filesystem::FreeMaterial(material);
     material = filesystem::LoadMaterial(
       g_material_path + "/diffuse.png",
-      g_material_path + "/fragment.png",
+      g_material_path + "/specular.png",
       g_material_path + "/vert.glsl",
-      g_material_path + "/frag.glsl"
+      g_material_path + "/frag.glsl", 32.0F
     );
   }
   if (material == nullptr) {

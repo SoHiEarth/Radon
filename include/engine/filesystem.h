@@ -30,7 +30,8 @@ void FreeTexture(Texture* /*texture*/);
 Material* LoadMaterial(std::string_view diffuse,
   std::string_view specular,
   std::string_view vertex,
-  std::string_view fragment);
+  std::string_view fragment,
+  float shininess);
 void FreeMaterial(Material* /*material*/);
 
 // Namespace for handling XML

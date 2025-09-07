@@ -208,8 +208,9 @@ void filesystem::FreeTexture(Texture* texture) {
 /// Material IO functions ///
 /////////////////////////////
 
-Material* filesystem::LoadMaterial(std::string_view diffuse, std::string_view specular, std::string_view vertex, std::string_view fragment) {
+Material* filesystem::LoadMaterial(std::string_view diffuse, std::string_view specular, std::string_view vertex, std::string_view fragment, float shininess) {
   auto* material = new Material();
+  material->shininess_ = shininess;
   try {
     material->diffuse_ = filesystem::LoadTexture(diffuse);
     material->specular_ = filesystem::LoadTexture(specular);
@@ -226,7 +227,6 @@ Material* filesystem::LoadMaterial(std::string_view diffuse, std::string_view sp
 }
 
 void filesystem::FreeMaterial(Material* material) {
-  fmt::print("Freed material\n");
   if (material == nullptr) {
     return;
   }
@@ -249,23 +249,25 @@ Material* filesystem::serialized::LoadMaterial(pugi::xml_node& node, std::string
     material_node.attribute(MATERIAL_DIFFUSE_KEY_NAME).as_string(),
     material_node.attribute(MATERIAL_SPECULAR_KEY_NAME).as_string(),
     material_node.attribute(MATERIAL_VERTEX_KEY_NAME).as_string(),
-    material_node.attribute(MATERIAL_FRAGMENT_KEY_NAME).as_string()
+      material_node.attribute(MATERIAL_FRAGMENT_KEY_NAME).as_string(),
+      material_node.attribute(MATERIAL_SHININESS_KEY_NAME).as_float(32.0F)
   );
   return material;
 }
 
 void filesystem::serialized::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
   if (material == nullptr) {
+    fmt::print("Material is null, skipping save\n");
     return;
   }
   pugi::xml_node node = base_node.child(MATERIAL_KEY_NAME);
   if (!node) {
     base_node.append_child(MATERIAL_KEY_NAME);
   }
-  node.append_attribute(MATERIAL_DIFFUSE_KEY_NAME).set_value(material->diffuse_->path_.data());
-  node.append_attribute(MATERIAL_SPECULAR_KEY_NAME).set_value(material->specular_->path_.data());
-  node.append_attribute(MATERIAL_VERTEX_KEY_NAME).set_value(material->shader_->vertex_path_.data());
-  node.append_attribute(MATERIAL_FRAGMENT_KEY_NAME).set_value(material->shader_->fragment_path_.data());
+  node.append_attribute(MATERIAL_DIFFUSE_KEY_NAME).set_value(material->diffuse_->path_);
+  node.append_attribute(MATERIAL_SPECULAR_KEY_NAME).set_value(material->specular_->path_);
+  node.append_attribute(MATERIAL_VERTEX_KEY_NAME).set_value(material->shader_->vertex_path_);
+  node.append_attribute(MATERIAL_FRAGMENT_KEY_NAME).set_value(material->shader_->fragment_path_);
   node.append_attribute(MATERIAL_SHININESS_KEY_NAME).set_value(material->shininess_);
 }
 
