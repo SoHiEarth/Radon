@@ -23,10 +23,14 @@ std::string g_material_path;
 
 void MaterialView(Material* material) {
   ImGui::SeparatorText("Material");
-  ImGui::SeparatorText("Load a Material from disk");
   ImGui::InputText("Material Path", &g_material_path);
   if (ImGui::Button("Load")) {
-    material = filesystem::LoadMaterial(g_material_path);
+    material = filesystem::LoadMaterial(
+      g_material_path + "/diffuse.png",
+      g_material_path + "/fragment.png",
+      g_material_path + "/vert.glsl",
+      g_material_path + "/frag.glsl"
+    );
   }
   if (material == nullptr) {
     ImGui::TextColored({1, 0, 0, 1}, "Material not loaded");
@@ -38,8 +42,8 @@ void MaterialView(Material* material) {
   ImGui::Image(material->specular_->id_, ImVec2(IMAGE_PREVIEW_SIZE));
   ImGui::DragFloat("Shininess", &material->shininess_);
   ImGui::Text("Shader");
-  ImGui::Text("Vert: %s", material->shader_->kVertPath.data());
-  ImGui::Text("Frag: %s", material->shader_->kFragPath.data());
+  ImGui::Text("Vert: %s", material->shader_->vertex_path_.data());
+  ImGui::Text("Frag: %s", material->shader_->fragment_path_.data());
 }
 
 void dev::Init() {
@@ -63,10 +67,10 @@ void dev::Update() {
   ImGui::NewFrame();
   ImGui::Begin("Level Management");
   if (ImGui::Button("Load Level")) {
-    filesystem::g_level = filesystem::LoadLevel("test.xml");
+    filesystem::g_level = filesystem::serialized::LoadLevel("test.xml");
   }
   if (ImGui::Button("Save Level")) {
-    filesystem::SaveLevel(filesystem::g_level, "test.xml");
+    filesystem::serialized::SaveLevel(filesystem::g_level, "test.xml");
   }
   if (ImGui::Button("Add Sprite")) {
     filesystem::g_level->AddObject(new Sprite);

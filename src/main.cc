@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
   dev::Init();
 
   try {
-    filesystem::g_level = filesystem::LoadLevel("test.xml");
+    filesystem::g_level = filesystem::serialized::LoadLevel("test.xml");
   } catch (std::exception& e) {
     fmt::print("Caught exception, falling back to new level. Details: {}\n", e.what());
     if (filesystem::g_level == nullptr) {

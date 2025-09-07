@@ -25,14 +25,14 @@ void Sprite::Quit() {
 }
 
 void Sprite::Load(pugi::xml_node& node) {
-  filesystem::serialized::LoadEditable(&position_, node);
-  filesystem::serialized::LoadEditable(&rotation_, node);
-  filesystem::serialized::LoadEditable(&scale_, node);
-  filesystem::serialized::LoadMaterial(material_, node);
+  position_ = filesystem::serialized::LoadVec3(node, position_.i_label_);
+  rotation_ = filesystem::serialized::LoadFloat(node, rotation_.i_label_);
+  scale_ = filesystem::serialized::LoadVec2(node, scale_.i_label_);
+  material_ = filesystem::serialized::LoadMaterial(node);
 }
 void Sprite::Save(pugi::xml_node& node) const {
-  filesystem::serialized::SaveEditable(position_, node);
-  filesystem::serialized::SaveEditable(rotation_, node);
-  filesystem::serialized::SaveEditable(scale_, node);
+  filesystem::serialized::SaveVec3(&position_.i_value_, node, position_.i_label_);
+  filesystem::serialized::SaveFloat(&rotation_.i_value_, node, rotation_.i_label_);
+  filesystem::serialized::SaveVec2(&scale_.i_value_, node, scale_.i_label_);
   filesystem::serialized::SaveMaterial(material_, node);
 }

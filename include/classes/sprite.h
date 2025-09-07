@@ -11,13 +11,12 @@ public:
   void Render() override;
   void Quit() override;
   void Load(pugi::xml_node& /*node*/ /*unused*/) override;
-  [[nodiscard]] std::string GetTypeName() const override {
-    return "Sprite";
-  }
   void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
   ~Sprite() = default;
 
-private:
+  [[nodiscard]] std::string GetTypeName() const override {
+    return "Sprite";
+  }
 };
 
 #endif  // SPRITE_H

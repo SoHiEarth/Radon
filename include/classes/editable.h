@@ -10,7 +10,6 @@
 #include <vector>
 #define FLOAT_STEP 0.1F
 
-void MaterialView(Material* /*material*/);
 class IEditable {
 public:
   virtual void RenderInterface() = 0;
@@ -45,6 +44,14 @@ public:
   }
   const T* operator->() const {
     return &i_value_;
+  }
+  T operator=(T&& rhs) {
+    i_value_ = std::move(rhs);
+    return i_value_;
+  }
+  const T operator=(const T& rhs) {
+    i_value_ = rhs;
+    return i_value_;
   }
   void RenderInterface() override {
     if constexpr (std::is_same_v<T, bool>) {

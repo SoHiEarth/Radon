@@ -4,8 +4,8 @@
 struct Texture {
   unsigned int id_;
   int width_, height_, channels_;
-  const char* type_;
-  const char* path_;
+  std::string_view type_;
+  std::string_view path_;
 };
 
 #endif  // TEXTURE_H

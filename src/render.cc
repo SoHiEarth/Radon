@@ -111,14 +111,14 @@ void render::Init() {
 #endif
   render::g_window = glfwCreateWindow(render::g_width, render::g_height, "Metal", nullptr, nullptr);
   if (render::g_window == nullptr) {
-    std::runtime_error("Failed to create GLFW window");
+    throw std::runtime_error("Failed to create GLFW window");
   }
   glfwMakeContextCurrent(render::g_window);
   glfwSetFramebufferSizeCallback(render::g_window, FBSizeCallback);
   glfwSwapInterval(1);
 
   if (0 == gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    std::runtime_error("Failed to initialize GLAD\n");
+    throw std::runtime_error("Failed to initialize GLAD\n");
     glfwTerminate();
     return;
   }
@@ -354,7 +354,7 @@ void RecreateFramebuffer() {
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, g_renderbuffer);
   glDrawBuffers(2, g_attachments.data());
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    std::runtime_error("Failed to recreate framebuffer!\n");
+    throw std::runtime_error("Failed to recreate framebuffer!\n");
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -372,7 +372,7 @@ void RecreateFramebuffer() {
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                            g_pingpong_colorbuffer[i], 0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-      std::runtime_error("Failed to recreate pingpong framebuffer!");
+      throw std::runtime_error("Failed to recreate pingpong framebuffer!");
     }
   }
   g_prev_render_factor = render::g_render_settings.render_factor_;

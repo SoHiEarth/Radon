@@ -10,7 +10,7 @@ int g_substep_count = 4;
 
 void physics::Init() {
   b2WorldDef world_def = b2DefaultWorldDef();
-  world_def.gravity = (b2Vec2) {0.0F, GRAVITY};
+  world_def.gravity = (b2Vec2)(0.0F, GRAVITY);
   g_world_id = b2CreateWorld(&world_def);
   printf("Initialized Physics\n");
 }
