@@ -7,6 +7,7 @@
 #include <engine/filesystem.h>
 #include <fmt/core.h>
 #include <glad/glad.h>
+#include <algorithm>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -22,6 +23,7 @@
 #define MATERIAL_VERTEX_KEY_NAME "vs"
 #define MATERIAL_FRAGMENT_KEY_NAME "fs"
 #define MATERIAL_SHININESS_KEY_NAME "shininess"
+#define MATERIAL_SHININESS_DEFAULT_VALUE 32.0F
 #define OBJECT_FACTORY_KEY(Object)  \
   {                                 \
     #Object, {                      \
@@ -248,8 +250,8 @@ Material* filesystem::serialized::LoadMaterial(pugi::xml_node& node) {
     material_node.attribute(MATERIAL_DIFFUSE_KEY_NAME).as_string(),
     material_node.attribute(MATERIAL_SPECULAR_KEY_NAME).as_string(),
     material_node.attribute(MATERIAL_VERTEX_KEY_NAME).as_string(),
-      material_node.attribute(MATERIAL_FRAGMENT_KEY_NAME).as_string(),
-      material_node.attribute(MATERIAL_SHININESS_KEY_NAME).as_float(32.0F)
+    material_node.attribute(MATERIAL_FRAGMENT_KEY_NAME).as_string(),
+    material_node.attribute(MATERIAL_SHININESS_KEY_NAME).as_float(MATERIAL_SHININESS_DEFAULT_VALUE)
   );
   return material;
 }
@@ -375,7 +377,7 @@ void filesystem::serialized::SaveFloat(const float* value, pugi::xml_node& base_
 ///////////////////////////
 
 std::string ValidateName(std::string input) {
-  std::replace(input.begin(), input.end(), ' ', '_');
+  std::ranges::replace(input.begin(),input.end(), ' ', '_');
   return input;
 }
 
