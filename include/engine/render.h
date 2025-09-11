@@ -43,6 +43,7 @@ struct FramebufferCreateInfo {
   int width_, height_;
   int border_;
   int format_, type_;
+  bool same_colorbuffer_attachment_ = false;
   bool create_renderbuffer_ = true;
 };
 
