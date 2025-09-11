@@ -25,10 +25,24 @@ void Level::Quit() {
   }
 }
 
-void Level::AddObject(Object* object) {
+void Level::AddObject(Object* object, std::string_view name) {
   if (object == nullptr) {
     return;
   }
+  if (name != "Object")
+    object->name_ = std::string(name);
   objects_.push_back(object);
   object->Init();
+}
+
+void Level::RemoveObject(Object* object) {
+  if (object == nullptr) {
+    return;
+  }
+  auto it = std::find(objects_.begin(), objects_.end(), object);
+  if (it != objects_.end()) {
+    (*it)->Quit();
+    delete *it;
+    objects_.erase(it);
+  }
 }

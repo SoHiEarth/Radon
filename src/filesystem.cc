@@ -309,19 +309,19 @@ glm::vec2 filesystem::serialized::LoadVec2(pugi::xml_node& base_node, std::strin
 std::string filesystem::serialized::LoadString(pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
-  return node.text().as_string();
+  return node.attribute("value").as_string("");
 }
 
 int filesystem::serialized::LoadInt(pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
-  return node.text().as_int(0);
+  return node.attribute("value").as_int(0);
 }
 
 float filesystem::serialized::LoadFloat(pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
-  return node.text().as_float(0.0F);
+  return node.attribute("value").as_float(0.0F);
 }
 
 void filesystem::serialized::SaveVec3(const glm::vec3* value, pugi::xml_node& base_node, std::string name) {
@@ -351,7 +351,7 @@ void filesystem::serialized::SaveString(const std::string* value, pugi::xml_node
   if (!node) {
     node = base_node.append_child(name);
   }
-  node.text().set(value->data());
+  node.append_attribute("value").set_value(value->c_str());
 }
 
 void filesystem::serialized::SaveInt(const int* value, pugi::xml_node& base_node, std::string name) {
@@ -360,7 +360,7 @@ void filesystem::serialized::SaveInt(const int* value, pugi::xml_node& base_node
   if (!node) {
     node = base_node.append_child(name);
   }
-  node.text().set(*value);
+  node.append_attribute("value").set_value(*value);
 }
 
 void filesystem::serialized::SaveFloat(const float* value, pugi::xml_node& base_node, std::string name) {
@@ -369,7 +369,7 @@ void filesystem::serialized::SaveFloat(const float* value, pugi::xml_node& base_
   if (!node) {
     node = base_node.append_child(name);
   }
-  node.text().set(*value);
+  node.append_attribute("value").set_value(*value);
 }
 
 ///////////////////////////

@@ -74,16 +74,16 @@ void dev::Update() {
     filesystem::serialized::SaveLevel(filesystem::g_level, "test.xml");
   }
   if (ImGui::Button("Add Sprite")) {
-    filesystem::g_level->AddObject(new Sprite);
+    filesystem::g_level->AddObject(new Sprite, "Sprite");
   }
   if (ImGui::Button("Add Directional Light")) {
-    filesystem::g_level->AddObject(new DirectionalLight);
+    filesystem::g_level->AddObject(new DirectionalLight, "Directional Light");
   }
   if (ImGui::Button("Add Point Light")) {
-    filesystem::g_level->AddObject(new PointLight);
+    filesystem::g_level->AddObject(new PointLight, "Point Light");
   }
   if (ImGui::Button("Add Spot Light")) {
-    filesystem::g_level->AddObject(new SpotLight);
+    filesystem::g_level->AddObject(new SpotLight, "Spot Light");
   }
   ImGui::SeparatorText("Scene Objects");
   if (filesystem::g_level->objects_.empty()) {
@@ -98,10 +98,14 @@ void dev::Update() {
   }
   ImGui::End();
 
+  bool remove_current = false;
   ImGui::Begin("Properties");
   if (g_current_object == nullptr) {
     ImGui::Text("Select an Object");
   } else {
+    if (ImGui::Button("Remove")) {
+      remove_current = true;
+    }
     for (const auto& field : g_current_object->reg_) {
       if (field != nullptr) {
         field->RenderInterface();
@@ -110,6 +114,10 @@ void dev::Update() {
     MaterialView(g_current_object->material_);
   }
   ImGui::End();
+  if (g_current_object != nullptr && remove_current) {
+    filesystem::g_level->RemoveObject(g_current_object);
+    g_current_object = nullptr;
+  }
 }
 
 void dev::Render() {

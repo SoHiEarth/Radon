@@ -93,26 +93,23 @@ void RemoveLight(T* light) {
   if (light == nullptr) {
     return;
   }
+  std::vector<T*>* light_list = nullptr;
   if constexpr (std::is_same_v<T, DirectionalLight>) {
-    for (int i = 0; i < g_directional_lights.size(); i++) {
-      if (g_directional_lights[i] == light) {
-        g_directional_lights.erase(g_directional_lights.begin() + i);
-      }
-    }
+    light_list = &g_directional_lights;
   } else if constexpr (std::is_same_v<T, PointLight>) {
-    for (int i = 0; i < g_point_lights.size(); i++) {
-      if (g_point_lights[i] == light) {
-        g_point_lights.erase(g_point_lights.begin() + i);
-      }
-    }
+    light_list = &g_point_lights;
   } else if constexpr (std::is_same_v<T, SpotLight>) {
-    for (int i = 0; i < g_spot_lights.size(); i++) {
-      if (g_spot_lights[i] == light) {
-        g_spot_lights.erase(g_spot_lights.begin() + i);
-      }
+    light_list = &g_spot_lights;
+  }
+  if (light_list == nullptr) {
+    return;
+  }
+  for (int i = 0; i < light_list->size(); i++) {
+    if (light_list->at(i) == light) {
+      light_list->erase(light_list->begin() + i);
     }
   }
-  }
+}
 }  // namespace render
 
 #endif  // RENDER_H
