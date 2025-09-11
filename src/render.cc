@@ -26,9 +26,11 @@
 #define CAMERA_NEAR_PLANE 0.1F
 #define CAMERA_FAR_PLANE 100.0F
 
-enum : std::uint8_t {
+enum : std::uint16_t {
   kNumColorbuffers = 2,
   kPingPongCount = 2,
+  kDefaultWindowWidth = 800,
+  kDefaultWindowHeight = 600
 };
 using ImGui::TextColored;
 
@@ -36,16 +38,14 @@ std::vector<DirectionalLight *> render::g_directional_lights;
 std::vector<PointLight *> render::g_point_lights;
 std::vector<SpotLight *> render::g_spot_lights;
 unsigned int g_vao, g_vbo;
-unsigned int g_framebuffer, g_renderbuffer;
-std::array<unsigned int, kNumColorbuffers> g_colorbuffers;
+Framebuffer g_framebuffer;
 std::array<unsigned int, kPingPongCount> g_pingpong_framebuffer, g_pingpong_colorbuffer;
-std::vector<unsigned int> g_attachments;
 unsigned int g_screen_vao, g_screen_vbo;
 Shader *g_screen_shader = nullptr, *g_screen_shader_blur;
 float g_prev_render_factor = render::g_render_settings.render_factor_;
 RenderSettings render::g_render_settings{};
 GLFWwindow *render::g_window = nullptr;
-int render::g_width = 800, render::g_height = 600;
+int render::g_width = kDefaultWindowWidth, render::g_height = kDefaultWindowHeight;
 Camera render::g_camera;
 
 const std::array<float, 32> kGVertices = {-0.5F, 0.5F,  0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 1.0F,
@@ -79,12 +79,12 @@ void DrawRendererStatus() {
     render::g_render_settings.bloom_amount_ = std::max(render::g_render_settings.bloom_amount_, 1);
     ImGui::InputFloat("Render Factor", &render::g_render_settings.render_factor_, GUI_DRAG_STEP);
     ImGui::Text("Colorbuffer");
-    for (unsigned int g_colorbuffer : g_colorbuffers) {
-      ImGui::Image(g_colorbuffer, IMAGE_SIZE);
+    for (unsigned int colorbuffer : g_framebuffer.colorbuffers_) {
+      ImGui::Image(colorbuffer, IMAGE_SIZE);
     }
     ImGui::Text("Ping Pong Colorbuffer");
-    for (unsigned int g_colorbuffer : g_pingpong_colorbuffer) {
-      ImGui::Image(g_colorbuffer, IMAGE_SIZE);
+    for (unsigned int colorbuffer : g_pingpong_colorbuffer) {
+      ImGui::Image(colorbuffer, IMAGE_SIZE);
     }
     ImGui::End();
   }
@@ -174,7 +174,7 @@ void render::Update() {
   }
   glViewport(0, 0, render::g_width / g_render_settings.render_factor_,
              render::g_height / g_render_settings.render_factor_);
-  glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
+  glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer.framebuffer_);
   glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
@@ -189,7 +189,7 @@ void render::Render() {
     g_screen_shader_blur->SetInt("horizontal", static_cast<int>(horizontal));
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, first_iteration
-                                     ? g_colorbuffers[1]
+                                     ? g_framebuffer.colorbuffers_[1]
                                      : g_pingpong_colorbuffer[static_cast<size_t>(!horizontal)]);
     glBindVertexArray(g_screen_vao);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -208,7 +208,7 @@ void render::Render() {
 
   g_screen_shader->Use();
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, g_colorbuffers[0]);
+  glBindTexture(GL_TEXTURE_2D, g_framebuffer.colorbuffers_[0]);
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, g_pingpong_colorbuffer[static_cast<size_t>(!horizontal)]);
   g_screen_shader->SetInt("bloom", static_cast<int>(g_render_settings.bloom_));
@@ -228,20 +228,7 @@ void render::Render() {
 void render::Quit() {
   glDeleteVertexArrays(1, &g_vao);
   glDeleteBuffers(1, &g_vbo);
-  if (g_renderbuffer != 0) {
-    glDeleteRenderbuffers(1, &g_renderbuffer);
-    g_renderbuffer = 0;
-  }
-  for (unsigned int &g_colorbuffer : g_colorbuffers) {
-    if (g_colorbuffer != 0) {
-      glDeleteTextures(1, &g_colorbuffer);
-      g_colorbuffer = 0;
-    }
-  }
-  if (g_framebuffer != 0) {
-    glDeleteFramebuffers(1, &g_framebuffer);
-    g_framebuffer = 0;
-  }
+  DeleteFramebuffer(g_framebuffer);
 
   if (render::g_window != nullptr) {
     glfwDestroyWindow(render::g_window);
@@ -308,28 +295,64 @@ void render::RenderTexture(const Material *material, const glm::vec3 &pos, const
   glBindVertexArray(0);
 }
 
-void RecreateFramebuffer() {
-  if (!g_attachments.empty()) {
-    g_attachments.clear();
+Framebuffer render::CreateFramebuffer(FramebufferCreateInfo& create_info) {
+  Framebuffer framebuffer;
+  glGenFramebuffers(1, &framebuffer.framebuffer_);
+  glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.framebuffer_);
+  glGenTextures(create_info.num_colorbuffers_, framebuffer.colorbuffers_.data());
+  for (unsigned int i = 0; i < create_info.num_colorbuffers_; i++) {
+    glBindTexture(GL_TEXTURE_2D, framebuffer.colorbuffers_[i]);
+    glTexImage2D(GL_TEXTURE_2D, create_info.level_, create_info.colorbuffer_format_,
+        create_info.width_, create_info.height_, create_info.border_,
+        create_info.format_, create_info.type_, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D,
+        framebuffer.colorbuffers_[i], 0);
+    framebuffer.attachments_.push_back(GL_COLOR_ATTACHMENT0 + i);
   }
-  if (g_renderbuffer != 0) {
-    glDeleteRenderbuffers(1, &g_renderbuffer);
-    g_renderbuffer = 0;
+  
+  if (create_info.create_renderbuffer_) {
+    glGenRenderbuffers(1, &framebuffer.renderbuffer_);
+    glBindRenderbuffer(GL_RENDERBUFFER, framebuffer.renderbuffer_);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, create_info.width_, create_info.height_);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, framebuffer.renderbuffer_);
+    glDrawBuffers(framebuffer.attachments_.size(), framebuffer.attachments_.data());
   }
-  for (unsigned int &g_colorbuffer : g_colorbuffers) {
-    if (g_colorbuffer != 0) {
-      glDeleteTextures(1, &g_colorbuffer);
-      g_colorbuffer = 0;
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+    throw std::runtime_error("Failed to recreate framebuffer!\n");
+  }
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  return framebuffer;
+}
+
+void render::DeleteFramebuffer(Framebuffer& framebuffer) {
+  if (!framebuffer.attachments_.empty()) {
+    framebuffer.attachments_.clear();
+  }
+  if (framebuffer.renderbuffer_ != 0) {
+    glDeleteRenderbuffers(1, &framebuffer.renderbuffer_);
+    framebuffer.renderbuffer_ = 0;
+  }
+  for (unsigned int &colorbuffer : framebuffer.colorbuffers_) {
+    if (colorbuffer != 0) {
+      glDeleteTextures(1, &colorbuffer);
+      colorbuffer = 0;
     }
   }
-  if (g_framebuffer != 0) {
-    glDeleteFramebuffers(1, &g_framebuffer);
-    g_framebuffer = 0;
+  if (framebuffer.framebuffer_ != 0) {
+    glDeleteFramebuffers(1, &framebuffer.framebuffer_);
+    framebuffer.framebuffer_ = 0;
   }
+}
 
+void RecreateFramebuffer() {
   int framebuffer_width = render::g_width / render::g_render_settings.render_factor_;
   int framebuffer_height = render::g_height / render::g_render_settings.render_factor_;
 
+  /*
   glGenFramebuffers(1, &g_framebuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
   glGenTextures(kNumColorbuffers, g_colorbuffers.data());
@@ -355,6 +378,18 @@ void RecreateFramebuffer() {
     throw std::runtime_error("Failed to recreate framebuffer!\n");
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  */
+  FramebufferCreateInfo create_info;
+  create_info.num_colorbuffers_ = 2;
+  create_info.level_ = 0;
+  create_info.colorbuffer_format_ = GL_RGBA16F;
+  create_info.width_ = framebuffer_width;
+  create_info.height_ = framebuffer_height;
+  create_info.border_ = 0;
+  create_info.format_ = GL_RGBA;
+  create_info.type_ = GL_FLOAT;
+  create_info.create_renderbuffer_ = true;
+  g_framebuffer = render::CreateFramebuffer(create_info);
 
   glGenFramebuffers(2, g_pingpong_framebuffer.data());
   glGenTextures(2, g_pingpong_colorbuffer.data());

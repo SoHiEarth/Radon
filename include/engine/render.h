@@ -3,6 +3,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
+#include <cstdint>
 
 class GLFWwindow;
 class Camera;
@@ -11,16 +12,46 @@ class DirectionalLight;
 class PointLight;
 class SpotLight;
 
+enum : std::uint8_t {
+  kDefaultRenderFactor = 1,
+  kDefaultExposure = 1,
+  kDefaultBloom = 0,
+  kDefaultBloomAmount = 10,
+  kDefaultDithering = 0,
+  kDefaultPixelation = 1,
+  kDefaultScanlines = 0,
+  kDefaultScanlinesIntensity = 1,
+  kDefaultBrightness = 1
+};
+
 struct RenderSettings {
-  float render_factor_ = 1;
-  float exposure_ = 1.0F;
-  bool bloom_ = false;
-  int bloom_amount_ = 10;
-  bool dithering_ = false;
-  float pixelation_ = 1.0F;
-  bool scanlines_ = false;
-  float scanline_intensity_ = 1.0F;
-  float brightness_ = 1.0F;
+  float render_factor_ = kDefaultRenderFactor;
+  float exposure_ = kDefaultExposure;
+  bool bloom_ = static_cast<bool>(kDefaultBloom);
+  int bloom_amount_ = kDefaultBloomAmount;
+  bool dithering_ = static_cast<bool>(kDefaultDithering);
+  float pixelation_ = kDefaultPixelation;
+  bool scanlines_ = static_cast<bool>(kDefaultScanlines);
+  float scanline_intensity_ = kDefaultScanlinesIntensity;
+  float brightness_ = kDefaultBrightness;
+};
+
+struct FramebufferCreateInfo {
+  int num_colorbuffers_ = 0;
+  int level_ = 0;
+  int colorbuffer_format_;
+  int width_, height_;
+  int border_;
+  int format_, type_;
+  bool create_renderbuffer_ = true;
+};
+
+struct Framebuffer {
+  int width_, height_;
+  unsigned int framebuffer_;
+  unsigned int renderbuffer_;
+  std::vector<unsigned int> colorbuffers_;
+  std::vector<unsigned int> attachments_;
 };
 
 namespace render {
@@ -39,6 +70,8 @@ void Render();
 void Quit();
 void RenderTexture(const Material* /*material*/, const glm::vec3& /*pos*/,
                    const glm::vec2& /*size*/, const float& /*rot*/);
+Framebuffer CreateFramebuffer(FramebufferCreateInfo& create_info);
+void DeleteFramebuffer(Framebuffer& framebuffer);
 
 template <typename T>
 void AddLight(T* light) {
@@ -78,7 +111,7 @@ void RemoveLight(T* light) {
       }
     }
   }
-}
+  }
 }  // namespace render
 
 #endif  // RENDER_H

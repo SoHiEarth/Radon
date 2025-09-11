@@ -125,7 +125,8 @@ unsigned int CompileShader(std::string_view code, int type);
 
 Shader* filesystem::LoadShader(std::string_view vertex_path, std::string_view fragment_path) {
   auto* shader = new Shader(vertex_path.data(), fragment_path.data());
-  unsigned int vertex, fragment;
+  unsigned int vertex;
+  unsigned int fragment;
   try {
     vertex = CompileShader(ReadFile(vertex_path), GL_VERTEX_SHADER);
     fragment = CompileShader(ReadFile(fragment_path), GL_FRAGMENT_SHADER);
