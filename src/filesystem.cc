@@ -67,6 +67,7 @@ void filesystem::FreeLevel(Level* level) {
     return;
   }
   for (auto* object : level->objects_) {
+    object->Quit();
     FreeObject(object);
   }
   delete level;
@@ -173,6 +174,7 @@ Texture* filesystem::LoadTexture(std::string_view path) {
   unsigned char* data = stbi_load(path.data(), &texture->width_, &texture->height_, &texture->channels_, 0);
   if (data == nullptr) {
     filesystem::FreeTexture(texture);
+    texture = nullptr;
     throw std::runtime_error(std::format("Failed to load texture. Details: {}", path));
   }
   GLenum format = GL_RGB;
@@ -196,17 +198,29 @@ Texture* filesystem::LoadTexture(std::string_view path) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   stbi_image_free(data);
+  texture->initialized_ = true;
   return texture;
 }
 
 void filesystem::FreeTexture(Texture* texture) {
+  fmt::print("FreeTexture called with texture pointer: {}\n", (void*) texture);
   if (texture == nullptr) {
+    fmt::print("Texture is nullptr, skipping\n");
     return;
   }
+
+  fmt::print("Accessing initialized_ field...\n");
+  if (!texture->initialized_) {
+    fmt::print("Texture is not initialized, deleting\n");
+    delete texture;
+    return;
+  }
+
+  fmt::print("Texture is initialized, deleting OpenGL texture ID {}\n", texture->id_);
   glDeleteTextures(1, &texture->id_);
   delete texture;
-  texture = nullptr;
 }
+
 
 /////////////////////////////
 /// Material IO functions ///
@@ -227,6 +241,7 @@ Material* filesystem::LoadMaterial(std::string_view diffuse, std::string_view sp
   material->shader_->Use();
   material->shader_->SetInt("material.diffuse", 0);
   material->shader_->SetInt("material.specular", 1);
+  material->is_initialized_ = true;
   return material;
 }
 
@@ -234,8 +249,13 @@ void filesystem::FreeMaterial(Material* material) {
   if (material == nullptr) {
     return;
   }
+  if (!material->is_initialized_ || !material->IsValid()) {
+    return;
+  }
   filesystem::FreeTexture(material->diffuse_);
+  material->diffuse_ = nullptr;
   filesystem::FreeTexture(material->specular_);
+  material->specular_ = nullptr;
   filesystem::FreeShader(material->shader_);
   delete material;
   material = nullptr;
@@ -246,14 +266,13 @@ Material* filesystem::serialized::LoadMaterial(pugi::xml_node& node) {
   if (!material_node) {
     return nullptr;
   }
-  Material* material = filesystem::LoadMaterial(
+  return filesystem::LoadMaterial(
     material_node.attribute(MATERIAL_DIFFUSE_KEY_NAME).as_string(),
     material_node.attribute(MATERIAL_SPECULAR_KEY_NAME).as_string(),
     material_node.attribute(MATERIAL_VERTEX_KEY_NAME).as_string(),
     material_node.attribute(MATERIAL_FRAGMENT_KEY_NAME).as_string(),
     material_node.attribute(MATERIAL_SHININESS_KEY_NAME).as_float(MATERIAL_SHININESS_DEFAULT_VALUE)
   );
-  return material;
 }
 
 void filesystem::serialized::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
@@ -271,16 +290,11 @@ void filesystem::serialized::SaveMaterial(const Material* material, pugi::xml_no
   if (!node) {
     node = base_node.append_child(MATERIAL_KEY_NAME);
   }
-  auto diffuse_node = node.append_child(MATERIAL_DIFFUSE_KEY_NAME);
-  diffuse_node.text().set(material->diffuse_->path_);
-  auto specular_node = node.append_child(MATERIAL_SPECULAR_KEY_NAME);
-  specular_node.text().set(material->specular_->path_);
-  auto vertex_node = node.append_child(MATERIAL_VERTEX_KEY_NAME);
-  vertex_node.text().set(material->shader_->vertex_path_);
-  auto fragment_node = node.append_child(MATERIAL_FRAGMENT_KEY_NAME);
-  fragment_node.text().set(material->shader_->fragment_path_);
-  auto shininess_node = node.append_child(MATERIAL_SHININESS_KEY_NAME);
-  shininess_node.text().set(material->shininess_);
+  node.append_attribute(MATERIAL_DIFFUSE_KEY_NAME).set_value(material->diffuse_->path_);
+  node.append_attribute(MATERIAL_SPECULAR_KEY_NAME).set_value(material->specular_->path_);
+  node.append_attribute(MATERIAL_VERTEX_KEY_NAME).set_value(material->shader_->vertex_path_);
+  node.append_attribute(MATERIAL_FRAGMENT_KEY_NAME).set_value(material->shader_->fragment_path_);
+  node.append_attribute(MATERIAL_SHININESS_KEY_NAME).set_value(material->shininess_);
 }
 
 ///////////////////////////////

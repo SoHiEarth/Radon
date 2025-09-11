@@ -7,6 +7,7 @@ class Texture;
 class Shader;
 
 struct Material {
+  bool is_initialized_ = false;
   Texture *diffuse_ = nullptr, *specular_ = nullptr;
   Shader* shader_ = nullptr;
   float shininess_ = 0;

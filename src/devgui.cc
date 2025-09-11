@@ -67,11 +67,13 @@ void dev::Update() {
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
   ImGui::Begin("Level Management");
+  ImGui::InputText("Level Path", &filesystem::g_level->path_);
   if (ImGui::Button("Load Level")) {
-    filesystem::g_level = filesystem::serialized::LoadLevel("test.xml");
+    filesystem::FreeLevel(filesystem::g_level);
+    filesystem::g_level = filesystem::serialized::LoadLevel(filesystem::g_level->path_);
   }
   if (ImGui::Button("Save Level")) {
-    filesystem::serialized::SaveLevel(filesystem::g_level, "test.xml");
+    filesystem::serialized::SaveLevel(filesystem::g_level, filesystem::g_level->path_);
   }
   if (ImGui::Button("Add Sprite")) {
     filesystem::g_level->AddObject(new Sprite, "Sprite");
@@ -86,9 +88,7 @@ void dev::Update() {
     filesystem::g_level->AddObject(new SpotLight, "Spot Light");
   }
   ImGui::SeparatorText("Scene Objects");
-  if (filesystem::g_level->objects_.empty()) {
-    ImGui::Text("Scene is empty.");
-  } else {
+  if (!filesystem::g_level->objects_.empty()) {
     for (int i = 0; i < filesystem::g_level->objects_.size(); i++) {
       if (ImGui::Button(
               std::format("{}###{}", *filesystem::g_level->objects_[i]->name_, i).c_str())) {
@@ -97,27 +97,21 @@ void dev::Update() {
     }
   }
   ImGui::End();
-
-  bool remove_current = false;
   ImGui::Begin("Properties");
-  if (g_current_object == nullptr) {
-    ImGui::Text("Select an Object");
-  } else {
+  if (g_current_object != nullptr) {
     if (ImGui::Button("Remove")) {
-      remove_current = true;
-    }
-    for (const auto& field : g_current_object->reg_) {
-      if (field != nullptr) {
-        field->RenderInterface();
+      filesystem::g_level->RemoveObject(g_current_object);
+      g_current_object = nullptr;
+    } else {
+      for (const auto& field : g_current_object->reg_) {
+        if (field != nullptr) {
+          field->RenderInterface();
+        }
       }
+      MaterialView(g_current_object->material_);
     }
-    MaterialView(g_current_object->material_);
   }
   ImGui::End();
-  if (g_current_object != nullptr && remove_current) {
-    filesystem::g_level->RemoveObject(g_current_object);
-    g_current_object = nullptr;
-  }
 }
 
 void dev::Render() {
