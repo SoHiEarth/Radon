@@ -2,6 +2,7 @@
 #include <AL/alc.h>
 #include <engine/audio.h>
 #include <engine/debug.h>
+#include <cstring>
 
 ALCdevice* g_device;
 ALCcontext* g_context;

@@ -1,5 +1,6 @@
 #include <classes/level.h>
 #include <classes/object.h>
+#include <algorithm>
 
 void Level::Init() {
   for (const auto& object : objects_) {
@@ -40,10 +41,12 @@ void Level::RemoveObject(Object* object) {
   if (object == nullptr) {
     return;
   }
-  auto it = std::find(objects_.begin(), objects_.end(), object);
+
+  auto it = std::ranges::find(objects_.begin(), objects_.end(), object);
   if (it != objects_.end()) {
-    if (!(*it)->has_quit_ && (*it)->has_initialized_)
+    if (!(*it)->has_quit_ && (*it)->has_initialized_) {
       (*it)->Quit();
+    }
     delete *it;
     objects_.erase(it);
   }

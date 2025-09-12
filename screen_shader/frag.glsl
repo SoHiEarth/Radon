@@ -5,5 +5,5 @@ uniform sampler2D scene;
 
 void main() {
   const float gamma = 2.2;
-  FragColor = vec4(texture(scene, coord).rgb, 1.0);
+  FragColor = vec4(texture(scene, TexCoords).rgb, 1.0);
 }
