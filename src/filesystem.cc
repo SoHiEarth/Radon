@@ -402,6 +402,7 @@ std::string ReadFile(std::string_view path) {
   } catch (std::ifstream::failure e) {
     debug::Throw(GET_TRACE, std::format("File IO failure. {}, {}", path, e.what()));
   }
+  return "";
 }
 
 unsigned int CompileShader(std::string_view code, int type) {
