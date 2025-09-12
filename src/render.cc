@@ -10,6 +10,7 @@
 #include <engine/devgui.h>
 #include <engine/filesystem.h>
 #include <engine/render.h>
+#include <engine/debug.h>
 #include <fmt/core.h>
 #include <imgui.h>
 #include <array>
@@ -65,26 +66,10 @@ void DrawRendererStatus() {
     ImGui::Text("Spot light count: %d", static_cast<int>(render::g_spot_lights.size()));
     ImGui::DragFloat3("Camera Position", glm::value_ptr(render::g_camera.position_));
     ImGui::SeparatorText("Screen Shader");
-    ImGui::InputFloat("Pixelation Factor", &render::g_render_settings.pixelation_, GUI_DRAG_STEP);
-    ImGui::Checkbox("Dithering", &render::g_render_settings.dithering_);
-    ImGui::InputFloat("Brightness Levels", &render::g_render_settings.brightness_, GUI_DRAG_STEP);
-    ImGui::Checkbox("Scanlines", &render::g_render_settings.scanlines_);
-    ImGui::InputFloat("Scanline Intensity", &render::g_render_settings.scanline_intensity_,
-                      GUI_DRAG_STEP);
-    ImGui::InputFloat("Exposure", &render::g_render_settings.exposure_, GUI_DRAG_STEP);
-    ImGui::Checkbox("Bloom", &render::g_render_settings.bloom_);
-    ImGui::InputInt("Bloom Amount", &render::g_render_settings.bloom_amount_);
-    render::g_render_settings.bloom_amount_ = std::max(render::g_render_settings.bloom_amount_, 1);
     ImGui::InputFloat("Render Factor", &render::g_render_settings.render_factor_, GUI_DRAG_STEP);
     ImGui::Text("Colorbuffer");
     for (unsigned int colorbuffer : g_framebuffer.colorbuffers_) {
       ImGui::Image(colorbuffer, IMAGE_SIZE);
-    }
-    ImGui::Text("Ping Pong Colorbuffer");
-    for (const Framebuffer& framebuffer : g_pingpong_framebuffers) {
-      for (unsigned int colorbuffer : framebuffer.colorbuffers_) {
-        ImGui::Image(colorbuffer, IMAGE_SIZE);
-      }
     }
     ImGui::End();
   }
@@ -112,14 +97,14 @@ void render::Init() {
     const char* error_desc;
     glfwGetError(&error_desc);
     fmt::print("{}\n", error_desc);
-    throw std::runtime_error("Failed to create GLFW window");
+    debug::Throw(GET_TRACE, "Failed to create GLFW window");
   }
   glfwMakeContextCurrent(render::g_window);
   glfwSetFramebufferSizeCallback(render::g_window, FBSizeCallback);
   glfwSwapInterval(1);
 
   if (0 == gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    throw std::runtime_error("Failed to initialize GLAD\n");
+    debug::Throw(GET_TRACE, "Failed to initialize GLAD");
     glfwTerminate();
     return;
   }
@@ -156,22 +141,20 @@ void render::Init() {
 
   RecreateFramebuffer();
 
-  g_screen_shader_blur = filesystem::LoadShader("screen_blur/vert.glsl", "screen_blur/frag.glsl");
-  g_screen_shader_blur->Use();
-  g_screen_shader_blur->SetInt("image", 0);
-
   g_screen_shader = filesystem::LoadShader("screen_shader/vert.glsl", "screen_shader/frag.glsl");
   g_screen_shader->Use();
   g_screen_shader->SetInt("scene", 0);
   g_screen_shader->SetInt("blur", 1);
 
-  fmt::println("Initialized OpenGL");
+  debug::Log(GET_TRACE, "Initialized Rendering");
 }
 
 void render::Update() {
   if (render::g_window == nullptr) {
     return;
   }
+  render::g_width = std::max(1, render::g_width);
+  render::g_height = std::max(1, render::g_height);
   if (g_render_settings.render_factor_ != g_prev_render_factor) {
     RecreateFramebuffer();
   }
@@ -183,44 +166,14 @@ void render::Update() {
 }
 
 void render::Render() {
-  // Bloom Start
-  bool horizontal = true;
-  bool first_iteration = true;
-  g_screen_shader_blur->Use();
-  for (unsigned int i = 0; std::cmp_less(i, g_render_settings.bloom_amount_); i++) {
-    glBindFramebuffer(GL_FRAMEBUFFER, g_pingpong_framebuffers[static_cast<size_t>(horizontal)].framebuffer_);
-    g_screen_shader_blur->SetInt("horizontal", static_cast<int>(horizontal));
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, first_iteration
-                                     ? g_framebuffer.colorbuffers_[1]
-                                     : g_pingpong_framebuffers[static_cast<size_t>(!horizontal)].colorbuffers_[static_cast<size_t>(!horizontal)]);
-    glBindVertexArray(g_screen_vao);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0);
-    horizontal = !horizontal;
-    if (first_iteration) {
-      first_iteration = false;
-    }
-  }
-  // Bloom End
   glViewport(0, 0, render::g_width, render::g_height);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   dev::Update();
   DrawRendererStatus();
-
   g_screen_shader->Use();
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, g_framebuffer.colorbuffers_[0]);
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, g_pingpong_framebuffers[static_cast<size_t>(!horizontal)].colorbuffers_[static_cast<size_t>(!horizontal)]);
-  g_screen_shader->SetInt("bloom", static_cast<int>(g_render_settings.bloom_));
-  g_screen_shader->SetFloat("exposure", g_render_settings.exposure_);
-  g_screen_shader->SetFloat("pixelation_factor", g_render_settings.pixelation_);
-  g_screen_shader->SetInt("enable_dithering", static_cast<int>(g_render_settings.dithering_));
-  g_screen_shader->SetFloat("brightness_levels", g_render_settings.brightness_);
-  g_screen_shader->SetInt("enable_scanlines", static_cast<int>(g_render_settings.scanlines_));
-  g_screen_shader->SetFloat("scanline_intensity", g_render_settings.scanline_intensity_);
   glBindVertexArray(g_screen_vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   glBindVertexArray(0);
@@ -238,7 +191,7 @@ void render::Quit() {
     render::g_window = nullptr;
   }
   glfwTerminate();
-  fmt::print("Terminated OpenGL\n");
+  debug::Log(GET_TRACE, "Terminated Rendering");
 }
 
 glm::mat4 GetTransform(const glm::vec3 &pos, const glm::vec2 &scale, float rot) {
@@ -334,7 +287,7 @@ Framebuffer render::CreateFramebuffer(FramebufferCreateInfo& create_info) {
     glDrawBuffers(framebuffer.attachments_.size(), framebuffer.attachments_.data());
   }
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    throw std::runtime_error("Failed to create framebuffer!\n");
+    debug::Throw(GET_TRACE, "Failed to create framebuffer!");
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   return framebuffer;
@@ -361,36 +314,9 @@ void render::DeleteFramebuffer(Framebuffer& framebuffer) {
 }
 
 void RecreateFramebuffer() {
-  int framebuffer_width = render::g_width / render::g_render_settings.render_factor_;
-  int framebuffer_height = render::g_height / render::g_render_settings.render_factor_;
-
-  /*
-  glGenFramebuffers(1, &g_framebuffer);
-  glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
-  glGenTextures(kNumColorbuffers, g_colorbuffers.data());
-  for (unsigned int i = 0; i < kNumColorbuffers; i++) {
-    glBindTexture(GL_TEXTURE_2D, g_colorbuffers[i]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, framebuffer_width, framebuffer_height, 0, GL_RGBA,
-                 GL_FLOAT, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D,
-                           g_colorbuffers[i], 0);
-    g_attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
-  }
-
-  glGenRenderbuffers(1, &g_renderbuffer);
-  glBindRenderbuffer(GL_RENDERBUFFER, g_renderbuffer);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, framebuffer_width, framebuffer_height);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, g_renderbuffer);
-  glDrawBuffers(2, g_attachments.data());
-  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    throw std::runtime_error("Failed to recreate framebuffer!\n");
-  }
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  */
+  render::DeleteFramebuffer(g_framebuffer);
+  int framebuffer_width = std::max(1, render::g_width) / render::g_render_settings.render_factor_;
+  int framebuffer_height = std::max(1, render::g_height) / render::g_render_settings.render_factor_;
   FramebufferCreateInfo create_info;
   create_info.num_colorbuffers_ = 2;
   create_info.level_ = 0;
@@ -403,21 +329,5 @@ void RecreateFramebuffer() {
   create_info.same_colorbuffer_attachment_ = false;
   create_info.create_renderbuffer_ = true;
   g_framebuffer = render::CreateFramebuffer(create_info);
-
-  FramebufferCreateInfo pp_create_info;
-  pp_create_info.num_colorbuffers_ = 2;
-  pp_create_info.level_ = 0;
-  pp_create_info.colorbuffer_format_ = GL_RGBA16F;
-  pp_create_info.width_ = framebuffer_width;
-  pp_create_info.height_ = framebuffer_height;
-  pp_create_info.border_ = 0;
-  pp_create_info.format_ = GL_RGBA;
-  pp_create_info.type_ = GL_FLOAT;
-  pp_create_info.same_colorbuffer_attachment_ = true;
-  pp_create_info.create_renderbuffer_ = false;
-  g_pingpong_framebuffers.resize(render::g_render_settings.bloom_amount_);
-  for (auto& framebuffer : g_pingpong_framebuffers) {
-    framebuffer = render::CreateFramebuffer(pp_create_info);
-  }
   g_prev_render_factor = render::g_render_settings.render_factor_;
 }

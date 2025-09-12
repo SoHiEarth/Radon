@@ -7,15 +7,22 @@
 #include <engine/input.h>
 #include <engine/physics.h>
 #include <engine/render.h>
-#include <fmt/core.h>
+#include <engine/debug.h>
+
 #define CAMERA_SPEED 0.1
 
 int main(int argc, char** argv) {
-  render::Init();
-  input::Init();
-  audio::Init();
-  physics::Init();
-  dev::Init();
+  try {
+    render::Init();
+    input::Init();
+    audio::Init();
+    physics::Init();
+    dev::Init();
+  }
+  catch (std::exception& e) {
+    debug::Log(GET_TRACE, std::format("Initialization failure: {}", e.what()));
+    return -1;
+  }
 
   input::AddHook({GLFW_KEY_ESCAPE, ButtonState::kRelease},
                  []() { glfwSetWindowShouldClose(render::g_window, true); });
@@ -49,7 +56,7 @@ int main(int argc, char** argv) {
       render::Render();
     }
   } catch (std::exception& e) {
-    fmt::print("Caught exception, exiting. Details: \n{}\n", e.what());
+    debug::Log(GET_TRACE, std::format("Runtime failure: {}", e.what()));
   }
 
   if (filesystem::g_level != nullptr) {

@@ -9,14 +9,12 @@
 #include <engine/devgui.h>
 #include <engine/filesystem.h>
 #include <engine/render.h>
+#include <engine/debug.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_stdlib.h>
 #include <format>
-#include <fmt/core.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #define IMAGE_PREVIEW_SIZE 100, 100
 bool dev::g_hud_enabled = false;
 Object* g_current_object = nullptr;
@@ -75,7 +73,7 @@ void dev::Init() {
   ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
   ImGui_ImplOpenGL3_Init("#version 150");
   ImGui::StyleColorsDark();
-  fmt::print("Initialized GUI\n");
+  debug::Log(GET_TRACE, "Initialized GUI");
 }
 
 std::string new_level_path = "Untitled Level.xml";
@@ -102,6 +100,11 @@ void dev::Update() {
       MaterialView(g_current_object->material_);
     }
   }
+  ImGui::End();
+  ImGui::Begin("Debug");
+  ImGui::Checkbox("Trace Source File", &debug::g_debug_settings.trace_source_file);
+  ImGui::Checkbox("Trace Function Name", &debug::g_debug_settings.trace_function_name);
+  ImGui::Checkbox("Trace Line Number", &debug::g_debug_settings.trace_line_number);
   ImGui::End();
   ImGui::Begin("Level Management");
   if (filesystem::g_level == nullptr) {

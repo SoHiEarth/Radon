@@ -1,9 +1,10 @@
 #include <GLFW/glfw3.h>
 #include <engine/input.h>
-#include <fmt/core.h>
+#include <engine/debug.h>
 #include <functional>
 #include <map>
-#include "engine/render.h"
+#include <format>
+#include <engine/render.h>
 
 static const std::map<ButtonState, const char*> kButtonStateMap = {
     {ButtonState::kHold, "Hold"},
@@ -15,11 +16,11 @@ std::map<int, bool> g_prev_frame_key_states;
 
 void input::AddHook(const Trigger& key, const std::function<void()>& hook) {
   if (glfwGetCurrentContext() == nullptr) {
-    throw std::runtime_error("No GLFW context to add input hook");
+    debug::Throw(GET_TRACE, "No GLFW context to add input hook");
   } else {
     g_event_hooks[key] = hook;
-    fmt::print("Added input hook for key: {}\tWith state {}\n", key.first,
-               kButtonStateMap.at(key.second));
+    debug::Log(GET_TRACE, std::format("Added input hook for key: {}\tWith state {}", key.first,
+                                      kButtonStateMap.at(key.second)));
   }
 }
 
@@ -29,8 +30,8 @@ void input::RemoveHook(const Trigger& key) {
     return;
   }
   g_event_hooks.erase(key);
-  fmt::print("Removed input hook for key: {}\tWith state {}\n", key.first,
-             kButtonStateMap.at(key.second));
+  debug::Log(GET_TRACE, std::format("Removed input hook for key: {}\tWith state {}", key.first,
+                                    kButtonStateMap.at(key.second)));
 }
 
 void input::Init() {
@@ -38,7 +39,7 @@ void input::Init() {
     throw std::runtime_error("No GLFW context to initialize input");
   } else {
     glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    fmt::print("Initialized Input\n");
+    debug::Log(GET_TRACE, "Initialized Input");
   }
 }
 
@@ -60,9 +61,9 @@ void input::Update() {
 
 void input::Quit() {
   if (render::g_window == nullptr) {
-    throw std::runtime_error("No GLFW context to quit input");
+    debug::Throw(GET_TRACE, "No GLFW context to quit input");
   } else {
     glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   }
-  fmt::print("Terminated Input\n");
+  debug::Log(GET_TRACE, "Terminated Input");
 }

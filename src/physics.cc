@@ -1,6 +1,6 @@
 #include <box2d/box2d.h>
 #include <engine/physics.h>
-#include <cstdio>
+#include <engine/debug.h>
 #define GRAVITY -10.0f
 #define UPDATE_RATE 60.0f
 
@@ -12,7 +12,7 @@ void physics::Init() {
   b2WorldDef world_def = b2DefaultWorldDef();
   world_def.gravity = (b2Vec2)(0.0F, GRAVITY);
   g_world_id = b2CreateWorld(&world_def);
-  printf("Initialized Physics\n");
+  debug::Log(GET_TRACE, "Initialized Physics");
 }
 
 void physics::Update() {
@@ -21,5 +21,5 @@ void physics::Update() {
 
 void physics::Quit() {
   b2DestroyWorld(g_world_id);
-  printf("Terminated Physics\n");
+  debug::Log(GET_TRACE, "Terminated Physics");
 }

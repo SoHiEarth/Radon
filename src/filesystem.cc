@@ -5,6 +5,7 @@
 #include <classes/sprite.h>
 #include <classes/texture.h>
 #include <engine/filesystem.h>
+#include <engine/debug.h>
 #include <fmt/core.h>
 #include <glad/glad.h>
 #include <algorithm>
@@ -43,17 +44,17 @@ std::string ValidateName(std::string input);
 
 Level* filesystem::serialized::LoadLevel(std::string_view path) {
   if (path.empty()) {
-    throw std::runtime_error("\tRequested file path is empty.\n");
+    debug::Throw(GET_TRACE, "Requested file path is empty.");
   }
   pugi::xml_document doc;
   pugi::xml_parse_result result = doc.load_file(path.data());
   if (!result) {
-    throw std::runtime_error(std::format("\tFailed to parse level file. Details: {}, {}\n", path, result.description()));
+    debug::Throw(GET_TRACE, std::format("Failed to load level file. {}, {}", path, result.description()));
   }
 
   pugi::xml_node root = doc.child("level");
   if (!root) {
-    throw std::runtime_error(std::format("\tRequested file is not a valid level file. Details {}\n", path));
+    debug::Throw(GET_TRACE, std::format("Requested file {} is not a valid level file", path));
   }
 
   auto* level = new Level();
@@ -61,7 +62,7 @@ Level* filesystem::serialized::LoadLevel(std::string_view path) {
   for (pugi::xml_node object_node : root.children("object")) {
     level->AddObject(filesystem::serialized::LoadObject(object_node));
   }
-  fmt::print("Successfully loaded level {}\n", path);
+  debug::Log(GET_TRACE, std::format("Successfully loaded {}", path));
   return level;
 }
 
@@ -87,7 +88,7 @@ void filesystem::serialized::SaveLevel(const Level* level, std::string_view path
   }
   bool save_result = doc.save_file(path.data());
   if (!save_result) {
-    throw std::runtime_error(std::format("\tFailed to save level file. Details: {}\n", path));
+    debug::Throw(GET_TRACE, std::format("Failed to save level file. {}", path));
   }
 }
 
@@ -99,7 +100,7 @@ Object* filesystem::serialized::LoadObject(pugi::xml_node& base_node) {
   std::string type_value = base_node.attribute("type").value();
   auto iterator = g_object_factory.find(type_value);
   if (iterator == g_object_factory.end()) {
-    throw std::runtime_error(std::format("\tUnknown object type: {}\n", type_value));
+    debug::Throw(GET_TRACE, std::format("Unknown object type: {}", type_value));
   }
   Object* object = iterator->second();
   object->Load(base_node);
@@ -133,13 +134,14 @@ unsigned int CompileShader(std::string_view code, int type);
 
 Shader* filesystem::LoadShader(std::string_view vertex_path, std::string_view fragment_path) {
   auto* shader = new Shader(vertex_path.data(), fragment_path.data());
-  unsigned int vertex;
-  unsigned int fragment;
+  unsigned int vertex = 0;
+  unsigned int fragment = 0;
   try {
     vertex = CompileShader(ReadFile(vertex_path), GL_VERTEX_SHADER);
     fragment = CompileShader(ReadFile(fragment_path), GL_FRAGMENT_SHADER);
   } catch (std::runtime_error& e) {
     delete shader;
+    debug::Throw(GET_TRACE, std::format("Failed to load shader. {}", e.what()));
     return nullptr;
   }
   unsigned int program = glCreateProgram();
@@ -151,7 +153,7 @@ Shader* filesystem::LoadShader(std::string_view vertex_path, std::string_view fr
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if (success == 0) {
     glGetProgramInfoLog(program, kLogSize, nullptr, log.data());
-    throw std::runtime_error(std::format("Shader program link failed. Details: {}", log.data()));
+    debug::Throw(GET_TRACE, std::format("Shader program link failed. {}", log.data()));
     return nullptr;
   }
   glDeleteShader(vertex);
@@ -182,7 +184,7 @@ Texture* filesystem::LoadTexture(std::string_view path) {
   if (data == nullptr) {
     delete texture;
     texture = nullptr;
-    throw std::runtime_error(std::format("Failed to load texture. Details: {}", path));
+    debug::Throw(GET_TRACE, std::format("Failed to load texture. Details: {}", path));
   }
   GLenum format = GL_RGB;
   switch (texture->channels_) {
@@ -230,7 +232,7 @@ Material* filesystem::LoadMaterial(std::string_view diffuse, std::string_view sp
     material->specular_ = filesystem::LoadTexture(specular);
     material->shader_ = filesystem::LoadShader(vertex, fragment);
   } catch (std::runtime_error& e) {
-    fmt::print("Failed to load material. Details: {}\n", e.what());
+    debug::Log(GET_TRACE, std::format("Material load failed. {}", e.what()));
     filesystem::FreeMaterial(material);
     return nullptr;
   }
@@ -272,7 +274,7 @@ void filesystem::serialized::SaveMaterial(const Material* material, pugi::xml_no
   }
 
   if (!material->IsValid()) {
-    fmt::print("Material is invalid (missing texture or shader), skipping save\n");
+    debug::Log(GET_TRACE, "Material is invalid (missing texture or shader), skipping save");
     return;
   }
 
@@ -387,7 +389,7 @@ std::string ValidateName(std::string input) {
 
 std::string ReadFile(std::string_view path) {
   if (!std::filesystem::exists(path)) {
-    throw std::runtime_error(std::format("Requested file does not exist. Details: {}", path));
+    debug::Throw(GET_TRACE, std::format("Requested file does not exist. {}", path));
   }
   std::ifstream file;
   file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -398,13 +400,13 @@ std::string ReadFile(std::string_view path) {
     file.close();
     return stream.str();
   } catch (std::ifstream::failure e) {
-    throw std::runtime_error(std::format("Failed to load file. Details: {}", path));
+    debug::Throw(GET_TRACE, std::format("File IO failure. {}, {}", path, e.what()));
   }
 }
 
 unsigned int CompileShader(std::string_view code, int type) {
   if (code.empty()) {
-    throw std::runtime_error(std::format("Got empty code."));
+    debug::Throw(GET_TRACE, "Got empty code.");
   }
   const char* code_data = code.data();
   unsigned int shader;
@@ -416,7 +418,7 @@ unsigned int CompileShader(std::string_view code, int type) {
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (success == 0) {
     glGetShaderInfoLog(shader, kLogSize, nullptr, log.data());
-    throw std::runtime_error(std::format("Shader compilation failed. Details: {}", log.data()));
+    debug::Throw(GET_TRACE, std::format("Shader compilation failed. {}", log.data()));
   }
   return shader;
 }
