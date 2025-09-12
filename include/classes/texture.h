@@ -2,7 +2,6 @@
 #define TEXTURE_H
 
 struct Texture {
-  bool initialized_ = false;
   unsigned int id_;
   int width_, height_, channels_;
   std::string type_;

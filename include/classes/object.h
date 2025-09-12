@@ -15,9 +15,11 @@ public:
   Editable<float> rotation_ = {0.0F, "Rotation", reg_};
   Editable<bool> is_static_ = {false, "Static", reg_};
   Material* material_ = nullptr;
+  bool has_initialized_ = false;
   virtual void Init() {};
   virtual void Update() {};
   virtual void Render() {};
+  bool has_quit_ = false;
   virtual void Quit() {};
   virtual void Load(pugi::xml_node&) = 0;
   [[nodiscard]] virtual std::string GetTypeName() const = 0;

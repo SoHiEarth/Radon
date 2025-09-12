@@ -17,15 +17,6 @@ int main(int argc, char** argv) {
   physics::Init();
   dev::Init();
 
-  try {
-    filesystem::g_level = filesystem::serialized::LoadLevel("test.xml");
-  } catch (std::exception& e) {
-    fmt::print("Caught exception, falling back to new level. Details: {}\n", e.what());
-    if (filesystem::g_level == nullptr) {
-      filesystem::g_level = new Level();
-    }
-  }
-
   input::AddHook({GLFW_KEY_ESCAPE, ButtonState::kRelease},
                  []() { glfwSetWindowShouldClose(render::g_window, true); });
 
@@ -44,17 +35,21 @@ int main(int argc, char** argv) {
   input::AddHook({GLFW_KEY_D, ButtonState::kHold},
                  []() { render::g_camera.position_.x += CAMERA_SPEED; });
 
-  while (glfwWindowShouldClose(render::g_window) == 0) {
-    input::Update();
-    if (filesystem::g_level != nullptr) {
-      filesystem::g_level->Update();
+  try {
+    while (glfwWindowShouldClose(render::g_window) == 0) {
+      input::Update();
+      if (filesystem::g_level != nullptr) {
+        filesystem::g_level->Update();
+      }
+      render::Update();
+      physics::Update();
+      if (filesystem::g_level != nullptr) {
+        filesystem::g_level->Render();
+      }
+      render::Render();
     }
-    render::Update();
-    physics::Update();
-    if (filesystem::g_level != nullptr) {
-      filesystem::g_level->Render();
-    }
-    render::Render();
+  } catch (std::exception& e) {
+    fmt::print("Caught exception, exiting. Details: \n{}\n", e.what());
   }
 
   if (filesystem::g_level != nullptr) {

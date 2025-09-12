@@ -1,8 +1,8 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <engine/audio.h>
-#include <cstdio>
-#include <cstring>
+#include <stdexcept>
+#include <fmt/core.h>
 
 ALCdevice* g_device;
 ALCcontext* g_context;
@@ -11,9 +11,9 @@ static void GetAudioDevices(const ALCchar* devices) {
   const ALCchar* device = devices;
   const ALCchar* next = devices + 1;
   size_t len = 0;
-  printf("Available Audio Devices\n");
+  fmt::print("Available Audio Devices\n");
   while ((device != nullptr) && *device != '\0' && (next != nullptr) && *next != '\0') {
-    printf("%s\n", device);
+    fmt::print("\t{}\n", device);
     len = strlen(device);
     device += (len + 1);
     next += (len + 2);
@@ -25,16 +25,15 @@ void audio::Init() {
   if (enumeration == AL_TRUE) {
     GetAudioDevices(alcGetString(nullptr, ALC_DEVICE_SPECIFIER));
   } else {
-    printf("audio: Cannot get devices as AL instance does not support enumeration.\n");
+    fmt::print("audio: Cannot get devices as AL instance does not support enumeration.\n");
   }
   g_device = alcOpenDevice(nullptr);
-  alGetError();
+  alGetError();  // Clear any errors
   g_context = alcCreateContext(g_device, nullptr);
   if (alcMakeContextCurrent(g_context) == 0) {
-    printf("audio: Failed to make context current");
-    return;
+    throw std::runtime_error("audio: Failed to make context current");
   }
-  printf("Initialized audio\n");
+  fmt::print("Initialized audio\n");
 }
 
 void audio::Quit() {
@@ -47,5 +46,5 @@ void audio::Quit() {
     alcCloseDevice(g_device);
     g_device = nullptr;
   }
-  printf("Terminated audio\n");
+  fmt::print("Terminated audio\n");
 }

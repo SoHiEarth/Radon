@@ -42,20 +42,23 @@ std::string ValidateName(std::string input);
 ///////////////////////////
 
 Level* filesystem::serialized::LoadLevel(std::string_view path) {
-  auto* level = new Level();
-  level->path_ = path;
+  if (path.empty()) {
+    throw std::runtime_error("\tRequested file path is empty.\n");
+  }
   pugi::xml_document doc;
   pugi::xml_parse_result result = doc.load_file(path.data());
   if (!result) {
-    throw std::runtime_error(std::format("Failed to parse level file. Details: {}, {}", path, result.description()));
+    throw std::runtime_error(std::format("\tFailed to parse level file. Details: {}, {}\n", path, result.description()));
   }
 
   pugi::xml_node root = doc.child("level");
   if (!root) {
-    throw std::runtime_error(std::format("Requested file is not a valid level file. Details {}", path));
+    throw std::runtime_error(std::format("\tRequested file is not a valid level file. Details {}\n", path));
   }
+
+  auto* level = new Level();
+  level->path_ = path;
   for (pugi::xml_node object_node : root.children("object")) {
-    fmt::print("Adding object\n");
     level->AddObject(filesystem::serialized::LoadObject(object_node));
   }
   fmt::print("Successfully loaded level {}\n", path);
@@ -84,7 +87,7 @@ void filesystem::serialized::SaveLevel(const Level* level, std::string_view path
   }
   bool save_result = doc.save_file(path.data());
   if (!save_result) {
-    throw std::runtime_error(std::format("Failed to save level file. Details: {}", path));
+    throw std::runtime_error(std::format("\tFailed to save level file. Details: {}\n", path));
   }
 }
 
@@ -96,7 +99,7 @@ Object* filesystem::serialized::LoadObject(pugi::xml_node& base_node) {
   std::string type_value = base_node.attribute("type").value();
   auto iterator = g_object_factory.find(type_value);
   if (iterator == g_object_factory.end()) {
-    throw std::runtime_error(std::format("Unknown object type: {}", type_value));
+    throw std::runtime_error(std::format("\tUnknown object type: {}\n", type_value));
   }
   Object* object = iterator->second();
   object->Load(base_node);
@@ -107,7 +110,9 @@ void filesystem::FreeObject(Object* object) {
   if (object == nullptr) {
     return;
   }
-  object->Quit();
+  if (object->has_initialized_ && !object->has_quit_) {
+    object->Quit();
+  }
   delete object;
   object = nullptr;
 }
@@ -147,6 +152,7 @@ Shader* filesystem::LoadShader(std::string_view vertex_path, std::string_view fr
   if (success == 0) {
     glGetProgramInfoLog(program, kLogSize, nullptr, log.data());
     throw std::runtime_error(std::format("Shader program link failed. Details: {}", log.data()));
+    return nullptr;
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);
@@ -160,6 +166,7 @@ void filesystem::FreeShader(Shader* shader) {
   }
   glDeleteProgram(shader->id_);
   delete shader;
+  shader = nullptr;
 }
 
 ////////////////////////////
@@ -173,7 +180,7 @@ Texture* filesystem::LoadTexture(std::string_view path) {
   stbi_set_flip_vertically_on_load(1);
   unsigned char* data = stbi_load(path.data(), &texture->width_, &texture->height_, &texture->channels_, 0);
   if (data == nullptr) {
-    filesystem::FreeTexture(texture);
+    delete texture;
     texture = nullptr;
     throw std::runtime_error(std::format("Failed to load texture. Details: {}", path));
   }
@@ -198,27 +205,16 @@ Texture* filesystem::LoadTexture(std::string_view path) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   stbi_image_free(data);
-  texture->initialized_ = true;
   return texture;
 }
 
 void filesystem::FreeTexture(Texture* texture) {
-  fmt::print("FreeTexture called with texture pointer: {}\n", (void*) texture);
   if (texture == nullptr) {
-    fmt::print("Texture is nullptr, skipping\n");
     return;
   }
-
-  fmt::print("Accessing initialized_ field...\n");
-  if (!texture->initialized_) {
-    fmt::print("Texture is not initialized, deleting\n");
-    delete texture;
-    return;
-  }
-
-  fmt::print("Texture is initialized, deleting OpenGL texture ID {}\n", texture->id_);
   glDeleteTextures(1, &texture->id_);
   delete texture;
+  texture = nullptr;
 }
 
 
@@ -249,13 +245,8 @@ void filesystem::FreeMaterial(Material* material) {
   if (material == nullptr) {
     return;
   }
-  if (!material->is_initialized_ || !material->IsValid()) {
-    return;
-  }
   filesystem::FreeTexture(material->diffuse_);
-  material->diffuse_ = nullptr;
   filesystem::FreeTexture(material->specular_);
-  material->specular_ = nullptr;
   filesystem::FreeShader(material->shader_);
   delete material;
   material = nullptr;
@@ -277,7 +268,6 @@ Material* filesystem::serialized::LoadMaterial(pugi::xml_node& node) {
 
 void filesystem::serialized::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
   if (material == nullptr) {
-    fmt::print("Material is null, skipping save\n");
     return;
   }
 
