@@ -4,18 +4,18 @@
 #include <classes/shader.h>
 #include <classes/sprite.h>
 #include <classes/texture.h>
-#include <engine/filesystem.h>
 #include <engine/debug.h>
+#include <engine/filesystem.h>
 #include <fmt/core.h>
 #include <glad/glad.h>
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <format>
 #include <fstream>
 #include <functional>
 #include <sstream>
 #include <unordered_map>
-#include <array>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #define MATERIAL_KEY_NAME "Material"
@@ -49,7 +49,8 @@ Level* filesystem::serialized::LoadLevel(std::string_view path) {
   pugi::xml_document doc;
   pugi::xml_parse_result result = doc.load_file(path.data());
   if (!result) {
-    debug::Throw(GET_TRACE, std::format("Failed to load level file. {}, {}", path, result.description()));
+    debug::Throw(GET_TRACE,
+                 std::format("Failed to load level file. {}, {}", path, result.description()));
   }
 
   pugi::xml_node root = doc.child("level");
@@ -180,7 +181,8 @@ Texture* filesystem::LoadTexture(std::string_view path) {
   texture->path_ = path;
   glGenTextures(1, &texture->id_);
   stbi_set_flip_vertically_on_load(1);
-  unsigned char* data = stbi_load(path.data(), &texture->width_, &texture->height_, &texture->channels_, 0);
+  unsigned char* data =
+      stbi_load(path.data(), &texture->width_, &texture->height_, &texture->channels_, 0);
   if (data == nullptr) {
     delete texture;
     texture = nullptr;
@@ -219,12 +221,13 @@ void filesystem::FreeTexture(Texture* texture) {
   texture = nullptr;
 }
 
-
 /////////////////////////////
 /// Material IO functions ///
 /////////////////////////////
 
-Material* filesystem::LoadMaterial(std::string_view diffuse, std::string_view specular, std::string_view vertex, std::string_view fragment, float shininess) {
+Material* filesystem::LoadMaterial(std::string_view diffuse, std::string_view specular,
+                                   std::string_view vertex, std::string_view fragment,
+                                   float shininess) {
   auto* material = new Material();
   material->shininess_ = shininess;
   try {
@@ -259,13 +262,12 @@ Material* filesystem::serialized::LoadMaterial(pugi::xml_node& node) {
   if (!material_node) {
     return nullptr;
   }
-  return filesystem::LoadMaterial(
-    material_node.attribute(MATERIAL_DIFFUSE_KEY_NAME).as_string(),
-    material_node.attribute(MATERIAL_SPECULAR_KEY_NAME).as_string(),
-    material_node.attribute(MATERIAL_VERTEX_KEY_NAME).as_string(),
-    material_node.attribute(MATERIAL_FRAGMENT_KEY_NAME).as_string(),
-    material_node.attribute(MATERIAL_SHININESS_KEY_NAME).as_float(MATERIAL_SHININESS_DEFAULT_VALUE)
-  );
+  return filesystem::LoadMaterial(material_node.attribute(MATERIAL_DIFFUSE_KEY_NAME).as_string(),
+                                  material_node.attribute(MATERIAL_SPECULAR_KEY_NAME).as_string(),
+                                  material_node.attribute(MATERIAL_VERTEX_KEY_NAME).as_string(),
+                                  material_node.attribute(MATERIAL_FRAGMENT_KEY_NAME).as_string(),
+                                  material_node.attribute(MATERIAL_SHININESS_KEY_NAME)
+                                      .as_float(MATERIAL_SHININESS_DEFAULT_VALUE));
 }
 
 void filesystem::serialized::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
@@ -330,7 +332,8 @@ float filesystem::serialized::LoadFloat(pugi::xml_node& base_node, std::string n
   return node.attribute("value").as_float(0.0F);
 }
 
-void filesystem::serialized::SaveVec3(const glm::vec3* value, pugi::xml_node& base_node, std::string name) {
+void filesystem::serialized::SaveVec3(const glm::vec3* value, pugi::xml_node& base_node,
+                                      std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {
@@ -341,7 +344,8 @@ void filesystem::serialized::SaveVec3(const glm::vec3* value, pugi::xml_node& ba
   node.append_attribute("z").set_value(value->z);
 }
 
-void filesystem::serialized::SaveVec2(const glm::vec2* value, pugi::xml_node& base_node, std::string name) {
+void filesystem::serialized::SaveVec2(const glm::vec2* value, pugi::xml_node& base_node,
+                                      std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {
@@ -351,7 +355,8 @@ void filesystem::serialized::SaveVec2(const glm::vec2* value, pugi::xml_node& ba
   node.append_attribute("y").set_value(value->y);
 }
 
-void filesystem::serialized::SaveString(const std::string* value, pugi::xml_node& base_node, std::string name) {
+void filesystem::serialized::SaveString(const std::string* value, pugi::xml_node& base_node,
+                                        std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {
@@ -360,7 +365,8 @@ void filesystem::serialized::SaveString(const std::string* value, pugi::xml_node
   node.append_attribute("value").set_value(value->c_str());
 }
 
-void filesystem::serialized::SaveInt(const int* value, pugi::xml_node& base_node, std::string name) {
+void filesystem::serialized::SaveInt(const int* value, pugi::xml_node& base_node,
+                                     std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {
@@ -369,7 +375,8 @@ void filesystem::serialized::SaveInt(const int* value, pugi::xml_node& base_node
   node.append_attribute("value").set_value(*value);
 }
 
-void filesystem::serialized::SaveFloat(const float* value, pugi::xml_node& base_node, std::string name) {
+void filesystem::serialized::SaveFloat(const float* value, pugi::xml_node& base_node,
+                                       std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {
@@ -383,7 +390,7 @@ void filesystem::serialized::SaveFloat(const float* value, pugi::xml_node& base_
 ///////////////////////////
 
 std::string ValidateName(std::string input) {
-  std::ranges::replace(input.begin(),input.end(), ' ', '_');
+  std::ranges::replace(input.begin(), input.end(), ' ', '_');
   return input;
 }
 

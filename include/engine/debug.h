@@ -9,19 +9,24 @@
 #endif
 
 struct DebugSettings {
-  bool enable_trace = true;
-  bool trace_source_file = true;
-  bool trace_function_name = false;
-  bool trace_line_number = false;
+#ifdef MDEBUG_DISABLE_TRACE
+  const bool kTraceSupported = false;
+#else
+  const bool kTraceSupported = true;
+#endif
+  bool enable_trace_ = true;
+  bool trace_source_file_ = true;
+  bool trace_function_name_ = false;
+  bool trace_line_number_ = false;
 };
 
 namespace debug {
 extern DebugSettings g_debug_settings;
 #ifdef MDEBUG_DISABLE_TRACE
-void Log(int, const char* fmt);
-void Log(int, std::string_view fmt);
-void Throw(int, const char* fmt);
-void Throw(int, std::string_view fmt);
+void Log(int /*unused*/, const char* fmt);
+void Log(int /*unused*/, std::string_view fmt);
+void Throw(int /*unused*/, const char* fmt);
+void Throw(int /*unused*/, std::string_view fmt);
 #else
 void Log(const std::stacktrace trace, const char* fmt);
 void Log(const std::stacktrace trace, std::string_view fmt);

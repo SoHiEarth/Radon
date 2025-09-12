@@ -1,9 +1,9 @@
 #ifndef RENDER_H
 #define RENDER_H
 
+#include <cstdint>
 #include <glm/glm.hpp>
 #include <vector>
-#include <cstdint>
 
 class GLFWwindow;
 class Camera;

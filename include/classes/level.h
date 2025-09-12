@@ -11,8 +11,8 @@ public:
   void Update();
   void Render();
   void Quit();
-  void AddObject(Object*, std::string_view = "Object");
-  void RemoveObject(Object*);
+  void AddObject(Object* /*object*/, std::string_view /*name*/ = "Object");
+  void RemoveObject(Object* /*object*/);
   std::string path_;
   std::vector<Object*> objects_;
 };

@@ -6,16 +6,17 @@
 #include <classes/shader.h>
 #include <classes/sprite.h>
 #include <classes/texture.h>
+#include <engine/debug.h>
 #include <engine/devgui.h>
 #include <engine/filesystem.h>
 #include <engine/render.h>
-#include <engine/debug.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_stdlib.h>
 #include <format>
 #define IMAGE_PREVIEW_SIZE 100, 100
+#define DEFAULT_SHININESS 32.0F
 bool dev::g_hud_enabled = false;
 Object* g_current_object = nullptr;
 std::string g_material_path;
@@ -27,7 +28,7 @@ void MaterialView(Material*& material) {
     filesystem::FreeMaterial(material);
     material = filesystem::LoadMaterial(
         g_material_path + "/diffuse.png", g_material_path + "/specular.png",
-        g_material_path + "/vert.glsl", g_material_path + "/frag.glsl", 32.0F);
+        g_material_path + "/vert.glsl", g_material_path + "/frag.glsl", DEFAULT_SHININESS);
   }
   ImGui::SameLine();
   if (ImGui::Button("Clear")) {
@@ -43,16 +44,16 @@ void MaterialView(Material*& material) {
     if (material->diffuse_ != nullptr) {
       ImGui::Image(material->diffuse_->id_, ImVec2(IMAGE_PREVIEW_SIZE));
       ImGui::Text("Path: %s", material->diffuse_->path_.data());
-    }
-    else
+    } else {
       ImGui::TextColored({1, 0, 0, 1}, "Diffuse texture not loaded");
+    }
     ImGui::Text("Specular");
     if (material->specular_ != nullptr) {
       ImGui::Image(material->specular_->id_, ImVec2(IMAGE_PREVIEW_SIZE));
       ImGui::Text("Path: %s", material->specular_->path_.data());
-    }
-    else
+    } else {
       ImGui::TextColored({1, 0, 0, 1}, "Specular texture not loaded");
+    }
     ImGui::DragFloat("Shininess", &material->shininess_);
     ImGui::Text("Shader");
     if (material->shader_ == nullptr) {
@@ -76,7 +77,7 @@ void dev::Init() {
   debug::Log(GET_TRACE, "Initialized GUI");
 }
 
-std::string new_level_path = "Untitled Level.xml";
+std::string g_new_level_path = "Untitled Level.xml";
 void dev::Update() {
   if (!dev::g_hud_enabled) {
     glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -102,28 +103,33 @@ void dev::Update() {
   }
   ImGui::End();
   ImGui::Begin("Debug");
-  ImGui::Checkbox("Trace Source File", &debug::g_debug_settings.trace_source_file);
-  ImGui::Checkbox("Trace Function Name", &debug::g_debug_settings.trace_function_name);
-  ImGui::Checkbox("Trace Line Number", &debug::g_debug_settings.trace_line_number);
+  if (debug::g_debug_settings.kTraceSupported) {
+    ImGui::Checkbox("Trace Source File", &debug::g_debug_settings.trace_source_file_);
+    ImGui::Checkbox("Trace Function Name", &debug::g_debug_settings.trace_function_name_);
+    ImGui::Checkbox("Trace Line Number", &debug::g_debug_settings.trace_line_number_);
+  } else {
+    ImGui::Text(
+        "Application does not support tracebacks; build platform does not support <stacktrace>");
+  }
   ImGui::End();
   ImGui::Begin("Level Management");
   if (filesystem::g_level == nullptr) {
-    ImGui::InputText("Level Path", &new_level_path);
+    ImGui::InputText("Level Path", &g_new_level_path);
     if (ImGui::Button("Load Level")) {
-      if (new_level_path.empty()) {
-        new_level_path = "Untitled Level.xml";
+      if (g_new_level_path.empty()) {
+        g_new_level_path = "Untitled Level.xml";
       }
       filesystem::g_level = new Level();
-      filesystem::g_level->path_ = new_level_path;
+      filesystem::g_level->path_ = g_new_level_path;
       g_current_object = nullptr;
     }
   }
   if (filesystem::g_level != nullptr) {
-    ImGui::InputText("Level Path", &new_level_path);
+    ImGui::InputText("Level Path", &g_new_level_path);
     if (ImGui::Button("Load Level")) {
       filesystem::FreeLevel(filesystem::g_level);
-      filesystem::g_level = filesystem::serialized::LoadLevel(new_level_path);
-      new_level_path = filesystem::g_level->path_;
+      filesystem::g_level = filesystem::serialized::LoadLevel(g_new_level_path);
+      g_new_level_path = filesystem::g_level->path_;
       g_current_object = nullptr;
     }
     if (ImGui::Button("Save Level")) {

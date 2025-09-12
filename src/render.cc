@@ -7,10 +7,10 @@
 #include <classes/light.h>
 #include <classes/material.h>
 #include <classes/shader.h>
+#include <engine/debug.h>
 #include <engine/devgui.h>
 #include <engine/filesystem.h>
 #include <engine/render.h>
-#include <engine/debug.h>
 #include <fmt/core.h>
 #include <imgui.h>
 #include <array>
@@ -27,10 +27,7 @@
 #define CAMERA_NEAR_PLANE 0.1F
 #define CAMERA_FAR_PLANE 100.0F
 
-enum : std::uint16_t {
-  kDefaultWindowWidth = 800,
-  kDefaultWindowHeight = 600
-};
+enum : std::uint16_t { kDefaultWindowWidth = 800, kDefaultWindowHeight = 600 };
 using ImGui::TextColored;
 
 std::vector<DirectionalLight *> render::g_directional_lights;
@@ -94,7 +91,7 @@ void render::Init() {
 #endif
   render::g_window = glfwCreateWindow(render::g_width, render::g_height, "Metal", nullptr, nullptr);
   if (render::g_window == nullptr) {
-    const char* error_desc;
+    const char *error_desc;
     glfwGetError(&error_desc);
     fmt::print("{}\n", error_desc);
     debug::Throw(GET_TRACE, "Failed to create GLFW window");
@@ -251,39 +248,41 @@ void render::RenderTexture(const Material *material, const glm::vec3 &pos, const
   glBindVertexArray(0);
 }
 
-Framebuffer render::CreateFramebuffer(FramebufferCreateInfo& create_info) {
+Framebuffer render::CreateFramebuffer(FramebufferCreateInfo &create_info) {
   Framebuffer framebuffer;
   glGenFramebuffers(1, &framebuffer.framebuffer_);
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.framebuffer_);
   framebuffer.colorbuffers_.resize(create_info.num_colorbuffers_);
   glGenTextures(create_info.num_colorbuffers_, framebuffer.colorbuffers_.data());
-  for (unsigned int i = 0; i < create_info.num_colorbuffers_; i++) {
+  for (unsigned int i = 0; std::cmp_less(i, create_info.num_colorbuffers_); i++) {
     glBindTexture(GL_TEXTURE_2D, framebuffer.colorbuffers_[i]);
     glTexImage2D(GL_TEXTURE_2D, create_info.level_, create_info.colorbuffer_format_,
-        create_info.width_, create_info.height_, create_info.border_,
-        create_info.format_, create_info.type_, nullptr);
+                 create_info.width_, create_info.height_, create_info.border_, create_info.format_,
+                 create_info.type_, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     if (create_info.same_colorbuffer_attachment_) {
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-        framebuffer.colorbuffers_[i], 0);
+                             framebuffer.colorbuffers_[i], 0);
       if (framebuffer.attachments_.empty()) {
         framebuffer.attachments_.push_back(GL_COLOR_ATTACHMENT0);
       }
     } else {
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D,
-        framebuffer.colorbuffers_[i], 0);
+                             framebuffer.colorbuffers_[i], 0);
       framebuffer.attachments_.push_back(GL_COLOR_ATTACHMENT0 + i);
     }
   }
-  
+
   if (create_info.create_renderbuffer_) {
     glGenRenderbuffers(1, &framebuffer.renderbuffer_);
     glBindRenderbuffer(GL_RENDERBUFFER, framebuffer.renderbuffer_);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, create_info.width_, create_info.height_);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, framebuffer.renderbuffer_);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, create_info.width_,
+                          create_info.height_);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,
+                              framebuffer.renderbuffer_);
     glDrawBuffers(framebuffer.attachments_.size(), framebuffer.attachments_.data());
   }
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -293,7 +292,7 @@ Framebuffer render::CreateFramebuffer(FramebufferCreateInfo& create_info) {
   return framebuffer;
 }
 
-void render::DeleteFramebuffer(Framebuffer& framebuffer) {
+void render::DeleteFramebuffer(Framebuffer &framebuffer) {
   if (!framebuffer.attachments_.empty()) {
     framebuffer.attachments_.clear();
   }

@@ -4,8 +4,7 @@
 #include <engine/render.h>
 #include <fmt/core.h>
 
-void Sprite::Init() {
-}
+void Sprite::Init() {}
 
 void Sprite::Update() {
   if (material_ != nullptr) {

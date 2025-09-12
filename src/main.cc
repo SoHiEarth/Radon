@@ -2,12 +2,12 @@
 #include <classes/camera.h>
 #include <classes/level.h>
 #include <engine/audio.h>
+#include <engine/debug.h>
 #include <engine/devgui.h>
 #include <engine/filesystem.h>
 #include <engine/input.h>
 #include <engine/physics.h>
 #include <engine/render.h>
-#include <engine/debug.h>
 
 #define CAMERA_SPEED 0.1
 
@@ -18,8 +18,7 @@ int main(int argc, char** argv) {
     audio::Init();
     physics::Init();
     dev::Init();
-  }
-  catch (std::exception& e) {
+  } catch (std::exception& e) {
     debug::Log(GET_TRACE, std::format("Initialization failure: {}", e.what()));
     return -1;
   }

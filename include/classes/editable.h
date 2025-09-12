@@ -49,7 +49,7 @@ public:
     i_value_ = std::move(rhs);
     return i_value_;
   }
-  const T operator=(const T& rhs) {
+  T operator=(const T& rhs) {
     i_value_ = rhs;
     return i_value_;
   }

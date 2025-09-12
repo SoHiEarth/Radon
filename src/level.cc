@@ -30,11 +30,13 @@ void Level::AddObject(Object* object, std::string_view name) {
   if (object == nullptr) {
     return;
   }
-  if (name != "Object")
+  if (name != "Object") {
     object->name_ = std::string(name);
+  }
   objects_.push_back(object);
-  if (!object->has_initialized_)
+  if (!object->has_initialized_) {
     object->Init();
+  }
 }
 
 void Level::RemoveObject(Object* object) {

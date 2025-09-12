@@ -15,7 +15,8 @@ public:
   void SetVec2(std::string_view /*name*/, const glm::vec2& /*value*/) const;
   void SetVec3(std::string_view /*name*/, const glm::vec3& /*value*/) const;
   void SetMat4(std::string_view /*name*/, const glm::mat4& /*value*/) const;
-  Shader(std::string_view vert, std::string_view frag) : vertex_path_(vert), fragment_path_(frag) {};
+  Shader(std::string_view vert, std::string_view frag)
+      : vertex_path_(vert), fragment_path_(frag) {};
 };
 
 #endif

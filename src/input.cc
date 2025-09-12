@@ -1,10 +1,10 @@
 #include <GLFW/glfw3.h>
-#include <engine/input.h>
 #include <engine/debug.h>
+#include <engine/input.h>
+#include <engine/render.h>
+#include <format>
 #include <functional>
 #include <map>
-#include <format>
-#include <engine/render.h>
 
 static const std::map<ButtonState, const char*> kButtonStateMap = {
     {ButtonState::kHold, "Hold"},
@@ -37,10 +37,9 @@ void input::RemoveHook(const Trigger& key) {
 void input::Init() {
   if (glfwGetCurrentContext() == nullptr) {
     throw std::runtime_error("No GLFW context to initialize input");
-  } else {
-    glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    debug::Log(GET_TRACE, "Initialized Input");
   }
+  glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  debug::Log(GET_TRACE, "Initialized Input");
 }
 
 void input::Update() {
