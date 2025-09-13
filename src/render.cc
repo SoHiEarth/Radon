@@ -161,10 +161,10 @@ void render::Render() {
   if (dev::g_hud_enabled) {
     ImGui::Begin("Viewport");
     auto viewport_size = ImGui::GetContentRegionAvail();
-    #ifdef WIN32
-    ImGui::Image(g_framebuffer.colorbuffers_[0], viewport_size, ImVec2(0, 1), ImVec2(1, 0));
-    #else
+    #ifdef __linux__
     ImGui::Image(g_framebuffer.colorbuffers_[0], viewport_size);
+    #else
+    ImGui::Image(g_framebuffer.colorbuffers_[0], viewport_size, ImVec2(0, 1), ImVec2(1, 0));
     #endif
     ImGui::End();
   } else {
