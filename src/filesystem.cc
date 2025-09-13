@@ -15,6 +15,7 @@
 #include <fstream>
 #include <functional>
 #include <sstream>
+#include <tinyfiledialogs/tinyfiledialogs.h>
 #include <unordered_map>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -33,10 +34,49 @@
   }
 Level* filesystem::g_level = nullptr;
 enum : std::uint16_t { kLogSize = 512 };
+std::string filesystem::g_engine_directory;
 std::unordered_map<std::string, std::function<Object*()>> filesystem::g_object_factory = {
     OBJECT_FACTORY_KEY(Sprite), OBJECT_FACTORY_KEY(DirectionalLight),
     OBJECT_FACTORY_KEY(PointLight), OBJECT_FACTORY_KEY(SpotLight)};
 std::string ValidateName(std::string input);
+
+void filesystem::Init() {
+  if (!std::filesystem::exists("engine_assets")) {
+    tinyfd_messageBox("Engine Directory Not Found",
+                         "Please select the engine directory to continue.", "ok",
+                      "info", 1);
+    char* engine_path = tinyfd_selectFolderDialog("Select the engine directory", std::filesystem::current_path().string().c_str());
+    if (engine_path != nullptr) {
+      g_engine_directory = std::string(engine_path);
+      bool copy_assets = tinyfd_messageBox(
+          "Copy Assets", "Would you like to copy the engine assets to the current directory?",
+          "yesno", "question", 1);
+      if (copy_assets) {
+        if (!std::filesystem::exists("engine_assets")) {
+          std::filesystem::create_directory("engine_assets");
+        }
+        for (const auto& entry :
+             std::filesystem::directory_iterator(g_engine_directory + "/engine_assets")) {
+          std::filesystem::copy(entry.path(), "engine_assets/" + entry.path().filename().string(),
+                                std::filesystem::copy_options::overwrite_existing);
+        }
+        if (!std::filesystem::exists("assets")) {
+          std::filesystem::create_directory("assets");
+        }
+        for (const auto& entry :
+             std::filesystem::directory_iterator(g_engine_directory + "/assets")) {
+          std::filesystem::copy(entry.path(), "assets/" + entry.path().filename().string(),
+                                std::filesystem::copy_options::overwrite_existing);
+        }
+      }
+    } else {
+      debug::Throw(GET_TRACE, "Engine directory selection cancelled, application cannot continue.");
+    }
+  } else {
+    filesystem::g_engine_directory = "engine_assets";
+  }
+  debug::Log(GET_TRACE, "Initialized filesystem");
+}
 
 ///////////////////////////
 ///  Level IO functions ///

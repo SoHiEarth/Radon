@@ -17,6 +17,7 @@
 #include <imgui_stdlib.h>
 #include <imgui_internal.h>
 #include <format>
+#include <array>
 #include <tinyfiledialogs/tinyfiledialogs.h>
 
 #define IMAGE_PREVIEW_SIZE 100, 100
@@ -30,6 +31,8 @@ std::string g_material_path;
 
 std::string g_material_diffuse, g_material_specular, g_material_vertex, g_material_fragment;
 int g_material_shininess = DEFAULT_SHININESS;
+bool g_disable_hud_after_frame = false;
+
 void MaterialView(Material*& material);
 void DrawProperties();
 void DrawDebug();
@@ -57,7 +60,7 @@ void dev::Init() {
   style.GrabRounding = DEVGUI_ROUNDING_LESS;
   style.TabRounding = DEVGUI_ROUNDING_LESS;
   ImFont* ui_font = imgui_io.Fonts->AddFontFromFileTTF(
-      "engine_assets/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf", DEVGUI_FONT_SIZE, nullptr,
+      (filesystem::g_engine_directory + "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf").c_str(), DEVGUI_FONT_SIZE, nullptr,
       imgui_io.Fonts->GetGlyphRangesDefault());
   ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
   ImGui_ImplOpenGL3_Init("#version 150");
@@ -118,6 +121,10 @@ void dev::Render() {
   ImGui::Render();
   ImGui::EndFrame();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+  if (g_disable_hud_after_frame) {
+    dev::g_hud_enabled = false;
+    g_disable_hud_after_frame = false;
+  }
 }
 
 void dev::Quit() {
@@ -262,7 +269,7 @@ void DrawLocalization() {
   }
   if (ImGui::Button("Load")) {
     const char* filter_patterns[] = {"*.xml"};
-    const char* file = tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Localization Files", 0);
+    const char* file = tinyfd_openFileDialog("Open Localization Data", "", 1, filter_patterns, "Localization Files", 0);
     if (file != nullptr) {
       localization::Load(file);
     }
@@ -270,7 +277,7 @@ void DrawLocalization() {
   ImGui::SameLine();
   if (ImGui::Button("Save")) {
     const char* filter_patterns[] = {"*.xml"};
-    const char* file = tinyfd_saveFileDialog("Save Level XML", std::string(localization::g_language + ".xml").c_str(), 1, filter_patterns, "Level Files");
+    const char* file = tinyfd_saveFileDialog("Save Localization Data", std::string(localization::g_language + ".xml").c_str(), 1, filter_patterns, "Localization Files");
     if (file != nullptr) {
       localization::Save(file);
     }
@@ -282,18 +289,22 @@ void MaterialView(Material*& material) {
   ImGui::SeparatorText("Material");
   if (ImGui::BeginTabBar("LoadType")) {
     if (ImGui::BeginTabItem("Directory")) {
-      ImGui::InputText("Material Path", &g_material_path);
       if (ImGui::Button("Load")) {
-        filesystem::FreeMaterial(material);
-        material = filesystem::LoadMaterial(
-            g_material_path + "/diffuse.png", g_material_path + "/specular.png",
-            g_material_path + "/vert.glsl", g_material_path + "/frag.glsl", DEFAULT_SHININESS);
-        g_material_diffuse = material->diffuse_->path_;
-        g_material_specular = material->specular_->path_;
-        g_material_vertex = material->shader_->vertex_path_;
-        g_material_fragment = material->shader_->fragment_path_;
+        char* material_path_c = tinyfd_selectFolderDialog("Select Material Directory", "");
+        if (material_path_c != nullptr) {
+          std::string material_path = std::string(material_path_c);
+          filesystem::FreeMaterial(material);
+          material = filesystem::LoadMaterial(
+              material_path + "/diffuse.png", material_path + "/specular.png",
+              material_path + "/vert.glsl", material_path + "/frag.glsl", DEFAULT_SHININESS);
+          g_material_diffuse = material->diffuse_->path_;
+          g_material_specular = material->specular_->path_;
+          g_material_vertex = material->shader_->vertex_path_;
+          g_material_fragment = material->shader_->fragment_path_;
+        }
       }
       ImGui::EndTabItem();
+      ImGui::SameLine();
     }
     if (ImGui::BeginTabItem("Specific")) {
       ImGui::InputText("Material Diffuse", &g_material_diffuse);
@@ -408,6 +419,9 @@ void DrawMenuEdit() {
 
 void DrawMenuView() {
   if (ImGui::BeginMenu("View")) {
+    if (ImGui::MenuItem("Toggle HUD", "F1")) {
+      g_disable_hud_after_frame = true;
+    }
     ImGui::EndMenu();
   }
 }

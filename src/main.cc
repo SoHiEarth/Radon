@@ -12,11 +12,8 @@
 #include <filesystem>
 
 int main(int argc, char** argv) {
-  if (!std::filesystem::exists("engine_assets")) {
-    debug::Log(GET_TRACE, "Initialization failure: Core assets not found.");
-    return -1;
-  }
   try {
+    filesystem::Init();
     render::Init();
     input::Init();
     audio::Init();

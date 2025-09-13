@@ -28,12 +28,12 @@
 #define DEFAULT_CAMERA_FOV 60.0F
 #define CAMERA_NEAR_PLANE 0.1F
 #define CAMERA_FAR_PLANE 100.0F
-#define DEFAULT_CAMERA_SPEED 0.1;
+#define DEFAULT_CAMERA_SPEED 0.1
 float g_camera_speed = DEFAULT_CAMERA_SPEED;
-#define IF_NOHUD(param)      \
-  if (!dev::g_hud_enabled) { \
-    param;                   \
-  }
+inline void IfNoHUD(const std::function<void()> &fn) {
+  if (!dev::g_hud_enabled)
+    fn();
+}
 
 enum : std::uint16_t { kDefaultWindowWidth = 800, kDefaultWindowHeight = 600 };
 using ImGui::TextColored;
@@ -43,7 +43,6 @@ std::vector<PointLight *> render::g_point_lights;
 std::vector<SpotLight *> render::g_spot_lights;
 unsigned int g_vao, g_vbo;
 Framebuffer g_framebuffer;
-std::vector<Framebuffer> g_pingpong_framebuffers;
 unsigned int g_screen_vao, g_screen_vbo;
 Shader *g_screen_shader = nullptr, *g_screen_shader_blur;
 float g_prev_render_factor = render::g_render_settings.render_factor_;
@@ -51,6 +50,7 @@ RenderSettings render::g_render_settings{};
 GLFWwindow *render::g_window = nullptr;
 int render::g_width = kDefaultWindowWidth, render::g_height = kDefaultWindowHeight;
 Camera render::g_camera;
+ImVec2 g_last_viewport_size = ImVec2(0.0F, 0.0F);
 
 const std::array<float, 32> kGVertices = {-0.5F, 0.5F,  0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 1.0F,
                                           -0.5F, -0.5F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
@@ -117,22 +117,22 @@ void render::Init() {
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<void *>(3 * sizeof(float)));
   RecreateFramebuffer();
-  g_screen_shader = filesystem::LoadShader("engine_assets/screen_shader/vert.glsl", "engine_assets/screen_shader/frag.glsl");
+  g_screen_shader = filesystem::LoadShader(filesystem::g_engine_directory + "/screen_shader/vert.glsl", filesystem::g_engine_directory + "/screen_shader/frag.glsl");
   g_screen_shader->Use();
   g_screen_shader->SetInt("scene", 0);
 
   input::AddHook({GLFW_KEY_W, ButtonState::kHold},
-                 []() { IF_NOHUD(render::g_camera.position_.z -= g_camera_speed) });
-  input::AddHook({GLFW_KEY_S, ButtonState::kHold},
-                 []() { IF_NOHUD(render::g_camera.position_.z += g_camera_speed) });
+    []() { IfNoHUD([]() { render::g_camera.position_.z -= g_camera_speed; }); });
+    input::AddHook({GLFW_KEY_S, ButtonState::kHold},
+    []() { IfNoHUD([]() { render::g_camera.position_.z += g_camera_speed; }); });
   input::AddHook({GLFW_KEY_A, ButtonState::kHold},
-                 []() { IF_NOHUD(render::g_camera.position_.x -= g_camera_speed) });
+    []() { IfNoHUD([]() { render::g_camera.position_.x -= g_camera_speed; }); });
   input::AddHook({GLFW_KEY_D, ButtonState::kHold},
-                 []() { IF_NOHUD(render::g_camera.position_.x += g_camera_speed) });
+    []() { IfNoHUD([]() { render::g_camera.position_.x += g_camera_speed; }); });
   input::AddHook({GLFW_KEY_E, ButtonState::kHold},
-                 []() { IF_NOHUD(render::g_camera.position_.y += g_camera_speed) });
+    []() { IfNoHUD([]() { render::g_camera.position_.y += g_camera_speed; }); });
   input::AddHook({GLFW_KEY_Q, ButtonState::kHold},
-                 []() { IF_NOHUD(render::g_camera.position_.y -= g_camera_speed) });
+    []() { IfNoHUD([]() { render::g_camera.position_.y -= g_camera_speed; }); });
   debug::Log(GET_TRACE, "Initialized Rendering");
 }
 
@@ -145,8 +145,7 @@ void render::Update() {
   if (g_render_settings.render_factor_ != g_prev_render_factor) {
     RecreateFramebuffer();
   }
-  glViewport(0, 0, render::g_width / g_render_settings.render_factor_,
-             render::g_height / g_render_settings.render_factor_);
+  glViewport(0, 0, g_framebuffer.width_, g_framebuffer.height_);
   glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer.framebuffer_);
   glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -160,12 +159,20 @@ void render::Render() {
   DrawRendererStatus();
   if (dev::g_hud_enabled) {
     ImGui::Begin("Viewport");
-    auto viewport_size = ImGui::GetContentRegionAvail();
-    #ifdef __linux__
-    ImGui::Image(g_framebuffer.colorbuffers_[0], viewport_size);
-    #else
-    ImGui::Image(g_framebuffer.colorbuffers_[0], viewport_size, ImVec2(0, 1), ImVec2(1, 0));
-    #endif
+    float aspect = (float) g_framebuffer.width_ / (float) g_framebuffer.height_;
+    float avail_w = ImGui::GetContentRegionAvail().x;
+    float avail_h = ImGui::GetContentRegionAvail().y;
+    ImVec2 image_size = ImVec2(avail_w, avail_w / aspect);
+    if (image_size.y > avail_h) {
+      image_size.y = avail_h;
+      image_size.x = avail_h * aspect;
+    }
+    g_last_viewport_size = image_size;
+#ifdef __linux__
+    ImGui::Image(g_framebuffer.colorbuffers_[0], image_size);
+#else
+    ImGui::Image(g_framebuffer.colorbuffers_[0], image_size, ImVec2(0, 1), ImVec2(1, 0));
+#endif
     ImGui::End();
   } else {
     g_screen_shader->Use();
@@ -239,7 +246,7 @@ void render::RenderTexture(const Material *material, const glm::vec3 &pos, const
   glm::mat4 view = glm::translate(glm::mat4(1.0F), -render::g_camera.position_);
   glm::mat4 projection =
       glm::perspective(glm::radians(g_camera_fov),
-                       (static_cast<float>(render::g_width) / static_cast<float>(render::g_height)),
+                       (static_cast<float>(g_framebuffer.width_) / static_cast<float>(g_framebuffer.height_)),
                        CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
 
   material->Bind();
@@ -276,14 +283,16 @@ void render::RenderTexture(const Material *material, const glm::vec3 &pos, const
 }
 
 void FBSizeCallback(GLFWwindow *window, int width, int height) {
-  glViewport(0, 0, render::g_width, render::g_height);
   render::g_width = width;
   render::g_height = height;
   RecreateFramebuffer();
+  glViewport(0, 0, render::g_width, render::g_height);
 }
 
 Framebuffer render::CreateFramebuffer(FramebufferCreateInfo &create_info) {
   Framebuffer framebuffer;
+  framebuffer.width_ = create_info.width_;
+  framebuffer.height_ = create_info.height_;
   glGenFramebuffers(1, &framebuffer.framebuffer_);
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.framebuffer_);
   framebuffer.colorbuffers_.resize(create_info.num_colorbuffers_);

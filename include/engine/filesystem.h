@@ -15,19 +15,17 @@ class Level;
 
 namespace filesystem {
 extern Level* g_level;
+extern std::string g_engine_directory;
 extern std::unordered_map<std::string, std::function<Object*()>> g_object_factory;
 
+void Init();
+
 void FreeLevel(Level* /*level*/);
-
 void FreeObject(Object*& /*object*/);
-
 Shader* LoadShader(std::string_view /*vertex_path*/, std::string_view /*fragment_path*/);
 void FreeShader(Shader*& /*shader*/);
-
-// Loads a texture from a image file.
 Texture* LoadTexture(std::string_view /*path*/);
 void FreeTexture(Texture*& /*texture*/);
-
 Material* LoadMaterial(std::string_view diffuse, std::string_view specular, std::string_view vertex,
                        std::string_view fragment, float shininess);
 void FreeMaterial(Material*& /*material*/);

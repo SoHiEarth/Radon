@@ -15,8 +15,8 @@ struct DebugSettings {
   const bool kTraceSupported = true;
 #endif
   bool enable_trace_ = true;
-  bool trace_source_file_ = true;
-  bool trace_function_name_ = false;
+  bool trace_source_file_ = false;
+  bool trace_function_name_ = true;
   bool trace_line_number_ = false;
 };
 
