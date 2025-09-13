@@ -16,44 +16,44 @@ DebugSettings debug::g_debug_settings{};
 #ifndef NDEBUG
 #ifdef MDEBUG_DISABLE_TRACE
 void debug::Log(int /*unused*/, const char* fmt) {
-  fmt::print("\nLog: {}", fmt);
+  fmt::print("Log: {}\n", fmt);
 }
 
 void debug::Log(int /*unused*/, std::string_view fmt) {
-  fmt::print("\nLog: {}", fmt);
+  fmt::print("Log: {}\n", fmt);
 }
 
 void debug::Throw(int /*unused*/, const char* fmt) {
-  throw std::runtime_error(std::format("\n\tException: {}", fmt));
+  throw std::runtime_error(std::format("\tException: {}\n", fmt));
 }
 
 void debug::Throw(int /*unused*/, std::string_view fmt) {
-  throw std::runtime_error(std::format("\n\tException: {}", fmt));
+  throw std::runtime_error(std::format("\tException: {}\n", fmt));
 }
 #else
 void debug::Log(const std::stacktrace trace, std::string_view fmt) {
-  fmt::print("\n{}: {}", DEBUG_IMPL_TRACE, fmt);
+  fmt::print("{}: {}\n", DEBUG_IMPL_TRACE, fmt);
 }
 
 void debug::Log(const std::stacktrace trace, const char* fmt) {
-  fmt::print("\n{}: {}", DEBUG_IMPL_TRACE, fmt);
+  fmt::print("{}: {}\n", DEBUG_IMPL_TRACE, fmt);
 }
 
 void debug::Throw(const std::stacktrace trace, std::string_view fmt) {
-  throw std::runtime_error(std::format("\n\t{}: {}", DEBUG_IMPL_TRACE, fmt));
+  throw std::runtime_error(std::format("\t{}: {}\n", DEBUG_IMPL_TRACE, fmt));
 }
 
 void debug::Throw(const std::stacktrace trace, const char* fmt) {
-  throw std::runtime_error(std::format("\n\t{}: {}", DEBUG_IMPL_TRACE, fmt));
+  throw std::runtime_error(std::format("\t{}: {}\n", DEBUG_IMPL_TRACE, fmt));
 }
 #endif
 #else
 void debug::Log(int /*unused*/, const char* /*unused*/) {}
 void debug::Log(int /*unused*/, std::string_view /*unused*/) {}
 void debug::Throw(int /*unused*/, const char* fmt) {
-  throw std::runtime_error(std::format("\n\tException: {}", fmt));
+  throw std::runtime_error(std::format("\tException: {}\n", fmt));
 }
 void debug::Throw(int /*unused*/, std::string_view fmt) {
-  throw std::runtime_error(std::format("\n\tException: {}", fmt));
+  throw std::runtime_error(std::format("\tException: {}\n, fmt));
 }
 #endif

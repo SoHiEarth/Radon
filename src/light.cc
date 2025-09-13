@@ -90,7 +90,7 @@ void SpotLight::Quit() {
 void SpotLight::Load(pugi::xml_node& node) {
   name_ = filesystem::serialized::LoadString(node, name_.i_label_);
   position_ = filesystem::serialized::LoadVec3(node, position_.i_label_);
-  direction_ = filesystem::serialized::LoadVec3(node, direction_.i_label_);
+  rotation_ = filesystem::serialized::LoadVec3(node, rotation_.i_label_);
   ambient_ = filesystem::serialized::LoadVec3(node, ambient_.i_label_);
   diffuse_ = filesystem::serialized::LoadVec3(node, diffuse_.i_label_);
   specular_ = filesystem::serialized::LoadVec3(node, specular_.i_label_);
@@ -104,7 +104,7 @@ void SpotLight::Load(pugi::xml_node& node) {
 void SpotLight::Save(pugi::xml_node& node) const {
   filesystem::serialized::SaveString(&name_.i_value_, node, name_.i_label_);
   filesystem::serialized::SaveVec3(&position_.i_value_, node, position_.i_label_);
-  filesystem::serialized::SaveVec3(&direction_.i_value_, node, direction_.i_label_);
+  filesystem::serialized::SaveVec3(&rotation_.i_value_, node, rotation_.i_label_);
   filesystem::serialized::SaveVec3(&ambient_.i_value_, node, ambient_.i_label_);
   filesystem::serialized::SaveVec3(&diffuse_.i_value_, node, diffuse_.i_label_);
   filesystem::serialized::SaveVec3(&specular_.i_value_, node, specular_.i_label_);
@@ -118,7 +118,7 @@ void SpotLight::Save(pugi::xml_node& node) const {
 void SpotLight::SetUniforms(const Shader* shader, const int kPos) {
   std::string prefix = "spot_lights[" + std::to_string(kPos) + "]";
   shader->SetVec3(prefix + ".position", static_cast<glm::vec3>(position_));
-  shader->SetVec3(prefix + ".direction", static_cast<glm::vec3>(direction_));
+  shader->SetVec3(prefix + ".direction", static_cast<glm::vec3>(rotation_));
   shader->SetVec3(prefix + ".ambient", static_cast<glm::vec3>(ambient_));
   shader->SetVec3(prefix + ".diffuse", static_cast<glm::vec3>(diffuse_));
   shader->SetVec3(prefix + ".specular", static_cast<glm::vec3>(specular_));

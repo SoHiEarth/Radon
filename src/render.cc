@@ -19,6 +19,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <utility>
 #include <vector>
+#include <format>
+#include <engine/input.h>
 
 #define TEXT_COLOR_RED ImVec4(1.0f, 0.0f, 0.0f, 1.0f)
 #define GUI_DRAG_STEP 0.1F
@@ -26,6 +28,12 @@
 #define DEFAULT_CAMERA_FOV 60.0F
 #define CAMERA_NEAR_PLANE 0.1F
 #define CAMERA_FAR_PLANE 100.0F
+#define DEFAULT_CAMERA_SPEED 0.1;
+float g_camera_speed = DEFAULT_CAMERA_SPEED;
+#define IF_NOHUD(param)      \
+  if (!dev::g_hud_enabled) { \
+    param;                   \
+  }
 
 enum : std::uint16_t { kDefaultWindowWidth = 800, kDefaultWindowHeight = 600 };
 using ImGui::TextColored;
@@ -53,33 +61,9 @@ const std::array<float, 20> kGScreenVertices = {
     -1.0F, 1.0F, 0.0F, 0.0F, 1.0F, -1.0F, -1.0F, 0.0F, 0.0F, 0.0F,
     1.0F,  1.0F, 0.0F, 1.0F, 1.0F, 1.0F,  -1.0F, 0.0F, 1.0F, 0.0F,
 };
-
-void DrawRendererStatus() {
-  if (dev::g_hud_enabled) {
-    ImGui::Begin("Renderer");
-    ImGui::Text("Directional light count: %d",
-                static_cast<int>(render::g_directional_lights.size()));
-    ImGui::Text("Point light count: %d", static_cast<int>(render::g_point_lights.size()));
-    ImGui::Text("Spot light count: %d", static_cast<int>(render::g_spot_lights.size()));
-    ImGui::DragFloat3("Camera Position", glm::value_ptr(render::g_camera.position_));
-    ImGui::DragFloat("Camera Field of View", &g_camera_fov);
-    ImGui::SeparatorText("Screen Shader");
-    ImGui::InputFloat("Render Factor", &render::g_render_settings.render_factor_, GUI_DRAG_STEP);
-    ImGui::Text("Colorbuffer");
-    for (unsigned int colorbuffer : g_framebuffer.colorbuffers_) {
-      ImGui::Image(colorbuffer, IMAGE_SIZE);
-    }
-    ImGui::End();
-  }
-}
-
+void DrawRendererStatus();
 void RecreateFramebuffer();
-void FBSizeCallback(GLFWwindow *window, int width, int height) {
-  glViewport(0, 0, render::g_width, render::g_height);
-  render::g_width = width;
-  render::g_height = height;
-  RecreateFramebuffer();
-}
+void FBSizeCallback(GLFWwindow *window, int width, int height);
 
 void render::Init() {
   glfwInit();
@@ -92,21 +76,18 @@ void render::Init() {
 #endif
   render::g_window = glfwCreateWindow(render::g_width, render::g_height, "Metal", nullptr, nullptr);
   if (render::g_window == nullptr) {
-    const char *error_desc;
+    const char* error_desc;
     glfwGetError(&error_desc);
-    fmt::print("{}\n", error_desc);
-    debug::Throw(GET_TRACE, "Failed to create GLFW window");
+    debug::Throw(GET_TRACE, std::format("Failed to create GLFW window. {}", error_desc));
   }
   glfwMakeContextCurrent(render::g_window);
   glfwSetFramebufferSizeCallback(render::g_window, FBSizeCallback);
   glfwSwapInterval(1);
-
   if (0 == gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
     debug::Throw(GET_TRACE, "Failed to initialize GLAD");
     glfwTerminate();
     return;
   }
-
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -125,7 +106,6 @@ void render::Init() {
   glEnableVertexAttribArray(2);
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
                         reinterpret_cast<void *>(6 * sizeof(float)));
-
   glGenVertexArrays(1, &g_screen_vao);
   glGenBuffers(1, &g_screen_vbo);
   glBindVertexArray(g_screen_vao);
@@ -136,14 +116,23 @@ void render::Init() {
   glEnableVertexAttribArray(1);
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<void *>(3 * sizeof(float)));
-
   RecreateFramebuffer();
-
-  g_screen_shader = filesystem::LoadShader("screen_shader/vert.glsl", "screen_shader/frag.glsl");
+  g_screen_shader = filesystem::LoadShader("engine_assets/screen_shader/vert.glsl", "engine_assets/screen_shader/frag.glsl");
   g_screen_shader->Use();
   g_screen_shader->SetInt("scene", 0);
-  g_screen_shader->SetInt("blur", 1);
 
+  input::AddHook({GLFW_KEY_W, ButtonState::kHold},
+                 []() { IF_NOHUD(render::g_camera.position_.z -= g_camera_speed) });
+  input::AddHook({GLFW_KEY_S, ButtonState::kHold},
+                 []() { IF_NOHUD(render::g_camera.position_.z += g_camera_speed) });
+  input::AddHook({GLFW_KEY_A, ButtonState::kHold},
+                 []() { IF_NOHUD(render::g_camera.position_.x -= g_camera_speed) });
+  input::AddHook({GLFW_KEY_D, ButtonState::kHold},
+                 []() { IF_NOHUD(render::g_camera.position_.x += g_camera_speed) });
+  input::AddHook({GLFW_KEY_E, ButtonState::kHold},
+                 []() { IF_NOHUD(render::g_camera.position_.y += g_camera_speed) });
+  input::AddHook({GLFW_KEY_Q, ButtonState::kHold},
+                 []() { IF_NOHUD(render::g_camera.position_.y -= g_camera_speed) });
   debug::Log(GET_TRACE, "Initialized Rendering");
 }
 
@@ -172,7 +161,11 @@ void render::Render() {
   if (dev::g_hud_enabled) {
     ImGui::Begin("Viewport");
     auto viewport_size = ImGui::GetContentRegionAvail();
+    #ifdef WIN32
+    ImGui::Image(g_framebuffer.colorbuffers_[0], viewport_size, ImVec2(0, 1), ImVec2(1, 0));
+    #else
     ImGui::Image(g_framebuffer.colorbuffers_[0], viewport_size);
+    #endif
     ImGui::End();
   } else {
     g_screen_shader->Use();
@@ -199,16 +192,42 @@ void render::Quit() {
   debug::Log(GET_TRACE, "Terminated Rendering");
 }
 
-glm::mat4 GetTransform(const glm::vec3 &pos, const glm::vec2 &scale, float rot) {
+/////////////////////////////
+/// Helper Functions etc. ///
+/////////////////////////////
+
+void DrawRendererStatus() {
+  if (dev::g_hud_enabled) {
+    ImGui::Begin("Renderer");
+    ImGui::Text("Directional light count: %d",
+                static_cast<int>(render::g_directional_lights.size()));
+    ImGui::Text("Point light count: %d", static_cast<int>(render::g_point_lights.size()));
+    ImGui::Text("Spot light count: %d", static_cast<int>(render::g_spot_lights.size()));
+    ImGui::DragFloat3("Camera Position", glm::value_ptr(render::g_camera.position_));
+    ImGui::DragFloat("Camera Field of View", &g_camera_fov);
+    ImGui::DragFloat("Camera Speed", &g_camera_speed, 0.01F, 0.01F, 10.0F);
+    ImGui::SeparatorText("Screen Shader");
+    ImGui::InputFloat("Render Factor", &render::g_render_settings.render_factor_, GUI_DRAG_STEP);
+    ImGui::Text("Colorbuffer");
+    for (unsigned int colorbuffer : g_framebuffer.colorbuffers_) {
+      ImGui::Image(colorbuffer, IMAGE_SIZE);
+    }
+    ImGui::End();
+  }
+}
+
+glm::mat4 GetTransform(const glm::vec3 &pos, const glm::vec2 &scale, const glm::vec3& rot) {
   auto transform = glm::mat4(1.0F);
   transform = glm::translate(transform, pos);
-  transform = glm::rotate(transform, glm::radians(rot), glm::vec3(0.0, 0.0, 1.0));
+  transform = glm::rotate(transform, rot.z, glm::vec3(0.0f, 0.0f, 1.0f));
+  transform = glm::rotate(transform, rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
+  transform = glm::rotate(transform, rot.x, glm::vec3(1.0f, 0.0f, 0.0f)); 
   transform = glm::scale(transform, glm::vec3(scale, 1));
   return transform;
 }
 
 void render::RenderTexture(const Material *material, const glm::vec3 &pos, const glm::vec2 &size,
-                           const float &rot) {
+                           const glm::vec3 &rot) {
   if (material == nullptr) {
     return;
   }
@@ -254,6 +273,13 @@ void render::RenderTexture(const Material *material, const glm::vec3 &pos, const
   glBindVertexArray(g_vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   glBindVertexArray(0);
+}
+
+void FBSizeCallback(GLFWwindow *window, int width, int height) {
+  glViewport(0, 0, render::g_width, render::g_height);
+  render::g_width = width;
+  render::g_height = height;
+  RecreateFramebuffer();
 }
 
 Framebuffer render::CreateFramebuffer(FramebufferCreateInfo &create_info) {

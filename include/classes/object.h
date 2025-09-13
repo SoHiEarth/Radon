@@ -12,7 +12,7 @@ public:
   Editable<std::string> name_ = {"Object", "Name", reg_};
   Editable<glm::vec3> position_ = {glm::vec3(0.0F), "Position", reg_};
   Editable<glm::vec2> scale_ = {glm::vec2(1.0F), "Scale", reg_};
-  Editable<float> rotation_ = {0.0F, "Rotation", reg_};
+  Editable<glm::vec3> rotation_ = {glm::vec3(0.0F), "Rotation", reg_};
   Editable<bool> is_static_ = {false, "Static", reg_};
   Material* material_ = nullptr;
   bool has_initialized_ = false;

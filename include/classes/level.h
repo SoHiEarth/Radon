@@ -13,7 +13,7 @@ public:
   void Quit();
   void AddObject(Object* /*object*/, std::string_view /*name*/ = "Object");
   void RemoveObject(Object* /*object*/);
-  std::string_view path_;
+  std::string path_;
   std::vector<Object*> objects_;
 };
 

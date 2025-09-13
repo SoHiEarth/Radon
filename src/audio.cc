@@ -6,19 +6,7 @@
 
 ALCdevice* g_device;
 ALCcontext* g_context;
-
-static void GetAudioDevices(const ALCchar* devices) {
-  const ALCchar* device = devices;
-  const ALCchar* next = devices + 1;
-  size_t len = 0;
-  debug::Log(GET_TRACE, "Available Audio Devices");
-  while ((device != nullptr) && *device != '\0' && (next != nullptr) && *next != '\0') {
-    debug::Log(GET_TRACE, device);
-    len = strlen(device);
-    device += (len + 1);
-    next += (len + 2);
-  }
-}
+static void GetAudioDevices(const ALCchar* devices);
 
 void audio::Init() {
   ALboolean enumeration = alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT");
@@ -47,4 +35,17 @@ void audio::Quit() {
     g_device = nullptr;
   }
   debug::Log(GET_TRACE, "Terminated audio");
+}
+
+static void GetAudioDevices(const ALCchar* devices) {
+  const ALCchar* device = devices;
+  const ALCchar* next = devices + 1;
+  size_t len = 0;
+  debug::Log(GET_TRACE, "Available Audio Devices");
+  while ((device != nullptr) && *device != '\0' && (next != nullptr) && *next != '\0') {
+    debug::Log(GET_TRACE, device);
+    len = strlen(device);
+    device += (len + 1);
+    next += (len + 2);
+  }
 }

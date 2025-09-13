@@ -9,14 +9,13 @@
 #include <engine/physics.h>
 #include <engine/render.h>
 #include <format>
-#define DEFAULT_CAMERA_SPEED 0.1;
-float g_camera_speed = DEFAULT_CAMERA_SPEED;
-#define IF_NOHUD(param)      \
-  if (!dev::g_hud_enabled) { \
-    param;                   \
-  }
+#include <filesystem>
 
 int main(int argc, char** argv) {
+  if (!std::filesystem::exists("engine_assets")) {
+    debug::Log(GET_TRACE, "Initialization failure: Core assets not found.");
+    return -1;
+  }
   try {
     render::Init();
     input::Init();
@@ -30,21 +29,8 @@ int main(int argc, char** argv) {
 
   input::AddHook({GLFW_KEY_ESCAPE, ButtonState::kRelease},
                  []() { glfwSetWindowShouldClose(render::g_window, true); });
-
   input::AddHook({GLFW_KEY_F1, ButtonState::kPress},
                  []() { dev::g_hud_enabled = !dev::g_hud_enabled; });
-
-  input::AddHook({GLFW_KEY_W, ButtonState::kHold},
-                 []() { IF_NOHUD(render::g_camera.position_.y += g_camera_speed) });
-
-  input::AddHook({GLFW_KEY_S, ButtonState::kHold},
-                 []() { IF_NOHUD(render::g_camera.position_.y -= g_camera_speed) });
-
-  input::AddHook({GLFW_KEY_A, ButtonState::kHold},
-                 []() { IF_NOHUD(render::g_camera.position_.x -= g_camera_speed) });
-
-  input::AddHook({GLFW_KEY_D, ButtonState::kHold},
-                 []() { IF_NOHUD(render::g_camera.position_.x += g_camera_speed) });
 
   try {
     while (glfwWindowShouldClose(render::g_window) == 0) {

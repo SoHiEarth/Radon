@@ -14,7 +14,10 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_stdlib.h>
+#include <imgui_internal.h>
 #include <format>
+#include <tinyfiledialogs/tinyfiledialogs.h>
+
 #define IMAGE_PREVIEW_SIZE 100, 100
 #define DEVGUI_ROUNDING_MORE 8.0F
 #define DEVGUI_ROUNDING_LESS 6.0F
@@ -26,6 +29,182 @@ std::string g_material_path;
 
 std::string g_material_diffuse, g_material_specular, g_material_vertex, g_material_fragment;
 int g_material_shininess = DEFAULT_SHININESS;
+void MaterialView(Material*& material);
+void DrawProperties();
+void DrawDebug();
+void DrawLevel();
+void DrawMenuFile();
+void DrawMenuEdit();
+void DrawMenuView();
+void DrawMenuEngine();
+void DrawMenuHelp();
+void DrawMenuBar();
+
+void dev::Init() {
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& imgui_io = ImGui::GetIO();
+  imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  imgui_io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  ImGuiStyle& style = ImGui::GetStyle();
+  style.WindowRounding = DEVGUI_ROUNDING_MORE;
+  style.ChildRounding = DEVGUI_ROUNDING_MORE;
+  style.FrameRounding = DEVGUI_ROUNDING_LESS;
+  style.PopupRounding = DEVGUI_ROUNDING_LESS;
+  style.ScrollbarRounding = DEVGUI_ROUNDING_LESS;
+  style.GrabRounding = DEVGUI_ROUNDING_LESS;
+  style.TabRounding = DEVGUI_ROUNDING_LESS;
+  ImFont* ui_font = imgui_io.Fonts->AddFontFromFileTTF(
+      "engine_assets/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf", DEVGUI_FONT_SIZE, nullptr,
+      imgui_io.Fonts->GetGlyphRangesDefault());
+  ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
+  ImGui_ImplOpenGL3_Init("#version 150");
+  debug::Log(GET_TRACE, "Initialized GUI");
+}
+
+void dev::Update() {
+  if (!dev::g_hud_enabled) {
+    glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    return;
+  }
+  glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+  ImGuiViewport* viewport = ImGui::GetMainViewport();
+  ImGui::SetNextWindowPos(viewport->Pos);
+  ImGui::SetNextWindowSize(viewport->Size);
+  ImGui::SetNextWindowViewport(viewport->ID);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+  ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar |
+                                  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+                                  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
+                                  ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_MenuBar;
+  ImGui::Begin("DockSpace_Window", nullptr, window_flags);
+  ImGui::PopStyleVar(2);
+  ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+  ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f));
+  ImGui::End();
+  static bool first_dock_layout = true;
+  if (first_dock_layout) {
+    first_dock_layout = false;
+    ImGui::DockBuilderRemoveNode(dockspace_id);
+    ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+    ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
+    ImGuiID dock_main_id = dockspace_id;
+    ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.7f, nullptr, &dock_main_id);
+    ImGui::DockBuilderDockWindow("Viewport", dock_id_left);
+    ImGui::DockBuilderDockWindow("Properties", dock_main_id);
+    ImGui::DockBuilderDockWindow("Debug", dock_main_id);
+    ImGui::DockBuilderDockWindow("Level", dock_main_id);
+    ImGui::DockBuilderDockWindow("Renderer", dock_main_id);
+    ImGui::DockBuilderFinish(dockspace_id);
+  }
+  DrawMenuBar();
+  DrawProperties();
+  DrawDebug();
+  DrawLevel();
+}
+
+void dev::Render() {
+  if (!dev::g_hud_enabled) {
+    return;
+  }
+  ImGui::Render();
+  ImGui::EndFrame();
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void dev::Quit() {
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
+}
+
+void DrawProperties() {
+  ImGui::Begin("Properties");
+  if (g_current_object != nullptr && filesystem::g_level != nullptr) {
+    if (ImGui::Button("Remove")) {
+      filesystem::g_level->RemoveObject(g_current_object);
+      g_current_object = nullptr;
+    } else {
+      for (const auto& field : g_current_object->reg_) {
+        if (field != nullptr) {
+          field->RenderInterface();
+        }
+      }
+      MaterialView(g_current_object->material_);
+      ImGui::SeparatorText("Other Info");
+      ImGui::Text("Type: %s", g_current_object->GetTypeName().data());
+      ImGui::Text("Has Initialized: %s", g_current_object->has_initialized_ ? "Yes" : "No");
+      ImGui::Text("Has Quit: %s", g_current_object->has_quit_ ? "Yes" : "No");
+    }
+  }
+  ImGui::End();
+}
+
+void DrawDebug() {
+  ImGui::Begin("Debug");
+  if (debug::g_debug_settings.kTraceSupported) {
+    ImGui::Checkbox("Trace Source File", &debug::g_debug_settings.trace_source_file_);
+    ImGui::Checkbox("Trace Function Name", &debug::g_debug_settings.trace_function_name_);
+    ImGui::Checkbox("Trace Line Number", &debug::g_debug_settings.trace_line_number_);
+  } else {
+    ImGui::Text("Build platform did not support <stacktrace>");
+  }
+  ImGui::End();
+}
+
+void DrawLevel() {
+  ImGui::Begin("Level");
+  if (filesystem::g_level == nullptr) {
+    if (ImGui::Button("New Level")) {
+      const char* filter_patterns[] = {"*.xml"};
+      const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1,
+                                               filter_patterns, "Level Files");
+      if (file != nullptr) {
+        filesystem::g_level = new Level();
+        filesystem::g_level->path_ = file;
+      }
+    }
+    if (ImGui::Button("Open Level")) {
+      const char* filter_patterns[] = {"*.xml"};
+      const char* file =
+          tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
+      if (file != nullptr) {
+        filesystem::g_level = filesystem::serialized::LoadLevel(file);
+        g_current_object = nullptr;
+      }
+    }
+  }
+  if (filesystem::g_level != nullptr) {
+    ImGui::LabelText("Level Path", filesystem::g_level->path_.c_str());
+    if (ImGui::Button("Open Level")) {
+      filesystem::FreeLevel(filesystem::g_level);
+      const char* filter_patterns[] = {"*.xml"};
+      const char* file =
+          tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
+      if (file != nullptr) {
+        filesystem::g_level = filesystem::serialized::LoadLevel(file);
+        g_current_object = nullptr;
+      }
+    }
+    if (ImGui::Button("Save Level")) {
+      filesystem::serialized::SaveLevel(filesystem::g_level, filesystem::g_level->path_);
+    }
+    ImGui::SeparatorText("Scene Objects");
+    if (!filesystem::g_level->objects_.empty()) {
+      for (int i = 0; i < filesystem::g_level->objects_.size(); i++) {
+        if (ImGui::Button(
+                std::format("{}##{}", *filesystem::g_level->objects_[i]->name_, i).c_str())) {
+          g_current_object = filesystem::g_level->objects_[i];
+        }
+      }
+    }
+  }
+  ImGui::End();
+}
 
 void MaterialView(Material*& material) {
   ImGui::SeparatorText("Material");
@@ -94,107 +273,39 @@ void MaterialView(Material*& material) {
   }
 }
 
-void dev::Init() {
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGuiIO& imgui_io = ImGui::GetIO();
-  imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-  imgui_io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-  ImGuiStyle& style = ImGui::GetStyle();
-  style.WindowRounding = DEVGUI_ROUNDING_MORE;
-  style.ChildRounding = DEVGUI_ROUNDING_MORE;
-  style.FrameRounding = DEVGUI_ROUNDING_LESS;
-  style.PopupRounding = DEVGUI_ROUNDING_LESS;
-  style.ScrollbarRounding = DEVGUI_ROUNDING_LESS;
-  style.GrabRounding = DEVGUI_ROUNDING_LESS;
-  style.TabRounding = DEVGUI_ROUNDING_LESS;
-  ImFont* ui_font = imgui_io.Fonts->AddFontFromFileTTF(
-      "IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf", DEVGUI_FONT_SIZE, nullptr,
-      imgui_io.Fonts->GetGlyphRangesDefault());
-  ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
-  ImGui_ImplOpenGL3_Init("#version 150");
-  debug::Log(GET_TRACE, "Initialized GUI");
-}
-
-void DrawProperties() {
-  ImGui::Begin("Properties");
-  if (g_current_object != nullptr && filesystem::g_level != nullptr) {
-    if (ImGui::Button("Remove")) {
-      filesystem::g_level->RemoveObject(g_current_object);
-      g_current_object = nullptr;
-    } else {
-      for (const auto& field : g_current_object->reg_) {
-        if (field != nullptr) {
-          field->RenderInterface();
-        }
-      }
-      MaterialView(g_current_object->material_);
-      ImGui::SeparatorText("Other Info");
-      ImGui::Text("Type: %s", g_current_object->GetTypeName().data());
-      ImGui::Text("Has Initialized: %s", g_current_object->has_initialized_ ? "Yes" : "No");
-      ImGui::Text("Has Quit: %s", g_current_object->has_quit_ ? "Yes" : "No");
-    }
-  }
-  ImGui::End();
-}
-
-void DrawDebug() {
-  ImGui::Begin("Debug");
-  if (debug::g_debug_settings.kTraceSupported) {
-    ImGui::Checkbox("Trace Source File", &debug::g_debug_settings.trace_source_file_);
-    ImGui::Checkbox("Trace Function Name", &debug::g_debug_settings.trace_function_name_);
-    ImGui::Checkbox("Trace Line Number", &debug::g_debug_settings.trace_line_number_);
-  } else {
-    ImGui::Text("Build platform did not support <stacktrace>");
-  }
-  ImGui::End();
-}
-
-std::string g_new_level_path = "Untitled Level.xml";
-void DrawLevel() {
-  ImGui::Begin("Level");
-  if (filesystem::g_level == nullptr) {
-    ImGui::InputText("Level Path", &g_new_level_path);
-    if (ImGui::Button("Load Level")) {
-      if (g_new_level_path.empty()) {
-        g_new_level_path = "Untitled Level.xml";
-      }
-      filesystem::g_level = new Level();
-      filesystem::g_level->path_ = g_new_level_path;
-      g_current_object = nullptr;
-    }
-  }
-  if (filesystem::g_level != nullptr) {
-    ImGui::InputText("Level Path", &g_new_level_path);
-    if (ImGui::Button("Load Level")) {
-      filesystem::FreeLevel(filesystem::g_level);
-      filesystem::g_level = filesystem::serialized::LoadLevel(g_new_level_path);
-      g_new_level_path = filesystem::g_level->path_;
-      g_current_object = nullptr;
-    }
-    if (ImGui::Button("Save Level")) {
-      filesystem::serialized::SaveLevel(filesystem::g_level, filesystem::g_level->path_);
-    }
-    for (const auto& [name, func] : filesystem::g_object_factory) {
-      if (ImGui::Button(std::format("Add {}", name).c_str())) {
-        filesystem::g_level->AddObject(func(), name);
-      }
-    }
-    ImGui::SeparatorText("Scene Objects");
-    if (!filesystem::g_level->objects_.empty()) {
-      for (int i = 0; i < filesystem::g_level->objects_.size(); i++) {
-        if (ImGui::Button(
-                std::format("{}##{}", *filesystem::g_level->objects_[i]->name_, i).c_str())) {
-          g_current_object = filesystem::g_level->objects_[i];
-        }
-      }
-    }
-  }
-  ImGui::End();
-}
-
 void DrawMenuFile() {
   if (ImGui::BeginMenu("File")) {
+    if (ImGui::MenuItem("New")) {
+      filesystem::FreeLevel(filesystem::g_level);
+      filesystem::g_level = new Level();
+      g_current_object = nullptr;
+    }
+    if (ImGui::MenuItem("Open")) {
+      const char* filter_patterns[] = {"*.xml"};
+      const char* file =
+          tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
+      if (file != nullptr) {
+        filesystem::FreeLevel(filesystem::g_level);
+        filesystem::g_level = filesystem::serialized::LoadLevel(file);
+        g_current_object = nullptr;
+      }
+    }
+    if (ImGui::MenuItem("Save")) {
+      if (filesystem::g_level != nullptr) {
+        filesystem::serialized::SaveLevel(filesystem::g_level, filesystem::g_level->path_);
+      }
+    }
+    if (ImGui::MenuItem("Save As")) {
+      if (filesystem::g_level != nullptr) {
+        const char* filter_patterns[] = {"*.xml"};
+        const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1,
+                                                 filter_patterns, "Level Files");
+        if (file != nullptr) {
+          filesystem::serialized::SaveLevel(filesystem::g_level, file);
+          filesystem::g_level->path_ = file;
+        }
+      }
+    }
     if (ImGui::MenuItem("Exit")) {
       glfwSetWindowShouldClose(render::g_window, GLFW_TRUE);
     }
@@ -250,34 +361,4 @@ void DrawMenuBar() {
     DrawMenuHelp();
     ImGui::EndMainMenuBar();
   }
-}
-
-void dev::Update() {
-  if (!dev::g_hud_enabled) {
-    glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    return;
-  }
-  glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
-  ImGui::NewFrame();
-  DrawMenuBar();
-  DrawProperties();
-  DrawDebug();
-  DrawLevel();
-}
-
-void dev::Render() {
-  if (!dev::g_hud_enabled) {
-    return;
-  }
-  ImGui::Render();
-  ImGui::EndFrame();
-  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-
-void dev::Quit() {
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext();
 }

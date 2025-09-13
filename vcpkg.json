@@ -19,6 +19,7 @@
     "openal-soft",
     "opengl",
     "pugixml",
-    "stb"
+    "stb",
+    "tinyfiledialogs"
   ]
 }

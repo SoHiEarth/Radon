@@ -70,7 +70,7 @@ void Update();
 void Render();
 void Quit();
 void RenderTexture(const Material* /*material*/, const glm::vec3& /*pos*/,
-                   const glm::vec2& /*size*/, const float& /*rot*/);
+                   const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
 Framebuffer CreateFramebuffer(FramebufferCreateInfo& create_info);
 void DeleteFramebuffer(Framebuffer& framebuffer);
 
