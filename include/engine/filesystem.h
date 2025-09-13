@@ -2,10 +2,10 @@
 #define FILESYSTEM_H
 
 #include <classes/editable.h>
-#include <format>
+#include <functional>
 #include <glm/glm.hpp>
 #include <pugixml.hpp>
-#include <stdexcept>
+#include <unordered_map>
 
 class Object;
 class Texture;
@@ -15,6 +15,7 @@ class Level;
 
 namespace filesystem {
 extern Level* g_level;
+extern std::unordered_map<std::string, std::function<Object*()>> g_object_factory;
 
 void FreeLevel(Level* /*level*/);
 

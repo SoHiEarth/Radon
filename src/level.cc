@@ -1,7 +1,7 @@
 #include <classes/level.h>
 #include <classes/object.h>
-#include <algorithm>
 #include <engine/debug.h>
+#include <algorithm>
 #include <format>
 
 void Level::Init() {

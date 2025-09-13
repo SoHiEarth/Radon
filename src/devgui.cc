@@ -16,21 +16,50 @@
 #include <imgui_stdlib.h>
 #include <format>
 #define IMAGE_PREVIEW_SIZE 100, 100
+#define DEVGUI_ROUNDING_MORE 8.0F
+#define DEVGUI_ROUNDING_LESS 6.0F
+#define DEVGUI_FONT_SIZE 18.0F
 #define DEFAULT_SHININESS 32.0F
 bool dev::g_hud_enabled = false;
 Object* g_current_object = nullptr;
 std::string g_material_path;
 
+std::string g_material_diffuse, g_material_specular, g_material_vertex, g_material_fragment;
+int g_material_shininess = DEFAULT_SHININESS;
+
 void MaterialView(Material*& material) {
   ImGui::SeparatorText("Material");
-  ImGui::InputText("Material Path", &g_material_path);
-  if (ImGui::Button("Load")) {
-    filesystem::FreeMaterial(material);
-    material = filesystem::LoadMaterial(
-        g_material_path + "/diffuse.png", g_material_path + "/specular.png",
-        g_material_path + "/vert.glsl", g_material_path + "/frag.glsl", DEFAULT_SHININESS);
+  if (ImGui::BeginTabBar("LoadType")) {
+    if (ImGui::BeginTabItem("Directory")) {
+      ImGui::InputText("Material Path", &g_material_path);
+      if (ImGui::Button("Load")) {
+        filesystem::FreeMaterial(material);
+        material = filesystem::LoadMaterial(
+            g_material_path + "/diffuse.png", g_material_path + "/specular.png",
+            g_material_path + "/vert.glsl", g_material_path + "/frag.glsl", DEFAULT_SHININESS);
+        g_material_diffuse = material->diffuse_->path_;
+        g_material_specular = material->specular_->path_;
+        g_material_vertex = material->shader_->vertex_path_;
+        g_material_fragment = material->shader_->fragment_path_;
+      }
+      ImGui::EndTabItem();
+    }
+    if (ImGui::BeginTabItem("Specific")) {
+      ImGui::InputText("Material Diffuse", &g_material_diffuse);
+      ImGui::InputText("Material Specular", &g_material_specular);
+      ImGui::InputText("Material Vertex", &g_material_vertex);
+      ImGui::InputText("Material Fragment", &g_material_fragment);
+      ImGui::DragInt("Material Shininess", &g_material_shininess);
+      if (ImGui::Button("Load")) {
+        filesystem::FreeMaterial(material);
+        material =
+            filesystem::LoadMaterial(g_material_diffuse, g_material_specular, g_material_vertex,
+                                     g_material_fragment, g_material_shininess);
+      }
+      ImGui::EndTabItem();
+    }
+    ImGui::EndTabBar();
   }
-  ImGui::SameLine();
   if (ImGui::Button("Clear")) {
     filesystem::FreeMaterial(material);
     material = nullptr;
@@ -71,22 +100,23 @@ void dev::Init() {
   ImGuiIO& imgui_io = ImGui::GetIO();
   imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   imgui_io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  ImGuiStyle& style = ImGui::GetStyle();
+  style.WindowRounding = DEVGUI_ROUNDING_MORE;
+  style.ChildRounding = DEVGUI_ROUNDING_MORE;
+  style.FrameRounding = DEVGUI_ROUNDING_LESS;
+  style.PopupRounding = DEVGUI_ROUNDING_LESS;
+  style.ScrollbarRounding = DEVGUI_ROUNDING_LESS;
+  style.GrabRounding = DEVGUI_ROUNDING_LESS;
+  style.TabRounding = DEVGUI_ROUNDING_LESS;
+  ImFont* ui_font = imgui_io.Fonts->AddFontFromFileTTF(
+      "IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf", DEVGUI_FONT_SIZE, nullptr,
+      imgui_io.Fonts->GetGlyphRangesDefault());
   ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
   ImGui_ImplOpenGL3_Init("#version 150");
-  ImGui::StyleColorsDark();
   debug::Log(GET_TRACE, "Initialized GUI");
 }
 
-std::string g_new_level_path = "Untitled Level.xml";
-void dev::Update() {
-  if (!dev::g_hud_enabled) {
-    glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    return;
-  }
-  glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
-  ImGui::NewFrame();
+void DrawProperties() {
   ImGui::Begin("Properties");
   if (g_current_object != nullptr && filesystem::g_level != nullptr) {
     if (ImGui::Button("Remove")) {
@@ -106,17 +136,23 @@ void dev::Update() {
     }
   }
   ImGui::End();
+}
+
+void DrawDebug() {
   ImGui::Begin("Debug");
   if (debug::g_debug_settings.kTraceSupported) {
     ImGui::Checkbox("Trace Source File", &debug::g_debug_settings.trace_source_file_);
     ImGui::Checkbox("Trace Function Name", &debug::g_debug_settings.trace_function_name_);
     ImGui::Checkbox("Trace Line Number", &debug::g_debug_settings.trace_line_number_);
   } else {
-    ImGui::Text(
-        "Application does not support tracebacks; build platform does not support <stacktrace>");
+    ImGui::Text("Build platform did not support <stacktrace>");
   }
   ImGui::End();
-  ImGui::Begin("Level Management");
+}
+
+std::string g_new_level_path = "Untitled Level.xml";
+void DrawLevel() {
+  ImGui::Begin("Level");
   if (filesystem::g_level == nullptr) {
     ImGui::InputText("Level Path", &g_new_level_path);
     if (ImGui::Button("Load Level")) {
@@ -139,17 +175,10 @@ void dev::Update() {
     if (ImGui::Button("Save Level")) {
       filesystem::serialized::SaveLevel(filesystem::g_level, filesystem::g_level->path_);
     }
-    if (ImGui::Button("Add Sprite")) {
-      filesystem::g_level->AddObject(new Sprite, "Sprite");
-    }
-    if (ImGui::Button("Add Directional Light")) {
-      filesystem::g_level->AddObject(new DirectionalLight, "Directional Light");
-    }
-    if (ImGui::Button("Add Point Light")) {
-      filesystem::g_level->AddObject(new PointLight, "Point Light");
-    }
-    if (ImGui::Button("Add Spot Light")) {
-      filesystem::g_level->AddObject(new SpotLight, "Spot Light");
+    for (const auto& [name, func] : filesystem::g_object_factory) {
+      if (ImGui::Button(std::format("Add {}", name).c_str())) {
+        filesystem::g_level->AddObject(func(), name);
+      }
     }
     ImGui::SeparatorText("Scene Objects");
     if (!filesystem::g_level->objects_.empty()) {
@@ -162,6 +191,80 @@ void dev::Update() {
     }
   }
   ImGui::End();
+}
+
+void DrawMenuFile() {
+  if (ImGui::BeginMenu("File")) {
+    if (ImGui::MenuItem("Exit")) {
+      glfwSetWindowShouldClose(render::g_window, GLFW_TRUE);
+    }
+    ImGui::EndMenu();
+  }
+}
+
+void DrawMenuEdit() {
+  if (ImGui::BeginMenu("Edit")) {
+    if (ImGui::BeginMenu("Add")) {
+      ImGui::BeginDisabled(filesystem::g_level == nullptr);
+      for (const auto& [name, func] : filesystem::g_object_factory) {
+        if (ImGui::MenuItem(std::format("{}", name).c_str())) {
+          filesystem::g_level->AddObject(func(), name);
+        }
+      }
+      ImGui::EndDisabled();
+      ImGui::EndMenu();
+    }
+    ImGui::BeginDisabled((g_current_object == nullptr) || (filesystem::g_level == nullptr));
+    if (ImGui::MenuItem("Remove Selected")) {
+      filesystem::g_level->RemoveObject(g_current_object);
+    }
+    ImGui::EndDisabled();
+    ImGui::EndMenu();
+  }
+}
+
+void DrawMenuView() {
+  if (ImGui::BeginMenu("View")) {
+    ImGui::EndMenu();
+  }
+}
+
+void DrawMenuEngine() {
+  if (ImGui::BeginMenu("Engine")) {
+    ImGui::EndMenu();
+  }
+}
+
+void DrawMenuHelp() {
+  if (ImGui::BeginMenu("Help")) {
+    ImGui::EndMenu();
+  }
+}
+
+void DrawMenuBar() {
+  if (ImGui::BeginMainMenuBar()) {
+    DrawMenuFile();
+    DrawMenuEdit();
+    DrawMenuView();
+    DrawMenuEngine();
+    DrawMenuHelp();
+    ImGui::EndMainMenuBar();
+  }
+}
+
+void dev::Update() {
+  if (!dev::g_hud_enabled) {
+    glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    return;
+  }
+  glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+  DrawMenuBar();
+  DrawProperties();
+  DrawDebug();
+  DrawLevel();
 }
 
 void dev::Render() {

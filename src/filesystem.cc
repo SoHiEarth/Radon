@@ -33,7 +33,7 @@
   }
 Level* filesystem::g_level = nullptr;
 enum : std::uint16_t { kLogSize = 512 };
-std::unordered_map<std::string, std::function<Object*()>> g_object_factory = {
+std::unordered_map<std::string, std::function<Object*()>> filesystem::g_object_factory = {
     OBJECT_FACTORY_KEY(Sprite), OBJECT_FACTORY_KEY(DirectionalLight),
     OBJECT_FACTORY_KEY(PointLight), OBJECT_FACTORY_KEY(SpotLight)};
 std::string ValidateName(std::string input);

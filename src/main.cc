@@ -8,8 +8,13 @@
 #include <engine/input.h>
 #include <engine/physics.h>
 #include <engine/render.h>
-
-#define CAMERA_SPEED 0.1
+#include <format>
+#define DEFAULT_CAMERA_SPEED 0.1;
+float g_camera_speed = DEFAULT_CAMERA_SPEED;
+#define IF_NOHUD(param)      \
+  if (!dev::g_hud_enabled) { \
+    param;                   \
+  }
 
 int main(int argc, char** argv) {
   try {
@@ -30,16 +35,16 @@ int main(int argc, char** argv) {
                  []() { dev::g_hud_enabled = !dev::g_hud_enabled; });
 
   input::AddHook({GLFW_KEY_W, ButtonState::kHold},
-                 []() { render::g_camera.position_.y += CAMERA_SPEED; });
+                 []() { IF_NOHUD(render::g_camera.position_.y += g_camera_speed) });
 
   input::AddHook({GLFW_KEY_S, ButtonState::kHold},
-                 []() { render::g_camera.position_.y -= CAMERA_SPEED; });
+                 []() { IF_NOHUD(render::g_camera.position_.y -= g_camera_speed) });
 
   input::AddHook({GLFW_KEY_A, ButtonState::kHold},
-                 []() { render::g_camera.position_.x -= CAMERA_SPEED; });
+                 []() { IF_NOHUD(render::g_camera.position_.x -= g_camera_speed) });
 
   input::AddHook({GLFW_KEY_D, ButtonState::kHold},
-                 []() { render::g_camera.position_.x += CAMERA_SPEED; });
+                 []() { IF_NOHUD(render::g_camera.position_.x += g_camera_speed) });
 
   try {
     while (glfwWindowShouldClose(render::g_window) == 0) {
