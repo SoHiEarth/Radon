@@ -23,13 +23,13 @@
 #define TEXT_COLOR_RED ImVec4(1.0f, 0.0f, 0.0f, 1.0f)
 #define GUI_DRAG_STEP 0.1F
 #define IMAGE_SIZE ImVec2(100, 100)
-#define CAMERA_FOV 60.0F
+#define DEFAULT_CAMERA_FOV 60.0F
 #define CAMERA_NEAR_PLANE 0.1F
 #define CAMERA_FAR_PLANE 100.0F
 
 enum : std::uint16_t { kDefaultWindowWidth = 800, kDefaultWindowHeight = 600 };
 using ImGui::TextColored;
-
+float g_camera_fov = DEFAULT_CAMERA_FOV;
 std::vector<DirectionalLight *> render::g_directional_lights;
 std::vector<PointLight *> render::g_point_lights;
 std::vector<SpotLight *> render::g_spot_lights;
@@ -56,12 +56,13 @@ const std::array<float, 20> kGScreenVertices = {
 
 void DrawRendererStatus() {
   if (dev::g_hud_enabled) {
-    ImGui::Begin("Renderer Status");
-    ImGui::Text("Directional light status: %d",
+    ImGui::Begin("Renderer");
+    ImGui::Text("Directional light count: %d",
                 static_cast<int>(render::g_directional_lights.size()));
     ImGui::Text("Point light count: %d", static_cast<int>(render::g_point_lights.size()));
     ImGui::Text("Spot light count: %d", static_cast<int>(render::g_spot_lights.size()));
     ImGui::DragFloat3("Camera Position", glm::value_ptr(render::g_camera.position_));
+    ImGui::DragFloat("Camera Field of View", &g_camera_fov);
     ImGui::SeparatorText("Screen Shader");
     ImGui::InputFloat("Render Factor", &render::g_render_settings.render_factor_, GUI_DRAG_STEP);
     ImGui::Text("Colorbuffer");
@@ -168,12 +169,19 @@ void render::Render() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   dev::Update();
   DrawRendererStatus();
-  g_screen_shader->Use();
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, g_framebuffer.colorbuffers_[0]);
-  glBindVertexArray(g_screen_vao);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-  glBindVertexArray(0);
+  if (dev::g_hud_enabled) {
+    ImGui::Begin("Viewport");
+    auto viewport_size = ImGui::GetContentRegionAvail();
+    ImGui::Image(g_framebuffer.colorbuffers_[0], viewport_size);
+    ImGui::End();
+  } else {
+    g_screen_shader->Use();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, g_framebuffer.colorbuffers_[0]);
+    glBindVertexArray(g_screen_vao);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+  }
   dev::Render();
   glfwSwapBuffers(render::g_window);
 }
@@ -211,7 +219,7 @@ void render::RenderTexture(const Material *material, const glm::vec3 &pos, const
   glm::mat4 model = GetTransform(pos, size, rot);
   glm::mat4 view = glm::translate(glm::mat4(1.0F), -render::g_camera.position_);
   glm::mat4 projection =
-      glm::perspective(glm::radians(CAMERA_FOV),
+      glm::perspective(glm::radians(g_camera_fov),
                        (static_cast<float>(render::g_width) / static_cast<float>(render::g_height)),
                        CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
 
