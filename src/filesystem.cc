@@ -108,7 +108,7 @@ Object* filesystem::serialized::LoadObject(pugi::xml_node& base_node) {
   return object;
 }
 
-void filesystem::FreeObject(Object* object) {
+void filesystem::FreeObject(Object*& object) {
   if (object == nullptr) {
     return;
   }
@@ -134,14 +134,12 @@ std::string ReadFile(std::string_view path);
 unsigned int CompileShader(std::string_view code, int type);
 
 Shader* filesystem::LoadShader(std::string_view vertex_path, std::string_view fragment_path) {
-  auto* shader = new Shader(vertex_path.data(), fragment_path.data());
   unsigned int vertex = 0;
   unsigned int fragment = 0;
   try {
     vertex = CompileShader(ReadFile(vertex_path), GL_VERTEX_SHADER);
     fragment = CompileShader(ReadFile(fragment_path), GL_FRAGMENT_SHADER);
   } catch (std::runtime_error& e) {
-    delete shader;
     debug::Throw(GET_TRACE, std::format("Failed to load shader. {}", e.what()));
     return nullptr;
   }
@@ -159,11 +157,12 @@ Shader* filesystem::LoadShader(std::string_view vertex_path, std::string_view fr
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);
+  auto* shader = new Shader(vertex_path, fragment_path);
   shader->id_ = program;
   return shader;
 }
 
-void filesystem::FreeShader(Shader* shader) {
+void filesystem::FreeShader(Shader*& shader) {
   if (shader == nullptr) {
     return;
   }
@@ -187,6 +186,7 @@ Texture* filesystem::LoadTexture(std::string_view path) {
     delete texture;
     texture = nullptr;
     debug::Throw(GET_TRACE, std::format("Failed to load texture. Details: {}", path));
+    return nullptr;
   }
   GLenum format = GL_RGB;
   switch (texture->channels_) {
@@ -212,7 +212,7 @@ Texture* filesystem::LoadTexture(std::string_view path) {
   return texture;
 }
 
-void filesystem::FreeTexture(Texture* texture) {
+void filesystem::FreeTexture(Texture*& texture) {
   if (texture == nullptr) {
     return;
   }
@@ -246,7 +246,7 @@ Material* filesystem::LoadMaterial(std::string_view diffuse, std::string_view sp
   return material;
 }
 
-void filesystem::FreeMaterial(Material* material) {
+void filesystem::FreeMaterial(Material*& material) {
   if (material == nullptr) {
     return;
   }

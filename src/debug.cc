@@ -5,44 +5,55 @@
 #define DEBUG_IMPL_TRACE_FUNCTION trace.at(0).description()
 #define DEBUG_IMPL_TRACE_LINE trace.at(0).source_line()
 #define DEBUG_IMPL_TRACE                                                                         \
-  (debug::g_debug_settings.trace_source_file ? DEBUG_IMPL_TRACE_FILE : "") +                     \
-      (debug::g_debug_settings.trace_function_name                                               \
+  (debug::g_debug_settings.trace_source_file_ ? DEBUG_IMPL_TRACE_FILE : "") +                     \
+      (debug::g_debug_settings.trace_function_name_                                               \
            ? ("::" + std::string(DEBUG_IMPL_TRACE_FUNCTION))                                     \
            : "") +                                                                               \
-      (debug::g_debug_settings.trace_line_number ? (":" + std::to_string(DEBUG_IMPL_TRACE_LINE)) \
+      (debug::g_debug_settings.trace_line_number_ ? (":" + std::to_string(DEBUG_IMPL_TRACE_LINE)) \
                                                  : "")
 DebugSettings debug::g_debug_settings{};
 
+#ifndef NDEBUG
 #ifdef MDEBUG_DISABLE_TRACE
 void debug::Log(int /*unused*/, const char* fmt) {
-  fmt::print("Log: {}\n", fmt);
+  fmt::print("\nLog: {}", fmt);
 }
 
 void debug::Log(int /*unused*/, std::string_view fmt) {
-  fmt::print("Log: {}\n", fmt);
+  fmt::print("\nLog: {}", fmt);
 }
 
 void debug::Throw(int /*unused*/, const char* fmt) {
-  throw std::runtime_error(std::format("\tException: {}\n", fmt));
+  throw std::runtime_error(std::format("\n\tException: {}", fmt));
 }
 
 void debug::Throw(int /*unused*/, std::string_view fmt) {
-  throw std::runtime_error(std::format("\tException: {}\n", fmt));
+  throw std::runtime_error(std::format("\n\tException: {}", fmt));
 }
 #else
 void debug::Log(const std::stacktrace trace, std::string_view fmt) {
-  fmt::print("{}: {}\n", DEBUG_IMPL_TRACE, fmt);
+  fmt::print("\n{}: {}", DEBUG_IMPL_TRACE, fmt);
 }
 
 void debug::Log(const std::stacktrace trace, const char* fmt) {
-  fmt::print("{}: {}\n", DEBUG_IMPL_TRACE, fmt);
+  fmt::print("\n{}: {}", DEBUG_IMPL_TRACE, fmt);
 }
 
 void debug::Throw(const std::stacktrace trace, std::string_view fmt) {
-  throw std::runtime_error(std::format("\t{}: {}\n", DEBUG_IMPL_TRACE, fmt));
+  throw std::runtime_error(std::format("\n\t{}: {}", DEBUG_IMPL_TRACE, fmt));
 }
 
 void debug::Throw(const std::stacktrace trace, const char* fmt) {
-  throw std::runtime_error(std::format("\t{}: {}\n", DEBUG_IMPL_TRACE, fmt));
+  throw std::runtime_error(std::format("\n\t{}: {}", DEBUG_IMPL_TRACE, fmt));
+}
+#endif
+#else
+void debug::Log(int /*unused*/, const char* /*unused*/) {}
+void debug::Log(int /*unused*/, std::string_view /*unused*/) {}
+void debug::Throw(int /*unused*/, const char* fmt) {
+  throw std::runtime_error(std::format("\n\tException: {}", fmt));
+}
+void debug::Throw(int /*unused*/, std::string_view fmt) {
+  throw std::runtime_error(std::format("\n\tException: {}", fmt));
 }
 #endif

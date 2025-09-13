@@ -4,25 +4,41 @@
 
 void Level::Init() {
   for (const auto& object : objects_) {
-    object->Init();
+    if (object != nullptr) {
+      if (!object->has_initialized_ && !object->has_quit_) {
+        object->Init();
+      }
+    }
   }
 }
 
 void Level::Update() {
   for (const auto& object : objects_) {
-    object->Update();
+    if (object != nullptr) {
+      if (object->has_initialized_ && !object->has_quit_) {
+        object->Update();
+      }
+    }
   }
 }
 
 void Level::Render() {
   for (const auto& object : objects_) {
-    object->Render();
+    if (object != nullptr) {
+      if (object->has_initialized_ && !object->has_quit_) {
+        object->Render();
+      }
+    }
   }
 }
 
 void Level::Quit() {
   for (const auto& object : objects_) {
-    object->Quit();
+    if (object != nullptr) {
+      if (object->has_initialized_ && !object->has_quit_) {
+        object->Quit();
+      }
+    }
   }
 }
 

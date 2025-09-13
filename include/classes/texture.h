@@ -2,10 +2,9 @@
 #define TEXTURE_H
 
 struct Texture {
-  unsigned int id_;
-  int width_, height_, channels_;
-  std::string type_;
-  std::string path_;
+  unsigned int id_ = 0;
+  int width_ = 0, height_ = 0, channels_ = 0;
+  std::string path_ = "";
 };
 
 #endif  // TEXTURE_H
