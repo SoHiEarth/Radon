@@ -64,6 +64,7 @@ Level* filesystem::serialized::LoadLevel(std::string_view path) {
     level->AddObject(filesystem::serialized::LoadObject(object_node));
   }
   debug::Log(GET_TRACE, std::format("Successfully loaded {}", path));
+  level->Init();
   return level;
 }
 
@@ -73,6 +74,7 @@ void filesystem::FreeLevel(Level* level) {
   }
   for (auto* object : level->objects_) {
     object->Quit();
+    object->has_quit_ = true;
     FreeObject(object);
   }
   delete level;
@@ -114,6 +116,7 @@ void filesystem::FreeObject(Object*& object) {
   }
   if (object->has_initialized_ && !object->has_quit_) {
     object->Quit();
+    object->has_quit_ = true;
   }
   delete object;
   object = nullptr;

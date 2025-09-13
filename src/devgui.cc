@@ -99,6 +99,10 @@ void dev::Update() {
         }
       }
       MaterialView(g_current_object->material_);
+      ImGui::SeparatorText("Other Info");
+      ImGui::Text("Type: %s", g_current_object->GetTypeName().data());
+      ImGui::Text("Has Initialized: %s", g_current_object->has_initialized_ ? "Yes" : "No");
+      ImGui::Text("Has Quit: %s", g_current_object->has_quit_ ? "Yes" : "No");
     }
   }
   ImGui::End();
