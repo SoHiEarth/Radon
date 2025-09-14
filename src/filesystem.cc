@@ -56,16 +56,8 @@ void filesystem::Init() {
           std::filesystem::create_directory("engine_assets");
         }
         for (const auto& entry :
-             std::filesystem::directory_iterator(g_engine_directory + "/engine_assets")) {
+             std::filesystem::directory_iterator(g_engine_directory)) {
           std::filesystem::copy(entry.path(), "engine_assets/" + entry.path().filename().string(),
-                                std::filesystem::copy_options::overwrite_existing);
-        }
-        if (!std::filesystem::exists("assets")) {
-          std::filesystem::create_directory("assets");
-        }
-        for (const auto& entry :
-             std::filesystem::directory_iterator(g_engine_directory + "/assets")) {
-          std::filesystem::copy(entry.path(), "assets/" + entry.path().filename().string(),
                                 std::filesystem::copy_options::overwrite_existing);
         }
       }

@@ -25,19 +25,22 @@
 #define DEVGUI_ROUNDING_LESS 6.0F
 #define DEVGUI_FONT_SIZE 18.0F
 #define DEFAULT_SHININESS 32.0F
-bool dev::g_hud_enabled = false;
-Object* g_current_object = nullptr;
-std::string g_material_path;
+#define DOCK_LEFT_WIDTH 0.25F
+#define DOCK_RIGHT_WIDTH 0.3F
+#define DOCK_BOTTOM_HEIGHT 0.3F
 
+bool dev::g_hud_enabled = false, g_disable_hud_after_frame = false;
+Object* g_current_object = nullptr;
 std::string g_material_diffuse, g_material_specular, g_material_vertex, g_material_fragment;
 int g_material_shininess = DEFAULT_SHININESS;
-bool g_disable_hud_after_frame = false;
+std::vector<ConsoleMessage> g_console_messages;
 
 void MaterialView(Material*& material);
 void DrawProperties();
 void DrawDebug();
 void DrawLevel();
 void DrawLocalization();
+void DrawConsole();
 void DrawMenuFile();
 void DrawMenuEdit();
 void DrawMenuView();
@@ -64,9 +67,10 @@ void dev::Init() {
       imgui_io.Fonts->GetGlyphRangesDefault());
   ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
   ImGui_ImplOpenGL3_Init("#version 150");
+  debug::SetCallback(AddConsoleMessage);
   debug::Log(GET_TRACE, "Initialized GUI");
 }
-#define VIEWPORT_WIDTH 0.7F
+
 void dev::Update() {
   if (!dev::g_hud_enabled) {
     glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -98,13 +102,17 @@ void dev::Update() {
     ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
     ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
     ImGuiID dock_main_id = dockspace_id;
-    ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, VIEWPORT_WIDTH, nullptr, &dock_main_id);
-    ImGui::DockBuilderDockWindow("Viewport", dock_id_left);
-    ImGui::DockBuilderDockWindow("Properties", dock_main_id);
-    ImGui::DockBuilderDockWindow("Debug", dock_main_id);
-    ImGui::DockBuilderDockWindow("Level", dock_main_id);
+    ImGuiID dock_id_bottom =
+        ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, DOCK_BOTTOM_HEIGHT, nullptr, &dock_main_id);
+    ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, DOCK_LEFT_WIDTH, nullptr, &dock_main_id);
+    ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, DOCK_RIGHT_WIDTH, nullptr, &dock_main_id);
+    ImGui::DockBuilderDockWindow("Viewport", dock_main_id);
+    ImGui::DockBuilderDockWindow("Properties", dock_id_right);
+    ImGui::DockBuilderDockWindow("Debug", dock_id_right);
+    ImGui::DockBuilderDockWindow("Level", dock_id_left);
     ImGui::DockBuilderDockWindow("Localization", dock_main_id);
-    ImGui::DockBuilderDockWindow("Renderer", dock_main_id);
+    ImGui::DockBuilderDockWindow("Renderer", dock_id_right);
+    ImGui::DockBuilderDockWindow("Console", dock_id_bottom);
     ImGui::DockBuilderFinish(dockspace_id);
   }
   DrawMenuBar();
@@ -112,6 +120,16 @@ void dev::Update() {
   DrawDebug();
   DrawLevel();
   DrawLocalization();
+  DrawConsole();
+}
+
+void dev::AddConsoleMessage(const char* traceback, const char* message, std::uint8_t type) {
+  #ifdef MDEBUG_DISABLE_TRACE
+  ConsoleMessage console_message{message, ConsoleMessageType(type)};
+  #else
+  ConsoleMessage console_message{traceback, message, ConsoleMessageType(type)};
+  #endif
+  g_console_messages.push_back(console_message);
 }
 
 void dev::Render() {
@@ -167,39 +185,89 @@ void DrawDebug() {
   ImGui::End();
 }
 
+void DrawConsole() {
+  ImGui::Begin("Console");
+  ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false,
+                    ImGuiWindowFlags_HorizontalScrollbar);
+  if (ImGui::BeginTable("ConsoleTable", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
+    ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 50.0F);
+#ifndef MDEBUG_DISABLE_TRACE
+    ImGui::TableSetupColumn("Traceback", ImGuiTableColumnFlags_WidthFixed, 200.0F);
+#endif
+    ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableHeadersRow();
+    for (const auto& message : g_console_messages) {
+      ImGui::TableNextRow();
+      ImGui::PushID(&message);
+      ImGui::TableSetColumnIndex(0);
+      switch (message.type_) {
+        case ConsoleMessageType::ConsoleMessageType_Info:
+          ImGui::TextColored(ImVec4(0.0F, 1.0F, 0.0F, 1.0F), "Info");
+          break;
+        case ConsoleMessageType::ConsoleMessageType_Warning:
+          ImGui::TextColored(ImVec4(1.0F, 1.0F, 0.0F, 1.0F), "Warning");
+          break;
+        case ConsoleMessageType::ConsoleMessageType_Error:
+          ImGui::TextColored(ImVec4(1.0F, 0.0F, 0.0F, 1.0F), "Error");
+          break;
+        default:
+          ImGui::Text("Unknown");
+          break;
+      }
+      ImGui::TableSetColumnIndex(1);
+#ifndef MDEBUG_DISABLE_TRACE
+      ImGui::Text(message.traceback_.c_str());
+      ImGui::TableSetColumnIndex(2);
+#endif
+      ImGui::TextUnformatted(message.message_.c_str());
+      ImGui::PopID();
+    }
+    if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) {
+      ImGui::SetScrollHereY(1.0F);
+    }
+    ImGui::EndTable();
+  }
+  ImGui::EndChild();
+  if (ImGui::Button("Clear")) {
+    g_console_messages.clear();
+  }
+  ImGui::End();
+}
+
+void DevNewLevel() {
+  const char* filter_patterns[] = {"*.xml"};
+  const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1, filter_patterns, "Level Files");
+  if (file != nullptr) {
+    filesystem::FreeLevel(filesystem::g_level);
+    filesystem::g_level = new Level();
+    filesystem::g_level->path_ = file;
+  }
+}
+
+void DevOpenLevel() {
+  const char* filter_patterns[] = {"*.xml"};
+  const char* file = tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
+  if (file != nullptr) {
+    filesystem::FreeLevel(filesystem::g_level);
+    filesystem::g_level = filesystem::serialized::LoadLevel(file);
+    g_current_object = nullptr;
+  }
+}
+
 void DrawLevel() {
   ImGui::Begin("Level");
   if (filesystem::g_level == nullptr) {
     if (ImGui::Button("New Level")) {
-      const char* filter_patterns[] = {"*.xml"};
-      const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1,
-                                               filter_patterns, "Level Files");
-      if (file != nullptr) {
-        filesystem::g_level = new Level();
-        filesystem::g_level->path_ = file;
-      }
+      DevNewLevel();
     }
     if (ImGui::Button("Open Level")) {
-      const char* filter_patterns[] = {"*.xml"};
-      const char* file =
-          tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
-      if (file != nullptr) {
-        filesystem::g_level = filesystem::serialized::LoadLevel(file);
-        g_current_object = nullptr;
-      }
+      DevOpenLevel();
     }
   }
   if (filesystem::g_level != nullptr) {
     ImGui::LabelText("Level Path", "%s", filesystem::g_level->path_.c_str());
     if (ImGui::Button("Open Level")) {
-      filesystem::FreeLevel(filesystem::g_level);
-      const char* filter_patterns[] = {"*.xml"};
-      const char* file =
-          tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
-      if (file != nullptr) {
-        filesystem::g_level = filesystem::serialized::LoadLevel(file);
-        g_current_object = nullptr;
-      }
+      DevOpenLevel();
     }
     if (ImGui::Button("Save Level")) {
       filesystem::serialized::SaveLevel(filesystem::g_level, filesystem::g_level->path_);
@@ -359,20 +427,12 @@ void MaterialView(Material*& material) {
 void DrawMenuFile() {
   if (ImGui::BeginMenu("File")) {
     if (ImGui::MenuItem("New")) {
-      filesystem::FreeLevel(filesystem::g_level);
-      filesystem::g_level = new Level();
-      g_current_object = nullptr;
+      DevNewLevel();
     }
     if (ImGui::MenuItem("Open")) {
-      const char* filter_patterns[] = {"*.xml"};
-      const char* file =
-          tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
-      if (file != nullptr) {
-        filesystem::FreeLevel(filesystem::g_level);
-        filesystem::g_level = filesystem::serialized::LoadLevel(file);
-        g_current_object = nullptr;
-      }
+      DevOpenLevel();
     }
+    ImGui::BeginDisabled(filesystem::g_level == nullptr);
     if (ImGui::MenuItem("Save")) {
       if (filesystem::g_level != nullptr) {
         filesystem::serialized::SaveLevel(filesystem::g_level, filesystem::g_level->path_);
@@ -389,6 +449,7 @@ void DrawMenuFile() {
         }
       }
     }
+    ImGui::EndDisabled();
     if (ImGui::MenuItem("Exit")) {
       glfwSetWindowShouldClose(render::g_window, GLFW_TRUE);
     }

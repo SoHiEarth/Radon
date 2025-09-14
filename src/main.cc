@@ -10,17 +10,19 @@
 #include <engine/render.h>
 #include <format>
 #include <filesystem>
+#include <tinyfiledialogs/tinyfiledialogs.h>
 
 int main(int argc, char** argv) {
   try {
     filesystem::Init();
     render::Init();
+    dev::Init();
     input::Init();
     audio::Init();
     physics::Init();
-    dev::Init();
   } catch (std::exception& e) {
     debug::Log(GET_TRACE, std::format("Initialization failure: {}", e.what()));
+    tinyfd_messageBox("Initialization Failure", e.what(), "ok", "error", 1);
     return -1;
   }
 
@@ -44,16 +46,22 @@ int main(int argc, char** argv) {
     }
   } catch (std::exception& e) {
     debug::Log(GET_TRACE, std::format("Runtime failure: {}", e.what()));
+    tinyfd_messageBox("Runtime Failure", e.what(), "ok", "error", 1);
   }
 
   if (filesystem::g_level != nullptr) {
     filesystem::g_level->Quit();
   }
 
-  dev::Quit();
-  audio::Quit();
-  physics::Quit();
-  input::Quit();
-  render::Quit();
+  try {
+    dev::Quit();
+    audio::Quit();
+    physics::Quit();
+    input::Quit();
+    render::Quit();
+  } catch (std::exception& e) {
+    debug::Log(GET_TRACE, std::format("Quit failure: {}", e.what()));
+    tinyfd_messageBox("Quit Failure", e.what(), "ok", "error", 1);
+  }
   return 0;
 }

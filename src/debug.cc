@@ -15,45 +15,139 @@ DebugSettings debug::g_debug_settings{};
 
 #ifndef NDEBUG
 #ifdef MDEBUG_DISABLE_TRACE
+std::function<void(const char*, std::uint8_t)> debug_callback = nullptr;
+void debug::SetCallback(std::function<void(const char*, std::uint8_t)> func) {
+  debug_callback = func;
+  debug::Log(GET_TRACE, "Set debug callback");
+}
+
 void debug::Log(int /*unused*/, const char* fmt) {
-  fmt::print("Log: {}\n", fmt);
+  auto msg = std::format("Log: {}\n", fmt);
+  fmt::print(msg);
+  if (debug_callback != nullptr) {
+    debug_callback(msg.c_str(), 0);
+  }
 }
 
 void debug::Log(int /*unused*/, std::string_view fmt) {
-  fmt::print("Log: {}\n", fmt);
+  auto msg = std::format("Log: {}\n", fmt);
+  fmt::print(msg);
+  if (debug_callback != nullptr) {
+    debug_callback(msg.c_str(), 0);
+  }
+}
+
+void debug::Warning(int /*unused*/, const char* fmt) {
+  auto msg = std::format("Warning: {}\n", fmt);
+  if (debug_callback != nullptr) {
+    debug_callback(msg.c_str(), 1);
+  }
+}
+
+void debug::Warning(int /*unused*/, std::string_view fmt) {
+  auto msg = std::format("Warning: {}\n", fmt);
+  if (debug_callback != nullptr) {
+    debug_callback(msg.c_str(), 1);
+  }
 }
 
 void debug::Throw(int /*unused*/, const char* fmt) {
-  throw std::runtime_error(std::format("\tException: {}\n", fmt));
+  auto msg = std::format("\tException: {}\n", fmt);
+  throw std::runtime_error(msg);
+  if (debug_callback != nullptr) {
+    debug_callback(msg.c_str(), 2);
+  }
 }
 
 void debug::Throw(int /*unused*/, std::string_view fmt) {
-  throw std::runtime_error(std::format("\tException: {}\n", fmt));
+  auto msg = std::format("\tException: {}\n", fmt);
+  throw std::runtime_error(msg);
+  if (debug_callback != nullptr) {
+    debug_callback(msg.c_str(), 2);
+  }
 }
 #else
+std::function<void(const char*, const char*, std::uint8_t)> debug_callback = nullptr;
+void debug::SetCallback(std::function<void(const char*, const char*, std::uint8_t)> func) {
+  debug_callback = func;
+  debug::Log(GET_TRACE, "Set debug callback");
+}
+
 void debug::Log(const std::stacktrace trace, std::string_view fmt) {
   fmt::print("{}: {}\n", DEBUG_IMPL_TRACE, fmt);
+  if (debug_callback != nullptr) {
+    debug_callback((DEBUG_IMPL_TRACE).c_str(), fmt.data(), 0);
+  }
 }
 
 void debug::Log(const std::stacktrace trace, const char* fmt) {
   fmt::print("{}: {}\n", DEBUG_IMPL_TRACE, fmt);
+  if (debug_callback != nullptr) {
+    debug_callback((DEBUG_IMPL_TRACE).c_str(), fmt, 0);
+  }
+}
+
+void debug::Warning(const std::stacktrace trace, std::string_view fmt) {
+  fmt::print("{}: {}\n", DEBUG_IMPL_TRACE, fmt);
+  if (debug_callback != nullptr) {
+    debug_callback((DEBUG_IMPL_TRACE).c_str(), fmt.data(), 1);
+  }
+}
+
+void debug::Warning(const std::stacktrace trace, const char* fmt) {
+  fmt::print("{}: {}\n", DEBUG_IMPL_TRACE, fmt);
+  if (debug_callback != nullptr) {
+    debug_callback((DEBUG_IMPL_TRACE).c_str(), fmt, 1);
+  }
 }
 
 void debug::Throw(const std::stacktrace trace, std::string_view fmt) {
   throw std::runtime_error(std::format("\t{}: {}\n", DEBUG_IMPL_TRACE, fmt));
+  if (debug_callback != nullptr) {
+    debug_callback((DEBUG_IMPL_TRACE).c_str(), fmt.data(), 2);
+  }
 }
 
 void debug::Throw(const std::stacktrace trace, const char* fmt) {
   throw std::runtime_error(std::format("\t{}: {}\n", DEBUG_IMPL_TRACE, fmt));
+  if (debug_callback != nullptr) {
+    debug_callback((DEBUG_IMPL_TRACE).c_str(), fmt, 2);
+  }
 }
 #endif
 #else
-void debug::Log(int /*unused*/, const char* /*unused*/) {}
-void debug::Log(int /*unused*/, std::string_view /*unused*/) {}
+void debug::Log(int /*unused*/, const char* msg) {
+  if (debug_callback != nullptr) {
+    debug_callback(msg, 0);
+  }
+}
+void debug::Log(int /*unused*/, std::string_view msg) {
+  if (debug_callback != nullptr) {
+    debug_callback(msg.data(), 0);
+  }
+}
+void debug::Warning(int /*unused*/, const char* msg) {
+  if (debug_callback != nullptr) {
+    debug_callback(msg, 1);
+  }
+}
+void debug::Warning(int /*unused*/, std::string_view msg) {
+  if (debug_callback != nullptr) {
+    debug_callback(msg.data(), 1);
+  }
+}
 void debug::Throw(int /*unused*/, const char* fmt) {
-  throw std::runtime_error(std::format("\tException: {}\n", fmt));
+  auto msg = std::format("\tException: {}\n", fmt);
+  throw std::runtime_error(msg);
+  if (debug_callback != nullptr) {
+    debug_callback(msg.c_str(), 2);
+  }
 }
 void debug::Throw(int /*unused*/, std::string_view fmt) {
-  throw std::runtime_error(std::format("\tException: {}\n, fmt));
+  auto msg = std::format("\tException: {}\n", fmt);
+  throw std::runtime_error(msg);
+  if (debug_callback != nullptr) {
+    debug_callback(msg.c_str(), 2);
+  }
 }
 #endif

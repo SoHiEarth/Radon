@@ -1,6 +1,7 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 #include <string_view>
+#include <functional>
 #ifdef MDEBUG_DISABLE_TRACE
 #define GET_TRACE 0x0
 #else
@@ -23,13 +24,19 @@ struct DebugSettings {
 namespace debug {
 extern DebugSettings g_debug_settings;
 #ifdef MDEBUG_DISABLE_TRACE
+void SetCallback(std::function<void(const char*, std::uint8_t)> callback);
 void Log(int /*unused*/, const char* fmt);
 void Log(int /*unused*/, std::string_view fmt);
+void Warning(int /*unused*/, const char* fmt);
+void Warning(int /*unused*/, std::string_view fmt);
 void Throw(int /*unused*/, const char* fmt);
 void Throw(int /*unused*/, std::string_view fmt);
 #else
+void SetCallback(std::function<void(const char*, const char*, std::uint8_t)> callback);
 void Log(const std::stacktrace trace, const char* fmt);
 void Log(const std::stacktrace trace, std::string_view fmt);
+void Warning(const std::stacktrace trace, const char* fmt);
+void Warning(const std::stacktrace trace, std::string_view fmt);
 void Throw(const std::stacktrace trace, const char* fmt);
 void Throw(const std::stacktrace trace, std::string_view fmt);
 #endif
