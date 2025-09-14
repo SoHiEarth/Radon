@@ -1,7 +1,7 @@
 #include <classes/material.h>
 #include <classes/shader.h>
 #include <classes/texture.h>
-#include <engine/filesystem.h>
+#include <engine/io.h>
 #include <glad/glad.h>
 
 bool Material::IsValid() const {

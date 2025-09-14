@@ -5,7 +5,7 @@
 #include <classes/sprite.h>
 #include <classes/texture.h>
 #include <engine/debug.h>
-#include <engine/filesystem.h>
+#include <engine/io.h>
 #include <fmt/core.h>
 #include <glad/glad.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
@@ -32,15 +32,15 @@
       []() { return new Object(); } \
     }                               \
   }
-Level* filesystem::g_level = nullptr;
+Level* io::g_level = nullptr;
 enum : std::uint16_t { kLogSize = 512 };
-std::string filesystem::g_engine_directory;
-std::unordered_map<std::string, std::function<Object*()>> filesystem::g_object_factory = {
+std::string io::g_engine_directory;
+std::unordered_map<std::string, std::function<Object*()>> io::g_object_factory = {
     OBJECT_FACTORY_KEY(Sprite), OBJECT_FACTORY_KEY(DirectionalLight),
     OBJECT_FACTORY_KEY(PointLight), OBJECT_FACTORY_KEY(SpotLight)};
 std::string ValidateName(std::string input);
 
-void filesystem::Init() {
+void io::Init() {
   if (!std::filesystem::exists("engine_assets")) {
     tinyfd_messageBox("Engine Directory Not Found",
                       "Please select the engine directory to continue.", "ok", "info", 1);
@@ -64,16 +64,16 @@ void filesystem::Init() {
       debug::Throw(GET_TRACE, "Engine directory selection cancelled, application cannot continue.");
     }
   } else {
-    filesystem::g_engine_directory = "engine_assets";
+    io::g_engine_directory = "engine_assets";
   }
-  debug::Log(GET_TRACE, "Initialized filesystem");
+  debug::Log(GET_TRACE, "Initialized I/O");
 }
 
 ///////////////////////////
 ///  Level IO functions ///
 ///////////////////////////
 
-Level* filesystem::serialized::LoadLevel(std::string_view path) {
+Level* io::serialized::LoadLevel(std::string_view path) {
   if (path.empty()) {
     debug::Throw(GET_TRACE, "Requested file path is empty.");
   }
@@ -92,14 +92,14 @@ Level* filesystem::serialized::LoadLevel(std::string_view path) {
   auto* level = new Level();
   level->path_ = path;
   for (pugi::xml_node object_node : root.children("object")) {
-    level->AddObject(filesystem::serialized::LoadObject(object_node));
+    level->AddObject(io::serialized::LoadObject(object_node));
   }
   debug::Log(GET_TRACE, std::format("Successfully loaded {}", path));
   level->Init();
   return level;
 }
 
-void filesystem::FreeLevel(Level* level) {
+void io::FreeLevel(Level* level) {
   if (level == nullptr) {
     return;
   }
@@ -112,7 +112,7 @@ void filesystem::FreeLevel(Level* level) {
   level = nullptr;
 }
 
-void filesystem::serialized::SaveLevel(const Level* level, std::string_view path) {
+void io::serialized::SaveLevel(const Level* level, std::string_view path) {
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child("level");
   for (const auto& object : level->objects_) {
@@ -130,7 +130,7 @@ void filesystem::serialized::SaveLevel(const Level* level, std::string_view path
 ///  Object IO functions ///
 ////////////////////////////
 
-Object* filesystem::serialized::LoadObject(pugi::xml_node& base_node) {
+Object* io::serialized::LoadObject(pugi::xml_node& base_node) {
   std::string type_value = base_node.attribute("type").value();
   auto iterator = g_object_factory.find(type_value);
   if (iterator == g_object_factory.end()) {
@@ -141,7 +141,7 @@ Object* filesystem::serialized::LoadObject(pugi::xml_node& base_node) {
   return object;
 }
 
-void filesystem::FreeObject(Object*& object) {
+void io::FreeObject(Object*& object) {
   if (object == nullptr) {
     return;
   }
@@ -153,7 +153,7 @@ void filesystem::FreeObject(Object*& object) {
   object = nullptr;
 }
 
-void filesystem::serialized::SaveObject(const Object* object, pugi::xml_node& base_node) {
+void io::serialized::SaveObject(const Object* object, pugi::xml_node& base_node) {
   if (object == nullptr) {
     return;
   }
@@ -167,7 +167,7 @@ void filesystem::serialized::SaveObject(const Object* object, pugi::xml_node& ba
 std::string ReadFile(std::string_view path);
 unsigned int CompileShader(std::string_view code, int type);
 
-Shader* filesystem::LoadShader(std::string_view vertex_path, std::string_view fragment_path) {
+Shader* io::LoadShader(std::string_view vertex_path, std::string_view fragment_path) {
   unsigned int vertex = 0;
   unsigned int fragment = 0;
   try {
@@ -196,7 +196,7 @@ Shader* filesystem::LoadShader(std::string_view vertex_path, std::string_view fr
   return shader;
 }
 
-void filesystem::FreeShader(Shader*& shader) {
+void io::FreeShader(Shader*& shader) {
   if (shader == nullptr) {
     return;
   }
@@ -209,7 +209,7 @@ void filesystem::FreeShader(Shader*& shader) {
 /// Texture IO functions ///
 ////////////////////////////
 
-Texture* filesystem::LoadTexture(std::string_view path) {
+Texture* io::LoadTexture(std::string_view path) {
   auto* texture = new Texture();
   texture->path_ = path;
   glGenTextures(1, &texture->id_);
@@ -246,7 +246,7 @@ Texture* filesystem::LoadTexture(std::string_view path) {
   return texture;
 }
 
-void filesystem::FreeTexture(Texture*& texture) {
+void io::FreeTexture(Texture*& texture) {
   if (texture == nullptr) {
     return;
   }
@@ -259,18 +259,18 @@ void filesystem::FreeTexture(Texture*& texture) {
 /// Material IO functions ///
 /////////////////////////////
 
-Material* filesystem::LoadMaterial(std::string_view diffuse, std::string_view specular,
+Material* io::LoadMaterial(std::string_view diffuse, std::string_view specular,
                                    std::string_view vertex, std::string_view fragment,
                                    float shininess) {
   auto* material = new Material();
   material->shininess_ = shininess;
   try {
-    material->diffuse_ = filesystem::LoadTexture(diffuse);
-    material->specular_ = filesystem::LoadTexture(specular);
-    material->shader_ = filesystem::LoadShader(vertex, fragment);
+    material->diffuse_ = io::LoadTexture(diffuse);
+    material->specular_ = io::LoadTexture(specular);
+    material->shader_ = io::LoadShader(vertex, fragment);
   } catch (std::runtime_error& e) {
     debug::Log(GET_TRACE, std::format("Material load failed. {}", e.what()));
-    filesystem::FreeMaterial(material);
+    io::FreeMaterial(material);
     return nullptr;
   }
   material->shader_->Use();
@@ -280,23 +280,23 @@ Material* filesystem::LoadMaterial(std::string_view diffuse, std::string_view sp
   return material;
 }
 
-void filesystem::FreeMaterial(Material*& material) {
+void io::FreeMaterial(Material*& material) {
   if (material == nullptr) {
     return;
   }
-  filesystem::FreeTexture(material->diffuse_);
-  filesystem::FreeTexture(material->specular_);
-  filesystem::FreeShader(material->shader_);
+  io::FreeTexture(material->diffuse_);
+  io::FreeTexture(material->specular_);
+  io::FreeShader(material->shader_);
   delete material;
   material = nullptr;
 }
 
-Material* filesystem::serialized::LoadMaterial(pugi::xml_node& node) {
+Material* io::serialized::LoadMaterial(pugi::xml_node& node) {
   pugi::xml_node material_node = node.child(MATERIAL_KEY_NAME);
   if (!material_node) {
     return nullptr;
   }
-  return filesystem::LoadMaterial(material_node.attribute(MATERIAL_DIFFUSE_KEY_NAME).as_string(),
+  return io::LoadMaterial(material_node.attribute(MATERIAL_DIFFUSE_KEY_NAME).as_string(),
                                   material_node.attribute(MATERIAL_SPECULAR_KEY_NAME).as_string(),
                                   material_node.attribute(MATERIAL_VERTEX_KEY_NAME).as_string(),
                                   material_node.attribute(MATERIAL_FRAGMENT_KEY_NAME).as_string(),
@@ -304,7 +304,7 @@ Material* filesystem::serialized::LoadMaterial(pugi::xml_node& node) {
                                       .as_float(MATERIAL_SHININESS_DEFAULT_VALUE));
 }
 
-void filesystem::serialized::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
+void io::serialized::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
   if (material == nullptr) {
     return;
   }
@@ -329,7 +329,7 @@ void filesystem::serialized::SaveMaterial(const Material* material, pugi::xml_no
 /// Serialized IO functions ///
 ///////////////////////////////
 
-glm::vec3 filesystem::serialized::LoadVec3(pugi::xml_node& base_node, std::string name) {
+glm::vec3 io::serialized::LoadVec3(pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   glm::vec3 value;
@@ -339,7 +339,7 @@ glm::vec3 filesystem::serialized::LoadVec3(pugi::xml_node& base_node, std::strin
   return value;
 }
 
-glm::vec2 filesystem::serialized::LoadVec2(pugi::xml_node& base_node, std::string name) {
+glm::vec2 io::serialized::LoadVec2(pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   glm::vec2 value;
@@ -348,25 +348,25 @@ glm::vec2 filesystem::serialized::LoadVec2(pugi::xml_node& base_node, std::strin
   return value;
 }
 
-std::string filesystem::serialized::LoadString(pugi::xml_node& base_node, std::string name) {
+std::string io::serialized::LoadString(pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   return node.attribute("value").as_string("");
 }
 
-int filesystem::serialized::LoadInt(pugi::xml_node& base_node, std::string name) {
+int io::serialized::LoadInt(pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   return node.attribute("value").as_int(0);
 }
 
-float filesystem::serialized::LoadFloat(pugi::xml_node& base_node, std::string name) {
+float io::serialized::LoadFloat(pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   return node.attribute("value").as_float(0.0F);
 }
 
-void filesystem::serialized::SaveVec3(const glm::vec3* value, pugi::xml_node& base_node,
+void io::serialized::SaveVec3(const glm::vec3* value, pugi::xml_node& base_node,
                                       std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
@@ -378,7 +378,7 @@ void filesystem::serialized::SaveVec3(const glm::vec3* value, pugi::xml_node& ba
   node.append_attribute("z").set_value(value->z);
 }
 
-void filesystem::serialized::SaveVec2(const glm::vec2* value, pugi::xml_node& base_node,
+void io::serialized::SaveVec2(const glm::vec2* value, pugi::xml_node& base_node,
                                       std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
@@ -389,7 +389,7 @@ void filesystem::serialized::SaveVec2(const glm::vec2* value, pugi::xml_node& ba
   node.append_attribute("y").set_value(value->y);
 }
 
-void filesystem::serialized::SaveString(const std::string* value, pugi::xml_node& base_node,
+void io::serialized::SaveString(const std::string* value, pugi::xml_node& base_node,
                                         std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
@@ -399,7 +399,7 @@ void filesystem::serialized::SaveString(const std::string* value, pugi::xml_node
   node.append_attribute("value").set_value(value->c_str());
 }
 
-void filesystem::serialized::SaveInt(const int* value, pugi::xml_node& base_node,
+void io::serialized::SaveInt(const int* value, pugi::xml_node& base_node,
                                      std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
@@ -409,7 +409,7 @@ void filesystem::serialized::SaveInt(const int* value, pugi::xml_node& base_node
   node.append_attribute("value").set_value(*value);
 }
 
-void filesystem::serialized::SaveFloat(const float* value, pugi::xml_node& base_node,
+void io::serialized::SaveFloat(const float* value, pugi::xml_node& base_node,
                                        std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);

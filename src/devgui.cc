@@ -8,7 +8,7 @@
 #include <classes/texture.h>
 #include <engine/debug.h>
 #include <engine/devgui.h>
-#include <engine/filesystem.h>
+#include <engine/io.h>
 #include <engine/localization.h>
 #include <engine/render.h>
 #include <engine/telemetry.h>
@@ -66,7 +66,7 @@ void dev::Init() {
   style.GrabRounding = DEVGUI_ROUNDING_LESS;
   style.TabRounding = DEVGUI_ROUNDING_LESS;
   ImFont* ui_font = imgui_io.Fonts->AddFontFromFileTTF(
-      (filesystem::g_engine_directory + "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf")
+      (io::g_engine_directory + "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf")
           .c_str(),
       DEVGUI_FONT_SIZE, nullptr, imgui_io.Fonts->GetGlyphRangesDefault());
   ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
@@ -161,13 +161,38 @@ void dev::Quit() {
   ImGui::DestroyContext();
 }
 
+std::vector<float> fps_history_;
 std::vector<std::map<std::string, std::chrono::milliseconds>> timings_history_;
 
 void DrawTelemetry() {
   ImGui::Begin("Telemetry");
-  ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-  // Get timings, draw the label/time and add a plot to the right
-  if (ImGui::BeginTable("TelemetryTable", 3, ImGuiTableFlags_Borders)) {
+  ImGui::SeparatorText("FPS");
+  float fps = ImGui::GetIO().Framerate;
+  fps_history_.push_back(fps);
+  if (fps_history_.size() > 100) {
+    fps_history_.erase(fps_history_.begin());
+  }
+  if (ImGui::BeginTable("FPSTable", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
+    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
+    ImGui::TableSetupColumn("Time (ms)", ImGuiTableColumnFlags_WidthFixed, 100.0F);
+    ImGui::TableSetupColumn("Graph", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableHeadersRow();
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text("FPS");
+    ImGui::TableSetColumnIndex(1);
+    ImGui::Text("%.1f", fps);
+    ImGui::TableSetColumnIndex(2);
+    ImGui::PlotLines("##fps_plot", fps_history_.data(), fps_history_.size(), 0, nullptr, 0.0F,
+                     *std::max_element(fps_history_.begin(), fps_history_.end()), ImVec2(0, 50));
+    ImGui::EndTable();
+  }
+  ImGui::SeparatorText("Update Timings");
+  if (ImGui::BeginTable("TelemetryTable", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
+    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
+    ImGui::TableSetupColumn("Time (ms)", ImGuiTableColumnFlags_WidthFixed, 100.0F);
+    ImGui::TableSetupColumn("Graph", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableHeadersRow();
     auto timings = telemetry::GetTimings();
     timings_history_.push_back(timings);
     if (timings_history_.size() > 100) {
@@ -199,14 +224,33 @@ void DrawTelemetry() {
     }
     ImGui::EndTable();
   }
+
+  ImGui::SeparatorText("Initialization Log");
+  if (ImGui::BeginTable("InitLogsTable", 2,
+                      ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
+    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
+    ImGui::TableSetupColumn("Time (ms)", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableHeadersRow();
+    auto logged_timings = telemetry::DownloadTimings(ENGINE_INIT_NAME);
+    for (const auto& [name, time]  : logged_timings) {
+      ImGui::PushID(&name);
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      ImGui::Text("%s", name.c_str());
+      ImGui::TableSetColumnIndex(1);
+      ImGui::Text("%.3f", time.count() * 1.0F);
+      ImGui::PopID();
+    }
+    ImGui::EndTable();
+  }
   ImGui::End();
 }
 
 void DrawProperties() {
   ImGui::Begin("Properties");
-  if (g_current_object != nullptr && filesystem::g_level != nullptr) {
+  if (g_current_object != nullptr && io::g_level != nullptr) {
     if (ImGui::Button("Remove")) {
-      filesystem::g_level->RemoveObject(g_current_object);
+      io::g_level->RemoveObject(g_current_object);
       g_current_object = nullptr;
     } else {
       for (const auto& field : g_current_object->reg_) {
@@ -295,9 +339,9 @@ void DevNewLevel() {
   const char* file =
       tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1, filter_patterns, "Level Files");
   if (file != nullptr) {
-    filesystem::FreeLevel(filesystem::g_level);
-    filesystem::g_level = new Level();
-    filesystem::g_level->path_ = file;
+    io::FreeLevel(io::g_level);
+    io::g_level = new Level();
+    io::g_level->path_ = file;
   }
 }
 
@@ -306,15 +350,15 @@ void DevOpenLevel() {
   const char* file =
       tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
   if (file != nullptr) {
-    filesystem::FreeLevel(filesystem::g_level);
-    filesystem::g_level = filesystem::serialized::LoadLevel(file);
+    io::FreeLevel(io::g_level);
+    io::g_level = io::serialized::LoadLevel(file);
     g_current_object = nullptr;
   }
 }
 
 void DrawLevel() {
   ImGui::Begin("Level");
-  if (filesystem::g_level == nullptr) {
+  if (io::g_level == nullptr) {
     if (ImGui::Button("New Level")) {
       DevNewLevel();
     }
@@ -322,13 +366,13 @@ void DrawLevel() {
       DevOpenLevel();
     }
   }
-  if (filesystem::g_level != nullptr) {
-    ImGui::LabelText("Level Path", "%s", filesystem::g_level->path_.c_str());
+  if (io::g_level != nullptr) {
+    ImGui::LabelText("Level Path", "%s", io::g_level->path_.c_str());
     ImGui::SeparatorText("Scene Objects");
     if (ImGui::BeginTable(
             "AddObjectTable", 1,
             ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
-      for (const auto& object : filesystem::g_level->objects_) {
+      for (const auto& object : io::g_level->objects_) {
         if (object != nullptr) {
           ImGui::TableNextRow();
           ImGui::PushID(object);
@@ -341,8 +385,8 @@ void DrawLevel() {
       }
       ImGui::EndTable();
     }
-    if (!filesystem::g_level->objects_.empty()) {
-      for (int i = 0; i < filesystem::g_level->objects_.size(); i++) {
+    if (!io::g_level->objects_.empty()) {
+      for (int i = 0; i < io::g_level->objects_.size(); i++) {
         
       }
     }
@@ -431,8 +475,8 @@ void MaterialView(Material*& material) {
         char* material_path_c = tinyfd_selectFolderDialog("Select Material Directory", "");
         if (material_path_c != nullptr) {
           std::string material_path = std::string(material_path_c);
-          filesystem::FreeMaterial(material);
-          material = filesystem::LoadMaterial(
+          io::FreeMaterial(material);
+          material = io::LoadMaterial(
               material_path + "/diffuse.png", material_path + "/specular.png",
               material_path + "/vert.glsl", material_path + "/frag.glsl", DEFAULT_SHININESS);
           g_material_diffuse = material->diffuse_->path_;
@@ -451,9 +495,9 @@ void MaterialView(Material*& material) {
       ImGui::InputText("Material Fragment", &g_material_fragment);
       ImGui::DragInt("Material Shininess", &g_material_shininess);
       if (ImGui::Button("Load")) {
-        filesystem::FreeMaterial(material);
+        io::FreeMaterial(material);
         material =
-            filesystem::LoadMaterial(g_material_diffuse, g_material_specular, g_material_vertex,
+            io::LoadMaterial(g_material_diffuse, g_material_specular, g_material_vertex,
                                      g_material_fragment, g_material_shininess);
       }
       ImGui::EndTabItem();
@@ -461,7 +505,7 @@ void MaterialView(Material*& material) {
     ImGui::EndTabBar();
   }
   if (ImGui::Button("Clear")) {
-    filesystem::FreeMaterial(material);
+    io::FreeMaterial(material);
     material = nullptr;
   }
   if (material == nullptr) {
@@ -502,20 +546,20 @@ void DrawMenuFile() {
     if (ImGui::MenuItem("Open")) {
       DevOpenLevel();
     }
-    ImGui::BeginDisabled(filesystem::g_level == nullptr);
+    ImGui::BeginDisabled(io::g_level == nullptr);
     if (ImGui::MenuItem("Save")) {
-      if (filesystem::g_level != nullptr) {
-        filesystem::serialized::SaveLevel(filesystem::g_level, filesystem::g_level->path_);
+      if (io::g_level != nullptr) {
+        io::serialized::SaveLevel(io::g_level, io::g_level->path_);
       }
     }
     if (ImGui::MenuItem("Save As")) {
-      if (filesystem::g_level != nullptr) {
+      if (io::g_level != nullptr) {
         const char* filter_patterns[] = {"*.xml"};
         const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1,
                                                  filter_patterns, "Level Files");
         if (file != nullptr) {
-          filesystem::serialized::SaveLevel(filesystem::g_level, file);
-          filesystem::g_level->path_ = file;
+          io::serialized::SaveLevel(io::g_level, file);
+          io::g_level->path_ = file;
         }
       }
     }
@@ -530,18 +574,18 @@ void DrawMenuFile() {
 void DrawMenuEdit() {
   if (ImGui::BeginMenu("Edit")) {
     if (ImGui::BeginMenu("Add")) {
-      ImGui::BeginDisabled(filesystem::g_level == nullptr);
-      for (const auto& [name, func] : filesystem::g_object_factory) {
+      ImGui::BeginDisabled(io::g_level == nullptr);
+      for (const auto& [name, func] : io::g_object_factory) {
         if (ImGui::MenuItem(std::format("{}", name).c_str())) {
-          filesystem::g_level->AddObject(func(), name);
+          io::g_level->AddObject(func(), name);
         }
       }
       ImGui::EndDisabled();
       ImGui::EndMenu();
     }
-    ImGui::BeginDisabled((g_current_object == nullptr) || (filesystem::g_level == nullptr));
+    ImGui::BeginDisabled((g_current_object == nullptr) || (io::g_level == nullptr));
     if (ImGui::MenuItem("Remove Selected")) {
-      filesystem::g_level->RemoveObject(g_current_object);
+      io::g_level->RemoveObject(g_current_object);
     }
     ImGui::EndDisabled();
     ImGui::EndMenu();

@@ -41,6 +41,20 @@ void telemetry::LogTimer(const char* name) {
   }
 }
 
+std::map<std::string, std::map<std::string, std::chrono::milliseconds>> g_uploaded_timings;
+void telemetry::UploadTimings(const char* name, std::map<std::string, std::chrono::milliseconds> data) {
+  g_uploaded_timings[name] = data;
+}
+
+std::map<std::string, std::chrono::milliseconds> telemetry::DownloadTimings(const char* name) {
+  if (g_uploaded_timings.find(name) != g_uploaded_timings.end()) {
+    return g_uploaded_timings[name];
+  } else {
+    debug::Warning(GET_TRACE, std::format("No uploaded timings found with name '{}'!", name));
+    return {};
+  }
+}
+
 std::map<std::string, std::chrono::milliseconds> telemetry::GetTimings() {
   return g_durations;
 }

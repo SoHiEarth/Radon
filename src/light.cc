@@ -1,7 +1,7 @@
 #include <classes/light.h>
 #include <classes/material.h>
 #include <classes/shader.h>
-#include <engine/filesystem.h>
+#include <engine/io.h>
 #include <engine/render.h>
 #include <fmt/core.h>
 #include <glad/glad.h>
@@ -16,19 +16,19 @@ void DirectionalLight::Quit() {
 }
 
 void DirectionalLight::Load(pugi::xml_node& node) {
-  name_ = filesystem::serialized::LoadString(node, name_.i_label_);
-  direction_ = filesystem::serialized::LoadVec3(node, direction_.i_label_);
-  ambient_ = filesystem::serialized::LoadVec3(node, ambient_.i_label_);
-  diffuse_ = filesystem::serialized::LoadVec3(node, diffuse_.i_label_);
-  specular_ = filesystem::serialized::LoadVec3(node, specular_.i_label_);
+  name_ = io::serialized::LoadString(node, name_.i_label_);
+  direction_ = io::serialized::LoadVec3(node, direction_.i_label_);
+  ambient_ = io::serialized::LoadVec3(node, ambient_.i_label_);
+  diffuse_ = io::serialized::LoadVec3(node, diffuse_.i_label_);
+  specular_ = io::serialized::LoadVec3(node, specular_.i_label_);
 }
 
 void DirectionalLight::Save(pugi::xml_node& node) const {
-  filesystem::serialized::SaveString(&name_.i_value_, node, name_.i_label_);
-  filesystem::serialized::SaveVec3(&direction_.i_value_, node, direction_.i_label_);
-  filesystem::serialized::SaveVec3(&ambient_.i_value_, node, ambient_.i_label_);
-  filesystem::serialized::SaveVec3(&diffuse_.i_value_, node, diffuse_.i_label_);
-  filesystem::serialized::SaveVec3(&specular_.i_value_, node, specular_.i_label_);
+  io::serialized::SaveString(&name_.i_value_, node, name_.i_label_);
+  io::serialized::SaveVec3(&direction_.i_value_, node, direction_.i_label_);
+  io::serialized::SaveVec3(&ambient_.i_value_, node, ambient_.i_label_);
+  io::serialized::SaveVec3(&diffuse_.i_value_, node, diffuse_.i_label_);
+  io::serialized::SaveVec3(&specular_.i_value_, node, specular_.i_label_);
 }
 
 void DirectionalLight::SetUniforms(const Shader* shader, const int kPos) {
@@ -48,24 +48,24 @@ void PointLight::Quit() {
 }
 
 void PointLight::Load(pugi::xml_node& node) {
-  name_ = filesystem::serialized::LoadString(node, name_.i_label_);
-  position_ = filesystem::serialized::LoadVec3(node, position_.i_label_);
-  ambient_ = filesystem::serialized::LoadVec3(node, ambient_.i_label_);
-  diffuse_ = filesystem::serialized::LoadVec3(node, diffuse_.i_label_);
-  specular_ = filesystem::serialized::LoadVec3(node, specular_.i_label_);
-  constant_ = filesystem::serialized::LoadFloat(node, constant_.i_label_);
-  linear_ = filesystem::serialized::LoadFloat(node, linear_.i_label_);
-  quadratic_ = filesystem::serialized::LoadFloat(node, quadratic_.i_label_);
+  name_ = io::serialized::LoadString(node, name_.i_label_);
+  position_ = io::serialized::LoadVec3(node, position_.i_label_);
+  ambient_ = io::serialized::LoadVec3(node, ambient_.i_label_);
+  diffuse_ = io::serialized::LoadVec3(node, diffuse_.i_label_);
+  specular_ = io::serialized::LoadVec3(node, specular_.i_label_);
+  constant_ = io::serialized::LoadFloat(node, constant_.i_label_);
+  linear_ = io::serialized::LoadFloat(node, linear_.i_label_);
+  quadratic_ = io::serialized::LoadFloat(node, quadratic_.i_label_);
 }
 void PointLight::Save(pugi::xml_node& node) const {
-  filesystem::serialized::SaveString(&name_.i_value_, node, name_.i_label_);
-  filesystem::serialized::SaveVec3(&position_.i_value_, node, position_.i_label_);
-  filesystem::serialized::SaveVec3(&ambient_.i_value_, node, ambient_.i_label_);
-  filesystem::serialized::SaveVec3(&diffuse_.i_value_, node, diffuse_.i_label_);
-  filesystem::serialized::SaveVec3(&specular_.i_value_, node, specular_.i_label_);
-  filesystem::serialized::SaveFloat(&constant_.i_value_, node, constant_.i_label_);
-  filesystem::serialized::SaveFloat(&linear_.i_value_, node, linear_.i_label_);
-  filesystem::serialized::SaveFloat(&quadratic_.i_value_, node, quadratic_.i_label_);
+  io::serialized::SaveString(&name_.i_value_, node, name_.i_label_);
+  io::serialized::SaveVec3(&position_.i_value_, node, position_.i_label_);
+  io::serialized::SaveVec3(&ambient_.i_value_, node, ambient_.i_label_);
+  io::serialized::SaveVec3(&diffuse_.i_value_, node, diffuse_.i_label_);
+  io::serialized::SaveVec3(&specular_.i_value_, node, specular_.i_label_);
+  io::serialized::SaveFloat(&constant_.i_value_, node, constant_.i_label_);
+  io::serialized::SaveFloat(&linear_.i_value_, node, linear_.i_label_);
+  io::serialized::SaveFloat(&quadratic_.i_value_, node, quadratic_.i_label_);
 }
 
 void PointLight::SetUniforms(const Shader* shader, const int kPos) {
@@ -88,31 +88,31 @@ void SpotLight::Quit() {
 }
 
 void SpotLight::Load(pugi::xml_node& node) {
-  name_ = filesystem::serialized::LoadString(node, name_.i_label_);
-  position_ = filesystem::serialized::LoadVec3(node, position_.i_label_);
-  rotation_ = filesystem::serialized::LoadVec3(node, rotation_.i_label_);
-  ambient_ = filesystem::serialized::LoadVec3(node, ambient_.i_label_);
-  diffuse_ = filesystem::serialized::LoadVec3(node, diffuse_.i_label_);
-  specular_ = filesystem::serialized::LoadVec3(node, specular_.i_label_);
-  constant_ = filesystem::serialized::LoadFloat(node, constant_.i_label_);
-  linear_ = filesystem::serialized::LoadFloat(node, linear_.i_label_);
-  quadratic_ = filesystem::serialized::LoadFloat(node, quadratic_.i_label_);
-  cut_off_ = filesystem::serialized::LoadFloat(node, cut_off_.i_label_);
-  outer_cut_off_ = filesystem::serialized::LoadFloat(node, outer_cut_off_.i_label_);
+  name_ = io::serialized::LoadString(node, name_.i_label_);
+  position_ = io::serialized::LoadVec3(node, position_.i_label_);
+  rotation_ = io::serialized::LoadVec3(node, rotation_.i_label_);
+  ambient_ = io::serialized::LoadVec3(node, ambient_.i_label_);
+  diffuse_ = io::serialized::LoadVec3(node, diffuse_.i_label_);
+  specular_ = io::serialized::LoadVec3(node, specular_.i_label_);
+  constant_ = io::serialized::LoadFloat(node, constant_.i_label_);
+  linear_ = io::serialized::LoadFloat(node, linear_.i_label_);
+  quadratic_ = io::serialized::LoadFloat(node, quadratic_.i_label_);
+  cut_off_ = io::serialized::LoadFloat(node, cut_off_.i_label_);
+  outer_cut_off_ = io::serialized::LoadFloat(node, outer_cut_off_.i_label_);
 }
 
 void SpotLight::Save(pugi::xml_node& node) const {
-  filesystem::serialized::SaveString(&name_.i_value_, node, name_.i_label_);
-  filesystem::serialized::SaveVec3(&position_.i_value_, node, position_.i_label_);
-  filesystem::serialized::SaveVec3(&rotation_.i_value_, node, rotation_.i_label_);
-  filesystem::serialized::SaveVec3(&ambient_.i_value_, node, ambient_.i_label_);
-  filesystem::serialized::SaveVec3(&diffuse_.i_value_, node, diffuse_.i_label_);
-  filesystem::serialized::SaveVec3(&specular_.i_value_, node, specular_.i_label_);
-  filesystem::serialized::SaveFloat(&constant_.i_value_, node, constant_.i_label_);
-  filesystem::serialized::SaveFloat(&linear_.i_value_, node, linear_.i_label_);
-  filesystem::serialized::SaveFloat(&quadratic_.i_value_, node, quadratic_.i_label_);
-  filesystem::serialized::SaveFloat(&cut_off_.i_value_, node, cut_off_.i_label_);
-  filesystem::serialized::SaveFloat(&outer_cut_off_.i_value_, node, outer_cut_off_.i_label_);
+  io::serialized::SaveString(&name_.i_value_, node, name_.i_label_);
+  io::serialized::SaveVec3(&position_.i_value_, node, position_.i_label_);
+  io::serialized::SaveVec3(&rotation_.i_value_, node, rotation_.i_label_);
+  io::serialized::SaveVec3(&ambient_.i_value_, node, ambient_.i_label_);
+  io::serialized::SaveVec3(&diffuse_.i_value_, node, diffuse_.i_label_);
+  io::serialized::SaveVec3(&specular_.i_value_, node, specular_.i_label_);
+  io::serialized::SaveFloat(&constant_.i_value_, node, constant_.i_label_);
+  io::serialized::SaveFloat(&linear_.i_value_, node, linear_.i_label_);
+  io::serialized::SaveFloat(&quadratic_.i_value_, node, quadratic_.i_label_);
+  io::serialized::SaveFloat(&cut_off_.i_value_, node, cut_off_.i_label_);
+  io::serialized::SaveFloat(&outer_cut_off_.i_value_, node, outer_cut_off_.i_label_);
 }
 
 void SpotLight::SetUniforms(const Shader* shader, const int kPos) {

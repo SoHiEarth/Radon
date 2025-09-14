@@ -9,7 +9,7 @@
 #include <classes/shader.h>
 #include <engine/debug.h>
 #include <engine/devgui.h>
-#include <engine/filesystem.h>
+#include <engine/io.h>
 #include <engine/input.h>
 #include <engine/render.h>
 #include <fmt/core.h>
@@ -118,8 +118,8 @@ void render::Init() {
                         reinterpret_cast<void *>(3 * sizeof(float)));
   RecreateFramebuffer();
   g_screen_shader =
-      filesystem::LoadShader(filesystem::g_engine_directory + "/screen_shader/vert.glsl",
-                             filesystem::g_engine_directory + "/screen_shader/frag.glsl");
+      io::LoadShader(io::g_engine_directory + "/screen_shader/vert.glsl",
+                             io::g_engine_directory + "/screen_shader/frag.glsl");
   g_screen_shader->Use();
   g_screen_shader->SetInt("scene", 0);
 
