@@ -3,12 +3,16 @@
 #include <engine/debug.h>
 #include <engine/io.h>
 #include <engine/render.h>
+#include <engine/physics.h>
 #include <fmt/core.h>
 
 void Sprite::Init() {
   if (material_ == nullptr) {
     debug::Log(GET_TRACE, "No material assigned to sprite.");
   }
+  // Create body
+  physics_body = physics::CreateBody(glm::vec2(position_->x, position_->y),
+                                     static_cast<glm::vec2>(scale_));
 }
 
 void Sprite::Update() {
@@ -16,6 +20,11 @@ void Sprite::Update() {
     if (material_->shininess_ <= 0) {
       material_->shininess_ = 1;
     }
+  }
+
+  if (!is_static_) {
+    const glm::vec2 phys_pos = physics::GetBodyPosition(physics_body);
+    position_ = glm::vec3(phys_pos, position_->z);
   }
 }
 
@@ -29,6 +38,7 @@ void Sprite::Quit() {
 }
 
 void Sprite::Load(pugi::xml_node& node) {
+  is_static_ = io::serialized::LoadInt(node, is_static_.i_label_);
   name_ = io::serialized::LoadString(node, name_.i_label_);
   position_ = io::serialized::LoadVec3(node, position_.i_label_);
   rotation_ = io::serialized::LoadVec3(node, rotation_.i_label_);
@@ -36,6 +46,8 @@ void Sprite::Load(pugi::xml_node& node) {
   material_ = io::serialized::LoadMaterial(node);
 }
 void Sprite::Save(pugi::xml_node& node) const {
+  int is_static = (int) is_static_.i_value_;
+  io::serialized::SaveInt(&is_static, node, is_static_.i_label_);
   io::serialized::SaveString(&name_.i_value_, node, name_.i_label_);
   io::serialized::SaveVec3(&position_.i_value_, node, position_.i_label_);
   io::serialized::SaveVec3(&rotation_.i_value_, node, rotation_.i_label_);

@@ -5,6 +5,8 @@
 #include <glm/glm.hpp>
 #include <pugixml.hpp>
 #include <string>
+#include <box2d/box2d.h>
+
 class Material;
 class Object {
 public:
@@ -14,6 +16,7 @@ public:
   Editable<glm::vec2> scale_ = {glm::vec2(1.0F), "Scale", reg_};
   Editable<glm::vec3> rotation_ = {glm::vec3(0.0F), "Rotation", reg_};
   Editable<bool> is_static_ = {false, "Static", reg_};
+  b2BodyId physics_body;
   Material* material_ = nullptr;
   bool has_initialized_ = false;
   virtual void Init() {};

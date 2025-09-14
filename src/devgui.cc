@@ -9,6 +9,7 @@
 #include <engine/debug.h>
 #include <engine/devgui.h>
 #include <engine/io.h>
+#include <engine/physics.h>
 #include <engine/localization.h>
 #include <engine/render.h>
 #include <engine/telemetry.h>
@@ -248,6 +249,8 @@ void DrawTelemetry() {
 
 void DrawProperties() {
   ImGui::Begin("Properties");
+  // Cache object's position, update it via physics if changed
+  auto old_position = g_current_object != nullptr ? *g_current_object->position_ : glm::vec3();
   if (g_current_object != nullptr && io::g_level != nullptr) {
     if (ImGui::Button("Remove")) {
       io::g_level->RemoveObject(g_current_object);
@@ -264,6 +267,9 @@ void DrawProperties() {
       ImGui::Text("Has Initialized: %s", g_current_object->has_initialized_ ? "Yes" : "No");
       ImGui::Text("Has Quit: %s", g_current_object->has_quit_ ? "Yes" : "No");
     }
+  }
+  if (g_current_object != nullptr && old_position != *g_current_object->position_) {
+    physics::SetBodyPosition(g_current_object->physics_body, *g_current_object->position_);
   }
   ImGui::End();
 }

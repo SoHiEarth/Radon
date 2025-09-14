@@ -1,25 +1,48 @@
-#include <box2d/box2d.h>
-#include <engine/debug.h>
 #include <engine/physics.h>
-#define GRAVITY -10.0f
-#define UPDATE_RATE 60.0f
+#include <box2d/box2d.h>
+#include <glm/glm.hpp>
+#include <vector>
 
-b2WorldId g_world_id;
-float g_time_step = 1.0F / UPDATE_RATE;
-int g_substep_count = 4;
+namespace physics {
+const float TIME_STEP = 1.0f / 60.0f;
+const int VELOCITY_ITERATIONS = 6;
+const int POSITION_ITERATIONS = 2;
+b2WorldId world;
 
-void physics::Init() {
-  b2WorldDef world_def = b2DefaultWorldDef();
-  world_def.gravity = (b2Vec2) (0.0F, GRAVITY);
-  g_world_id = b2CreateWorld(&world_def);
-  debug::Log(GET_TRACE, "Initialized Physics");
+void Init() {
+  b2WorldDef worldDef = b2DefaultWorldDef();
+  worldDef.gravity = b2Vec2(0.0f, -1.0f);
+  world = b2CreateWorld(&worldDef);
 }
 
-void physics::Update() {
-  b2World_Step(g_world_id, g_time_step, g_substep_count);
+void Update() {
+  b2World_Step(world, TIME_STEP, VELOCITY_ITERATIONS);
 }
 
-void physics::Quit() {
-  b2DestroyWorld(g_world_id);
-  debug::Log(GET_TRACE, "Terminated Physics");
+b2BodyId CreateBody(glm::vec2 position, glm::vec2 scale) {
+  b2BodyDef bodyDef = b2DefaultBodyDef();
+  bodyDef.type = b2_dynamicBody;
+  bodyDef.position = b2Vec2(position.x, position.y);
+  b2BodyId body = b2CreateBody(world, &bodyDef);
+  b2Polygon shape = b2MakeBox(scale.x * 0.5f, scale.y * 0.5f);
+  b2ShapeDef shapeDef = b2DefaultShapeDef();
+  shapeDef.density = 1.0f;
+  shapeDef.material.friction = 0.3f;
+  b2CreatePolygonShape(body, &shapeDef, &shape);
+  return body;
 }
+
+glm::vec2 GetBodyPosition(b2BodyId body_id) {
+  b2Vec2 position = b2Body_GetPosition(body_id);
+  return glm::vec2(position.x, position.y);
+}
+
+void SetBodyPosition(b2BodyId body_id, glm::vec2 position) {
+  b2Body_SetTransform(body_id, b2Vec2(position.x, position.y), b2Body_GetRotation(body_id));
+}
+
+void Quit() {
+  b2DestroyWorld(world);
+}
+
+}  // namespace physics
