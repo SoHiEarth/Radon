@@ -263,9 +263,9 @@ void DrawProperties() {
       }
       MaterialView(g_current_object->material_);
       ImGui::SeparatorText("Other Info");
-      ImGui::Text("Type: %s", g_current_object->GetTypeName().data());
-      ImGui::Text("Has Initialized: %s", g_current_object->has_initialized_ ? "Yes" : "No");
-      ImGui::Text("Has Quit: %s", g_current_object->has_quit_ ? "Yes" : "No");
+      ImGui::LabelText("Type", "%s", g_current_object->GetTypeName().c_str());
+      ImGui::Value("Has Initialized", g_current_object->has_initialized_);
+      ImGui::Value("Has Quit", g_current_object->has_quit_);
     }
   }
   if (g_current_object != nullptr && old_position != *g_current_object->position_) {
@@ -325,10 +325,10 @@ void DrawConsole() {
       }
       ImGui::TableSetColumnIndex(1);
 #ifndef MDEBUG_DISABLE_TRACE
-      ImGui::Text(message.traceback_.c_str());
+      ImGui::Text("%s", message.traceback_.c_str());
       ImGui::TableSetColumnIndex(2);
 #endif
-      ImGui::Text(message.message_.c_str());
+      ImGui::Text("%s", message.message_.c_str());
       ImGui::PopID();
     }
     ImGui::EndTable();
@@ -522,14 +522,14 @@ void MaterialView(Material*& material) {
     ImGui::Text("Diffuse");
     if (material->diffuse_ != nullptr) {
       ImGui::Image(material->diffuse_->id_, ImVec2(IMAGE_PREVIEW_SIZE));
-      ImGui::Text("Path: %s", material->diffuse_->path_.data());
+      ImGui::LabelText("Path", "%s", material->diffuse_->path_.c_str());
     } else {
       ImGui::TextColored({1, 0, 0, 1}, "Diffuse texture not loaded");
     }
     ImGui::Text("Specular");
     if (material->specular_ != nullptr) {
       ImGui::Image(material->specular_->id_, ImVec2(IMAGE_PREVIEW_SIZE));
-      ImGui::Text("Path: %s", material->specular_->path_.data());
+      ImGui::LabelText("Path", "%s", material->specular_->path_.c_str());
     } else {
       ImGui::TextColored({1, 0, 0, 1}, "Specular texture not loaded");
     }
@@ -538,8 +538,8 @@ void MaterialView(Material*& material) {
     if (material->shader_ == nullptr) {
       ImGui::TextColored({1, 0, 0, 1}, "Shader not loaded");
     } else {
-      ImGui::Text("Vert: %s", material->shader_->vertex_path_.data());
-      ImGui::Text("Frag: %s", material->shader_->fragment_path_.data());
+      ImGui::LabelText("Vertex Path", "%s", material->shader_->vertex_path_.c_str());
+      ImGui::LabelText("Fragment Path", "%s", material->shader_->fragment_path_.c_str());
     }
   }
 }
