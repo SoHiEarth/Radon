@@ -9,6 +9,6 @@ void Init();
 void Quit();
 void Load(std::string_view path);
 void Save(std::string_view path);
-} // localization
+}  // namespace localization
 
 #endif

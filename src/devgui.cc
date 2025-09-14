@@ -7,18 +7,18 @@
 #include <classes/sprite.h>
 #include <classes/texture.h>
 #include <engine/debug.h>
-#include <engine/localization.h>
 #include <engine/devgui.h>
 #include <engine/filesystem.h>
+#include <engine/localization.h>
 #include <engine/render.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
-#include <imgui_stdlib.h>
 #include <imgui_internal.h>
-#include <format>
-#include <array>
+#include <imgui_stdlib.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
+#include <array>
+#include <format>
 
 #define IMAGE_PREVIEW_SIZE 100, 100
 #define DEVGUI_ROUNDING_MORE 8.0F
@@ -28,7 +28,8 @@
 #define DOCK_LEFT_WIDTH 0.25F
 #define DOCK_RIGHT_WIDTH 0.3F
 #define DOCK_BOTTOM_HEIGHT 0.3F
-
+#define CONSOLE_TYPE_WIDTH 50.0F
+#define CONSOLE_TRACEBACK_WIDTH 200.0F
 bool dev::g_hud_enabled = false, g_disable_hud_after_frame = false;
 Object* g_current_object = nullptr;
 std::string g_material_diffuse, g_material_specular, g_material_vertex, g_material_fragment;
@@ -63,8 +64,9 @@ void dev::Init() {
   style.GrabRounding = DEVGUI_ROUNDING_LESS;
   style.TabRounding = DEVGUI_ROUNDING_LESS;
   ImFont* ui_font = imgui_io.Fonts->AddFontFromFileTTF(
-      (filesystem::g_engine_directory + "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf").c_str(), DEVGUI_FONT_SIZE, nullptr,
-      imgui_io.Fonts->GetGlyphRangesDefault());
+      (filesystem::g_engine_directory + "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf")
+          .c_str(),
+      DEVGUI_FONT_SIZE, nullptr, imgui_io.Fonts->GetGlyphRangesDefault());
   ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
   ImGui_ImplOpenGL3_Init("#version 150");
   debug::SetCallback(AddConsoleMessage);
@@ -102,10 +104,12 @@ void dev::Update() {
     ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
     ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
     ImGuiID dock_main_id = dockspace_id;
-    ImGuiID dock_id_bottom =
-        ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, DOCK_BOTTOM_HEIGHT, nullptr, &dock_main_id);
-    ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, DOCK_LEFT_WIDTH, nullptr, &dock_main_id);
-    ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, DOCK_RIGHT_WIDTH, nullptr, &dock_main_id);
+    ImGuiID dock_id_bottom = ImGui::DockBuilderSplitNode(
+        dock_main_id, ImGuiDir_Down, DOCK_BOTTOM_HEIGHT, nullptr, &dock_main_id);
+    ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, DOCK_LEFT_WIDTH,
+                                                       nullptr, &dock_main_id);
+    ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right,
+                                                        DOCK_RIGHT_WIDTH, nullptr, &dock_main_id);
     ImGui::DockBuilderDockWindow("Viewport", dock_main_id);
     ImGui::DockBuilderDockWindow("Properties", dock_id_right);
     ImGui::DockBuilderDockWindow("Debug", dock_id_right);
@@ -123,15 +127,17 @@ void dev::Update() {
   DrawConsole();
 }
 
+#ifndef MDEBUG_DISABLE_TRACE
 void dev::AddConsoleMessage(const char* traceback, const char* message, std::uint8_t type) {
-  #ifdef MDEBUG_DISABLE_TRACE
-  ConsoleMessage console_message{message, ConsoleMessageType(type)};
-  #else
   ConsoleMessage console_message{traceback, message, ConsoleMessageType(type)};
-  #endif
   g_console_messages.push_back(console_message);
 }
-
+#else
+void dev::AddConsoleMessage(const char *message, std::uint8_t type) {
+  ConsoleMessage console_message{.message_=message, .type_=ConsoleMessageType(type)};
+  g_console_messages.push_back(console_message);
+}
+#endif
 void dev::Render() {
   if (!dev::g_hud_enabled) {
     return;
@@ -189,10 +195,18 @@ void DrawConsole() {
   ImGui::Begin("Console");
   ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false,
                     ImGuiWindowFlags_HorizontalScrollbar);
-  if (ImGui::BeginTable("ConsoleTable", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
-    ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 50.0F);
 #ifndef MDEBUG_DISABLE_TRACE
-    ImGui::TableSetupColumn("Traceback", ImGuiTableColumnFlags_WidthFixed, 200.0F);
+  if (ImGui::BeginTable(
+          "ConsoleTable", 3,
+          ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
+#else
+  if (ImGui::BeginTable(
+          "ConsoleTable", 2,
+          ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
+#endif
+    ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, CONSOLE_TYPE_WIDTH);
+#ifndef MDEBUG_DISABLE_TRACE
+    ImGui::TableSetupColumn("Traceback", ImGuiTableColumnFlags_WidthFixed, CONSOLE_TRACEBACK_WIDTH);
 #endif
     ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
@@ -236,7 +250,8 @@ void DrawConsole() {
 
 void DevNewLevel() {
   const char* filter_patterns[] = {"*.xml"};
-  const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1, filter_patterns, "Level Files");
+  const char* file =
+      tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1, filter_patterns, "Level Files");
   if (file != nullptr) {
     filesystem::FreeLevel(filesystem::g_level);
     filesystem::g_level = new Level();
@@ -246,7 +261,8 @@ void DevNewLevel() {
 
 void DevOpenLevel() {
   const char* filter_patterns[] = {"*.xml"};
-  const char* file = tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
+  const char* file =
+      tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
   if (file != nullptr) {
     filesystem::FreeLevel(filesystem::g_level);
     filesystem::g_level = filesystem::serialized::LoadLevel(file);
@@ -294,7 +310,9 @@ void DrawLocalization() {
   }
   std::vector<std::pair<std::string, std::string>> renamed_entries;
   std::vector<std::string> keys_to_delete;
-  if (ImGui::BeginTable("EditableMapTable", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
+  if (ImGui::BeginTable(
+          "EditableMapTable", 3,
+          ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
     ImGui::TableSetupColumn("Key");
     ImGui::TableSetupColumn("Value");
     ImGui::TableSetupColumn("Actions");
@@ -308,9 +326,9 @@ void DrawLocalization() {
       strncpy(key_buffer.data(), key.c_str(), sizeof(key_buffer));
       key_buffer[sizeof(key_buffer) - 1] = '\0';
       if (ImGui::InputText("##Key", key_buffer.data(), sizeof(key_buffer))) {
-      if (key != key_buffer.data() && strlen(key_buffer.data()) > 0) {
-        keys_to_delete.push_back(key);
-        renamed_entries.emplace_back(key_buffer.data(), value);
+        if (key != key_buffer.data() && strlen(key_buffer.data()) > 0) {
+          keys_to_delete.push_back(key);
+          renamed_entries.emplace_back(key_buffer.data(), value);
         }
       }
       ImGui::TableSetColumnIndex(1);
@@ -337,7 +355,8 @@ void DrawLocalization() {
   }
   if (ImGui::Button("Load")) {
     const char* filter_patterns[] = {"*.xml"};
-    const char* file = tinyfd_openFileDialog("Open Localization Data", "", 1, filter_patterns, "Localization Files", 0);
+    const char* file = tinyfd_openFileDialog("Open Localization Data", "", 1, filter_patterns,
+                                             "Localization Files", 0);
     if (file != nullptr) {
       localization::Load(file);
     }
@@ -345,7 +364,9 @@ void DrawLocalization() {
   ImGui::SameLine();
   if (ImGui::Button("Save")) {
     const char* filter_patterns[] = {"*.xml"};
-    const char* file = tinyfd_saveFileDialog("Save Localization Data", std::string(localization::g_language + ".xml").c_str(), 1, filter_patterns, "Localization Files");
+    const char* file = tinyfd_saveFileDialog("Save Localization Data",
+                                             std::string(localization::g_language + ".xml").c_str(),
+                                             1, filter_patterns, "Localization Files");
     if (file != nullptr) {
       localization::Save(file);
     }

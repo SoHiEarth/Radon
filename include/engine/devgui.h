@@ -10,7 +10,7 @@ enum ConsoleMessageType : std::uint8_t {
 struct ConsoleMessage {
 #ifndef MDEBUG_DISABLE_TRACE
   std::string traceback_;
- #endif
+#endif
   std::string message_;
   ConsoleMessageType type_;
 };

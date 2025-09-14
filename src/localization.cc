@@ -1,7 +1,7 @@
-#include <engine/localization.h>
 #include <engine/debug.h>
-#include <pugixml.hpp>
+#include <engine/localization.h>
 #include <format>
+#include <pugixml.hpp>
 
 std::string localization::g_language;
 std::map<std::string, std::string> localization::g_dictionary{};
@@ -18,14 +18,16 @@ void localization::Load(std::string_view path) {
   pugi::xml_document doc;
   auto result = doc.load_file(path.data());
   if (!result) {
-    debug::Throw(GET_TRACE, std::format("Failed to load dictionary. {}, {}", path, result.description()));
+    debug::Throw(GET_TRACE,
+                 std::format("Failed to load dictionary. {}, {}", path, result.description()));
   }
   pugi::xml_node language_node = doc.child("language");
   g_language = language_node.attribute("name").as_string();
   pugi::xml_node dictionary = doc.child("dictionary");
   localization::g_dictionary.clear();
   for (pugi::xml_node entry_node : dictionary.children("entry")) {
-    localization::g_dictionary.insert({entry_node.attribute("key").as_string(), entry_node.attribute("value").as_string()});
+    localization::g_dictionary.insert(
+        {entry_node.attribute("key").as_string(), entry_node.attribute("value").as_string()});
   }
 }
 

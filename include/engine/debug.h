@@ -1,7 +1,8 @@
 #ifndef DEBUG_H
 #define DEBUG_H
-#include <string_view>
 #include <functional>
+#include <string_view>
+#include <cstdint>
 #ifdef MDEBUG_DISABLE_TRACE
 #define GET_TRACE 0x0
 #else

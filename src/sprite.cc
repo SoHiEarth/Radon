@@ -1,8 +1,8 @@
 #include <classes/material.h>
 #include <classes/sprite.h>
+#include <engine/debug.h>
 #include <engine/filesystem.h>
 #include <engine/render.h>
-#include <engine/debug.h>
 #include <fmt/core.h>
 
 void Sprite::Init() {

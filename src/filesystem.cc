@@ -8,6 +8,7 @@
 #include <engine/filesystem.h>
 #include <fmt/core.h>
 #include <glad/glad.h>
+#include <tinyfiledialogs/tinyfiledialogs.h>
 #include <algorithm>
 #include <array>
 #include <filesystem>
@@ -15,7 +16,6 @@
 #include <fstream>
 #include <functional>
 #include <sstream>
-#include <tinyfiledialogs/tinyfiledialogs.h>
 #include <unordered_map>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -43,9 +43,9 @@ std::string ValidateName(std::string input);
 void filesystem::Init() {
   if (!std::filesystem::exists("engine_assets")) {
     tinyfd_messageBox("Engine Directory Not Found",
-                         "Please select the engine directory to continue.", "ok",
-                      "info", 1);
-    char* engine_path = tinyfd_selectFolderDialog("Select the engine directory", std::filesystem::current_path().string().c_str());
+                      "Please select the engine directory to continue.", "ok", "info", 1);
+    char* engine_path = tinyfd_selectFolderDialog("Select the engine directory",
+                                                  std::filesystem::current_path().string().c_str());
     if (engine_path != nullptr) {
       g_engine_directory = std::string(engine_path);
       bool copy_assets = tinyfd_messageBox(
@@ -55,8 +55,7 @@ void filesystem::Init() {
         if (!std::filesystem::exists("engine_assets")) {
           std::filesystem::create_directory("engine_assets");
         }
-        for (const auto& entry :
-             std::filesystem::directory_iterator(g_engine_directory)) {
+        for (const auto& entry : std::filesystem::directory_iterator(g_engine_directory)) {
           std::filesystem::copy(entry.path(), "engine_assets/" + entry.path().filename().string(),
                                 std::filesystem::copy_options::overwrite_existing);
         }

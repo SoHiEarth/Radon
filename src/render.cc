@@ -10,17 +10,17 @@
 #include <engine/debug.h>
 #include <engine/devgui.h>
 #include <engine/filesystem.h>
+#include <engine/input.h>
 #include <engine/render.h>
 #include <fmt/core.h>
 #include <imgui.h>
 #include <array>
+#include <format>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <utility>
 #include <vector>
-#include <format>
-#include <engine/input.h>
 
 #define TEXT_COLOR_RED ImVec4(1.0f, 0.0f, 0.0f, 1.0f)
 #define GUI_DRAG_STEP 0.1F
@@ -76,7 +76,7 @@ void render::Init() {
 #endif
   render::g_window = glfwCreateWindow(render::g_width, render::g_height, "Metal", nullptr, nullptr);
   if (render::g_window == nullptr) {
-    const char* error_desc;
+    const char *error_desc;
     glfwGetError(&error_desc);
     debug::Throw(GET_TRACE, std::format("Failed to create GLFW window. {}", error_desc));
   }
@@ -117,22 +117,24 @@ void render::Init() {
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<void *>(3 * sizeof(float)));
   RecreateFramebuffer();
-  g_screen_shader = filesystem::LoadShader(filesystem::g_engine_directory + "/screen_shader/vert.glsl", filesystem::g_engine_directory + "/screen_shader/frag.glsl");
+  g_screen_shader =
+      filesystem::LoadShader(filesystem::g_engine_directory + "/screen_shader/vert.glsl",
+                             filesystem::g_engine_directory + "/screen_shader/frag.glsl");
   g_screen_shader->Use();
   g_screen_shader->SetInt("scene", 0);
 
   input::AddHook({GLFW_KEY_W, ButtonState::kHold},
-    []() { IfNoHUD([]() { render::g_camera.position_.z -= g_camera_speed; }); });
-    input::AddHook({GLFW_KEY_S, ButtonState::kHold},
-    []() { IfNoHUD([]() { render::g_camera.position_.z += g_camera_speed; }); });
+                 []() { IfNoHUD([]() { render::g_camera.position_.z -= g_camera_speed; }); });
+  input::AddHook({GLFW_KEY_S, ButtonState::kHold},
+                 []() { IfNoHUD([]() { render::g_camera.position_.z += g_camera_speed; }); });
   input::AddHook({GLFW_KEY_A, ButtonState::kHold},
-    []() { IfNoHUD([]() { render::g_camera.position_.x -= g_camera_speed; }); });
+                 []() { IfNoHUD([]() { render::g_camera.position_.x -= g_camera_speed; }); });
   input::AddHook({GLFW_KEY_D, ButtonState::kHold},
-    []() { IfNoHUD([]() { render::g_camera.position_.x += g_camera_speed; }); });
+                 []() { IfNoHUD([]() { render::g_camera.position_.x += g_camera_speed; }); });
   input::AddHook({GLFW_KEY_E, ButtonState::kHold},
-    []() { IfNoHUD([]() { render::g_camera.position_.y += g_camera_speed; }); });
+                 []() { IfNoHUD([]() { render::g_camera.position_.y += g_camera_speed; }); });
   input::AddHook({GLFW_KEY_Q, ButtonState::kHold},
-    []() { IfNoHUD([]() { render::g_camera.position_.y -= g_camera_speed; }); });
+                 []() { IfNoHUD([]() { render::g_camera.position_.y -= g_camera_speed; }); });
   debug::Log(GET_TRACE, "Initialized Rendering");
 }
 
@@ -223,12 +225,12 @@ void DrawRendererStatus() {
   }
 }
 
-glm::mat4 GetTransform(const glm::vec3 &pos, const glm::vec2 &scale, const glm::vec3& rot) {
+glm::mat4 GetTransform(const glm::vec3 &pos, const glm::vec2 &scale, const glm::vec3 &rot) {
   auto transform = glm::mat4(1.0F);
   transform = glm::translate(transform, pos);
   transform = glm::rotate(transform, rot.z, glm::vec3(0.0f, 0.0f, 1.0f));
   transform = glm::rotate(transform, rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
-  transform = glm::rotate(transform, rot.x, glm::vec3(1.0f, 0.0f, 0.0f)); 
+  transform = glm::rotate(transform, rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
   transform = glm::scale(transform, glm::vec3(scale, 1));
   return transform;
 }
@@ -244,10 +246,10 @@ void render::RenderTexture(const Material *material, const glm::vec3 &pos, const
 
   glm::mat4 model = GetTransform(pos, size, rot);
   glm::mat4 view = glm::translate(glm::mat4(1.0F), -render::g_camera.position_);
-  glm::mat4 projection =
-      glm::perspective(glm::radians(g_camera_fov),
-                       (static_cast<float>(g_framebuffer.width_) / static_cast<float>(g_framebuffer.height_)),
-                       CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
+  glm::mat4 projection = glm::perspective(
+      glm::radians(g_camera_fov),
+      (static_cast<float>(g_framebuffer.width_) / static_cast<float>(g_framebuffer.height_)),
+      CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
 
   material->Bind();
   material->shader_->SetMat4("model", model);

@@ -1,6 +1,7 @@
 #include <engine/debug.h>
 #include <fmt/core.h>
 #include <format>
+#include <utility>
 #define DEBUG_IMPL_TRACE_FILE trace.at(0).source_file()
 #define DEBUG_IMPL_TRACE_FUNCTION trace.at(0).description()
 #define DEBUG_IMPL_TRACE_LINE trace.at(0).source_line()
@@ -15,55 +16,55 @@ DebugSettings debug::g_debug_settings{};
 
 #ifndef NDEBUG
 #ifdef MDEBUG_DISABLE_TRACE
-std::function<void(const char*, std::uint8_t)> debug_callback = nullptr;
-void debug::SetCallback(std::function<void(const char*, std::uint8_t)> func) {
-  debug_callback = func;
+std::function<void(const char*, std::uint8_t)> g_debug_callback = nullptr;
+void debug::SetCallback(std::function<void(const char*, std::uint8_t)> callback) {
+  g_debug_callback = std::move(callback);
   debug::Log(GET_TRACE, "Set debug callback");
 }
 
 void debug::Log(int /*unused*/, const char* fmt) {
   auto msg = std::format("Log: {}\n", fmt);
-  fmt::print(msg);
-  if (debug_callback != nullptr) {
-    debug_callback(msg.c_str(), 0);
+  fmt::print("{}", msg);
+  if (g_debug_callback != nullptr) {
+    g_debug_callback(msg.c_str(), 0);
   }
 }
 
 void debug::Log(int /*unused*/, std::string_view fmt) {
   auto msg = std::format("Log: {}\n", fmt);
-  fmt::print(msg);
-  if (debug_callback != nullptr) {
-    debug_callback(msg.c_str(), 0);
+  fmt::print("{}", msg);
+  if (g_debug_callback != nullptr) {
+    g_debug_callback(msg.c_str(), 0);
   }
 }
 
 void debug::Warning(int /*unused*/, const char* fmt) {
   auto msg = std::format("Warning: {}\n", fmt);
-  if (debug_callback != nullptr) {
-    debug_callback(msg.c_str(), 1);
+  if (g_debug_callback != nullptr) {
+    g_debug_callback(msg.c_str(), 1);
   }
 }
 
 void debug::Warning(int /*unused*/, std::string_view fmt) {
   auto msg = std::format("Warning: {}\n", fmt);
-  if (debug_callback != nullptr) {
-    debug_callback(msg.c_str(), 1);
+  if (g_debug_callback != nullptr) {
+    g_debug_callback(msg.c_str(), 1);
   }
 }
 
 void debug::Throw(int /*unused*/, const char* fmt) {
   auto msg = std::format("\tException: {}\n", fmt);
   throw std::runtime_error(msg);
-  if (debug_callback != nullptr) {
-    debug_callback(msg.c_str(), 2);
+  if (g_debug_callback != nullptr) {
+    g_debug_callback(msg.c_str(), 2);
   }
 }
 
 void debug::Throw(int /*unused*/, std::string_view fmt) {
   auto msg = std::format("\tException: {}\n", fmt);
   throw std::runtime_error(msg);
-  if (debug_callback != nullptr) {
-    debug_callback(msg.c_str(), 2);
+  if (g_debug_callback != nullptr) {
+    g_debug_callback(msg.c_str(), 2);
   }
 }
 #else
