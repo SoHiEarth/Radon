@@ -161,15 +161,7 @@ void render::Render() {
   DrawRendererStatus();
   if (dev::g_hud_enabled) {
     ImGui::Begin("Viewport");
-    float aspect = (float) g_framebuffer.width_ / (float) g_framebuffer.height_;
-    float avail_w = ImGui::GetContentRegionAvail().x;
-    float avail_h = ImGui::GetContentRegionAvail().y;
-    ImVec2 image_size = ImVec2(avail_w, avail_w / aspect);
-    if (image_size.y > avail_h) {
-      image_size.y = avail_h;
-      image_size.x = avail_h * aspect;
-    }
-    g_last_viewport_size = image_size;
+    auto image_size = ImGui::GetContentRegionAvail();
 #ifdef __linux__
     ImGui::Image(g_framebuffer.colorbuffers_[0], image_size);
 #else

@@ -119,12 +119,12 @@ void dev::Update() {
     ImGui::DockBuilderDockWindow("Console", dock_id_bottom);
     ImGui::DockBuilderFinish(dockspace_id);
   }
-  DrawMenuBar();
   DrawProperties();
   DrawDebug();
   DrawLevel();
   DrawLocalization();
   DrawConsole();
+  DrawMenuBar();
 }
 
 #ifndef MDEBUG_DISABLE_TRACE
@@ -233,11 +233,8 @@ void DrawConsole() {
       ImGui::Text(message.traceback_.c_str());
       ImGui::TableSetColumnIndex(2);
 #endif
-      ImGui::TextUnformatted(message.message_.c_str());
+      ImGui::Text(message.message_.c_str());
       ImGui::PopID();
-    }
-    if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) {
-      ImGui::SetScrollHereY(1.0F);
     }
     ImGui::EndTable();
   }
@@ -282,19 +279,26 @@ void DrawLevel() {
   }
   if (filesystem::g_level != nullptr) {
     ImGui::LabelText("Level Path", "%s", filesystem::g_level->path_.c_str());
-    if (ImGui::Button("Open Level")) {
-      DevOpenLevel();
-    }
-    if (ImGui::Button("Save Level")) {
-      filesystem::serialized::SaveLevel(filesystem::g_level, filesystem::g_level->path_);
-    }
     ImGui::SeparatorText("Scene Objects");
+    if (ImGui::BeginTable(
+            "AddObjectTable", 1,
+            ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
+      for (const auto& object : filesystem::g_level->objects_) {
+        if (object != nullptr) {
+          ImGui::TableNextRow();
+          ImGui::PushID(object);
+          ImGui::TableSetColumnIndex(0);
+          if (ImGui::Selectable(std::format("{}", *object->name_).c_str())) {
+            g_current_object = object;
+          }
+          ImGui::PopID();
+        }
+      }
+      ImGui::EndTable();
+    }
     if (!filesystem::g_level->objects_.empty()) {
       for (int i = 0; i < filesystem::g_level->objects_.size(); i++) {
-        if (ImGui::Button(
-                std::format("{}##{}", *filesystem::g_level->objects_[i]->name_, i).c_str())) {
-          g_current_object = filesystem::g_level->objects_[i];
-        }
+        
       }
     }
   }
