@@ -11,6 +11,7 @@
 #include <engine/filesystem.h>
 #include <engine/localization.h>
 #include <engine/render.h>
+#include <engine/telemetry.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -25,9 +26,9 @@
 #define DEVGUI_ROUNDING_LESS 6.0F
 #define DEVGUI_FONT_SIZE 18.0F
 #define DEFAULT_SHININESS 32.0F
-#define DOCK_LEFT_WIDTH 0.25F
+#define DOCK_LEFT_WIDTH 0.3F
 #define DOCK_RIGHT_WIDTH 0.3F
-#define DOCK_BOTTOM_HEIGHT 0.3F
+#define DOCK_BOTTOM_HEIGHT 0.4F
 #define CONSOLE_TYPE_WIDTH 50.0F
 #define CONSOLE_TRACEBACK_WIDTH 200.0F
 bool dev::g_hud_enabled = false, g_disable_hud_after_frame = false;
@@ -42,6 +43,7 @@ void DrawDebug();
 void DrawLevel();
 void DrawLocalization();
 void DrawConsole();
+void DrawTelemetry();
 void DrawMenuFile();
 void DrawMenuEdit();
 void DrawMenuView();
@@ -117,6 +119,7 @@ void dev::Update() {
     ImGui::DockBuilderDockWindow("Localization", dock_main_id);
     ImGui::DockBuilderDockWindow("Renderer", dock_id_right);
     ImGui::DockBuilderDockWindow("Console", dock_id_bottom);
+    ImGui::DockBuilderDockWindow("Telemetry", dock_id_bottom);
     ImGui::DockBuilderFinish(dockspace_id);
   }
   DrawProperties();
@@ -124,6 +127,7 @@ void dev::Update() {
   DrawLevel();
   DrawLocalization();
   DrawConsole();
+  DrawTelemetry();
   DrawMenuBar();
 }
 
@@ -155,6 +159,47 @@ void dev::Quit() {
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
+}
+
+std::vector<std::map<std::string, std::chrono::milliseconds>> timings_history_;
+
+void DrawTelemetry() {
+  ImGui::Begin("Telemetry");
+  ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+  // Get timings, draw the label/time and add a plot to the right
+  if (ImGui::BeginTable("TelemetryTable", 3, ImGuiTableFlags_Borders)) {
+    auto timings = telemetry::GetTimings();
+    timings_history_.push_back(timings);
+    if (timings_history_.size() > 100) {
+      timings_history_.erase(timings_history_.begin());
+    }
+    for (const auto& [label, time] : timings) {
+      ImGui::PushID(label.c_str());
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      ImGui::Text("%s", label.c_str());
+      ImGui::TableSetColumnIndex(1);
+      ImGui::Text("%.3f ms", time.count() * 1.0F);
+      ImGui::TableSetColumnIndex(2);
+      std::array<float, 100> plot_data{};
+      int plot_data_count = 0;
+      for (const auto& history_entry : timings_history_) {
+        auto it = history_entry.find(label);
+        if (it != history_entry.end() && plot_data_count < 100) {
+          plot_data[plot_data_count] = it->second.count() * 1.0F;
+          plot_data_count++;
+        }
+      }
+      if (plot_data_count > 0) {
+        ImGui::PlotLines("##plot", plot_data.data(), plot_data_count, 0, nullptr, 0.0F,
+                         *std::max_element(plot_data.begin(), plot_data.begin() + plot_data_count),
+                         ImVec2(0, 50));
+      }
+      ImGui::PopID();
+    }
+    ImGui::EndTable();
+  }
+  ImGui::End();
 }
 
 void DrawProperties() {

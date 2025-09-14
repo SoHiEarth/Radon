@@ -1,0 +1,56 @@
+#include <engine/telemetry.h>
+#include <engine/debug.h>
+
+std::map<std::string, std::chrono::high_resolution_clock::time_point> g_start_points;
+std::map<std::string, std::chrono::milliseconds> g_durations;
+std::map<std::string, std::chrono::milliseconds> g_duration_log;
+
+void telemetry::Init() {
+  debug::Log(GET_TRACE, "Initialized telemetry");
+}
+
+void telemetry::BeginFrame() {
+  g_start_points.clear();
+  g_durations.clear();
+}
+
+void telemetry::BeginTimer(const char* name) {
+  if (g_start_points.find(name) == g_start_points.end()) {
+    g_start_points.insert({name, std::chrono::high_resolution_clock::now()});
+  } else {
+    debug::Warning(GET_TRACE, std::format("Timer with name '{}' already exists!", name));
+  }
+}
+
+void telemetry::EndTimer(const char* name) {
+  if (g_start_points.find(name) != g_start_points.end()) {
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - g_start_points[name]);
+    g_durations.insert({name, duration});
+    g_start_points.erase(name);
+  } else {
+    debug::Warning(GET_TRACE, std::format("Timer with name '{}' does not exist!", name));
+  }
+}
+
+void telemetry::LogTimer(const char* name) {
+  if (g_durations.find(name) != g_durations.end()) {
+    g_duration_log[name] = g_durations[name];
+  } else {
+    debug::Warning(GET_TRACE, std::format("No duration recorded for timer with name '{}'!", name));
+  }
+}
+
+std::map<std::string, std::chrono::milliseconds> telemetry::GetTimings() {
+  return g_durations;
+}
+
+std::map<std::string, std::chrono::milliseconds> telemetry::GetLog() {
+  return g_duration_log;
+}
+
+void telemetry::Quit() {
+  g_durations.clear();
+  g_start_points.clear();
+  debug::Log(GET_TRACE, "Quit telemetry");
+}
