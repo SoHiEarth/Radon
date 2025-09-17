@@ -39,9 +39,12 @@ std::unordered_map<std::string, std::function<Object*()>> io::g_object_factory =
     OBJECT_FACTORY_KEY(Sprite), OBJECT_FACTORY_KEY(DirectionalLight),
     OBJECT_FACTORY_KEY(PointLight), OBJECT_FACTORY_KEY(SpotLight)};
 std::string ValidateName(std::string input);
+bool CheckFile(std::string_view path) {
+  return std::filesystem::exists(path);
+}
 
 void io::Init() {
-  if (!std::filesystem::exists("engine_assets")) {
+  if (!CheckFile("engine_assets")) {
     tinyfd_messageBox("Engine Directory Not Found",
                       "Please select the engine directory to continue.", "ok", "info", 1);
     char* engine_path = tinyfd_selectFolderDialog("Select the engine directory",
@@ -52,7 +55,7 @@ void io::Init() {
           "Copy Assets", "Would you like to copy the engine assets to the current directory?",
           "yesno", "question", 1);
       if (copy_assets) {
-        if (!std::filesystem::exists("engine_assets")) {
+        if (!CheckFile("engine_assets")) {
           std::filesystem::create_directory("engine_assets");
         }
         for (const auto& entry : std::filesystem::directory_iterator(g_engine_directory)) {
@@ -73,9 +76,9 @@ void io::Init() {
 ///  Level IO functions ///
 ///////////////////////////
 
-Level* io::serialized::LoadLevel(std::string_view path) {
-  if (path.empty()) {
-    debug::Throw(GET_TRACE, "Requested file path is empty.");
+[[nodiscard("Pointer Discarded")]] Level* io::serialized::LoadLevel(std::string_view path) {
+  if (!CheckFile(path)) {
+    debug::Throw(GET_TRACE, std::format("Requested file does not exist. {}", path));
   }
   pugi::xml_document doc;
   pugi::xml_parse_result result = doc.load_file(path.data());
@@ -130,7 +133,7 @@ void io::serialized::SaveLevel(const Level* level, std::string_view path) {
 ///  Object IO functions ///
 ////////////////////////////
 
-Object* io::serialized::LoadObject(pugi::xml_node& base_node) {
+[[nodiscard("Pointer Discarded")]] Object* io::serialized::LoadObject(pugi::xml_node& base_node) {
   std::string type_value = base_node.attribute("type").value();
   auto iterator = g_object_factory.find(type_value);
   if (iterator == g_object_factory.end()) {
@@ -167,7 +170,13 @@ void io::serialized::SaveObject(const Object* object, pugi::xml_node& base_node)
 std::string ReadFile(std::string_view path);
 unsigned int CompileShader(std::string_view code, int type);
 
-Shader* io::LoadShader(std::string_view vertex_path, std::string_view fragment_path) {
+[[nodiscard("Pointer Discarded")]] Shader* io::LoadShader(std::string_view vertex_path,
+                                                          std::string_view fragment_path) {
+  if (!CheckFile(vertex_path) || !CheckFile(fragment_path)) {
+    debug::Throw(GET_TRACE, std::format("Requested shader file does not exist. {}, {}", vertex_path,
+                                       fragment_path));
+  }
+
   unsigned int vertex = 0;
   unsigned int fragment = 0;
   try {
@@ -209,7 +218,7 @@ void io::FreeShader(Shader*& shader) {
 /// Texture IO functions ///
 ////////////////////////////
 
-Texture* io::LoadTexture(std::string_view path) {
+[[nodiscard("Pointer Discarded")]] Texture* io::LoadTexture(std::string_view path) {
   auto* texture = new Texture();
   texture->path_ = path;
   glGenTextures(1, &texture->id_);
@@ -259,7 +268,7 @@ void io::FreeTexture(Texture*& texture) {
 /// Material IO functions ///
 /////////////////////////////
 
-Material* io::LoadMaterial(std::string_view diffuse, std::string_view specular,
+[[nodiscard("Pointer Discarded")]] Material* io::LoadMaterial(std::string_view diffuse, std::string_view specular,
                            std::string_view vertex, std::string_view fragment, float shininess) {
   auto* material = new Material();
   material->shininess_ = shininess;
@@ -290,7 +299,7 @@ void io::FreeMaterial(Material*& material) {
   material = nullptr;
 }
 
-Material* io::serialized::LoadMaterial(pugi::xml_node& node) {
+[[nodiscard("Pointer Discarded")]] Material* io::serialized::LoadMaterial(pugi::xml_node& node) {
   pugi::xml_node material_node = node.child(MATERIAL_KEY_NAME);
   if (!material_node) {
     return nullptr;
@@ -441,7 +450,7 @@ std::string ReadFile(std::string_view path) {
   return "";
 }
 
-unsigned int CompileShader(std::string_view code, int type) {
+[[nodiscard("Shader Discarded")]] unsigned int CompileShader(std::string_view code, int type) {
   if (code.empty()) {
     debug::Throw(GET_TRACE, "Got empty code.");
   }

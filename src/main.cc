@@ -62,9 +62,6 @@ int main(int argc, char** argv) {
   input::AddHook({GLFW_KEY_F1, ButtonState::kPress},
                  []() { dev::g_hud_enabled = !dev::g_hud_enabled; });
 
-  // Testing
-  audio::Play(audio::Load("test.wav"));
-
   try {
     while (glfwWindowShouldClose(render::g_window) == 0) {
       telemetry::BeginFrame();
