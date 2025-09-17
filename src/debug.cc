@@ -46,7 +46,7 @@ void debug::Warning(int /*unused*/, const char* fmt) noexcept {
   }
 }
 
-void debug::Warning(int /*unused*/, std::string_view fmt) {
+void debug::Warning(int /*unused*/, std::string_view fmt) noexcept {
   auto msg = std::format("Warning: {}\n", fmt);
   if (g_debug_callback != nullptr) {
     g_debug_callback(msg.c_str(), 1);
