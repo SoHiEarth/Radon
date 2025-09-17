@@ -1,8 +1,8 @@
 #ifndef TELEMETRY_H
 #define TELEMETRY_H
 
-#include <map>
 #include <chrono>
+#include <map>
 #define ENGINE_INIT_NAME "Engine Init"
 
 namespace telemetry {
@@ -16,6 +16,6 @@ std::map<std::string, std::chrono::milliseconds> DownloadTimings(const char* nam
 std::map<std::string, std::chrono::milliseconds> GetTimings();
 std::map<std::string, std::chrono::milliseconds> GetLog();
 void Quit();
-}
+}  // namespace telemetry
 
 #endif  // TELEMETRY_H

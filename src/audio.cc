@@ -1,12 +1,12 @@
-#include <engine/audio.h>
 #include <AL/al.h>
 #include <AL/alc.h>
-#include <fstream>
-#include <vector>
-#include <cstring>
-#include <map>
+#include <engine/audio.h>
 #include <engine/debug.h>
+#include <cstring>
 #include <format>
+#include <fstream>
+#include <map>
+#include <vector>
 
 namespace audio {
 
@@ -36,7 +36,7 @@ void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsi
     debug::Throw(GET_TRACE, std::format("Invalid WAV file (missing RIFF): {}", filename));
   }
   file.ignore(4);  // Skip chunk size
-  
+
   char format_id[4];
   file.read(format_id, 4);
   if (std::strncmp(format_id, "WAVE", 4) != 0) {
@@ -62,7 +62,8 @@ void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsi
   file.read(reinterpret_cast<char*>(&bits_per_sample), 2);
 
   if (audio_format != 1) {
-    debug::Throw(GET_TRACE, std::format("Unsupported WAV audio_format (only PCM supported): {}", filename));
+    debug::Throw(GET_TRACE,
+                 std::format("Unsupported WAV audio_format (only PCM supported): {}", filename));
   }
   if (subchunk_1_size > 16) {
     file.ignore(subchunk_1_size - 16);
@@ -90,7 +91,8 @@ void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsi
   } else if (bits_per_sample == 16) {
     format = (channels == 1) ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
   } else {
-    debug::Throw(GET_TRACE, std::format("Unsupported WAV bit depth: {} in file {}", bits_per_sample, filename));
+    debug::Throw(GET_TRACE, std::format("Unsupported WAV bit depth: {} in file {}", bits_per_sample,
+                                        filename));
   }
 
   frequency = sample_rate;
@@ -100,7 +102,7 @@ void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsi
 void Init() {
   device = alcOpenDevice(nullptr);
   if (!device) {
-    debug::Throw(GET_TRACE, "Failed to open OpenAL device.");  
+    debug::Throw(GET_TRACE, "Failed to open OpenAL device.");
   }
   context = alcCreateContext(device, nullptr);
   if (!context || !alcMakeContextCurrent(context)) {

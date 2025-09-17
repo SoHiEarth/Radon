@@ -4,13 +4,12 @@
 #include <engine/audio.h>
 #include <engine/debug.h>
 #include <engine/devgui.h>
-#include <engine/io.h>
 #include <engine/input.h>
+#include <engine/io.h>
 #include <engine/physics.h>
-#include <engine/telemetry.h>
 #include <engine/render.h>
+#include <engine/telemetry.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
-#include <filesystem>
 #include <format>
 #define TIMER_INIT_NAME "Engine Init"
 #define TIMER_IO_INIT_NAME "I/O Init"
@@ -28,10 +27,10 @@
 #define TIMER_RENDER_RENDER_NAME "Render Render"
 #define TIMER_AUDIO_UPDATE_NAME "Audio Update"
 
-#define TIME(FUNC, NAME) \
+#define TIME(FUNC, NAME)       \
   telemetry::BeginTimer(NAME); \
-  FUNC; \
-  telemetry::EndTimer(NAME); \
+  FUNC;                        \
+  telemetry::EndTimer(NAME);   \
   telemetry::LogTimer(NAME);
 
 int main(int argc, char** argv) {
@@ -57,7 +56,7 @@ int main(int argc, char** argv) {
     tinyfd_messageBox("Initialization Failure", e.what(), "ok", "error", 1);
     return -1;
   }
-  
+
   input::AddHook({GLFW_KEY_ESCAPE, ButtonState::kRelease},
                  []() { glfwSetWindowShouldClose(render::g_window, true); });
   input::AddHook({GLFW_KEY_F1, ButtonState::kPress},

@@ -260,8 +260,7 @@ void io::FreeTexture(Texture*& texture) {
 /////////////////////////////
 
 Material* io::LoadMaterial(std::string_view diffuse, std::string_view specular,
-                                   std::string_view vertex, std::string_view fragment,
-                                   float shininess) {
+                           std::string_view vertex, std::string_view fragment, float shininess) {
   auto* material = new Material();
   material->shininess_ = shininess;
   try {
@@ -297,11 +296,11 @@ Material* io::serialized::LoadMaterial(pugi::xml_node& node) {
     return nullptr;
   }
   return io::LoadMaterial(material_node.attribute(MATERIAL_DIFFUSE_KEY_NAME).as_string(),
-                                  material_node.attribute(MATERIAL_SPECULAR_KEY_NAME).as_string(),
-                                  material_node.attribute(MATERIAL_VERTEX_KEY_NAME).as_string(),
-                                  material_node.attribute(MATERIAL_FRAGMENT_KEY_NAME).as_string(),
-                                  material_node.attribute(MATERIAL_SHININESS_KEY_NAME)
-                                      .as_float(MATERIAL_SHININESS_DEFAULT_VALUE));
+                          material_node.attribute(MATERIAL_SPECULAR_KEY_NAME).as_string(),
+                          material_node.attribute(MATERIAL_VERTEX_KEY_NAME).as_string(),
+                          material_node.attribute(MATERIAL_FRAGMENT_KEY_NAME).as_string(),
+                          material_node.attribute(MATERIAL_SHININESS_KEY_NAME)
+                              .as_float(MATERIAL_SHININESS_DEFAULT_VALUE));
 }
 
 void io::serialized::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
@@ -366,8 +365,7 @@ float io::serialized::LoadFloat(pugi::xml_node& base_node, std::string name) {
   return node.attribute("value").as_float(0.0F);
 }
 
-void io::serialized::SaveVec3(const glm::vec3* value, pugi::xml_node& base_node,
-                                      std::string name) {
+void io::serialized::SaveVec3(const glm::vec3* value, pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {
@@ -378,8 +376,7 @@ void io::serialized::SaveVec3(const glm::vec3* value, pugi::xml_node& base_node,
   node.append_attribute("z").set_value(value->z);
 }
 
-void io::serialized::SaveVec2(const glm::vec2* value, pugi::xml_node& base_node,
-                                      std::string name) {
+void io::serialized::SaveVec2(const glm::vec2* value, pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {
@@ -390,7 +387,7 @@ void io::serialized::SaveVec2(const glm::vec2* value, pugi::xml_node& base_node,
 }
 
 void io::serialized::SaveString(const std::string* value, pugi::xml_node& base_node,
-                                        std::string name) {
+                                std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {
@@ -399,8 +396,7 @@ void io::serialized::SaveString(const std::string* value, pugi::xml_node& base_n
   node.append_attribute("value").set_value(value->c_str());
 }
 
-void io::serialized::SaveInt(const int* value, pugi::xml_node& base_node,
-                                     std::string name) {
+void io::serialized::SaveInt(const int* value, pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {
@@ -409,8 +405,7 @@ void io::serialized::SaveInt(const int* value, pugi::xml_node& base_node,
   node.append_attribute("value").set_value(*value);
 }
 
-void io::serialized::SaveFloat(const float* value, pugi::xml_node& base_node,
-                                       std::string name) {
+void io::serialized::SaveFloat(const float* value, pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {

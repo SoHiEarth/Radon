@@ -1,5 +1,5 @@
-#include <engine/telemetry.h>
 #include <engine/debug.h>
+#include <engine/telemetry.h>
 
 std::map<std::string, std::chrono::high_resolution_clock::time_point> g_start_points;
 std::map<std::string, std::chrono::milliseconds> g_durations;
@@ -25,7 +25,8 @@ void telemetry::BeginTimer(const char* name) {
 void telemetry::EndTimer(const char* name) {
   if (g_start_points.find(name) != g_start_points.end()) {
     auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - g_start_points[name]);
+    auto duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end_time - g_start_points[name]);
     g_durations.insert({name, duration});
     g_start_points.erase(name);
   } else {
@@ -42,7 +43,8 @@ void telemetry::LogTimer(const char* name) {
 }
 
 std::map<std::string, std::map<std::string, std::chrono::milliseconds>> g_uploaded_timings;
-void telemetry::UploadTimings(const char* name, std::map<std::string, std::chrono::milliseconds> data) {
+void telemetry::UploadTimings(const char* name,
+                              std::map<std::string, std::chrono::milliseconds> data) {
   g_uploaded_timings[name] = data;
 }
 

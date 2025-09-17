@@ -2,8 +2,8 @@
 #include <classes/sprite.h>
 #include <engine/debug.h>
 #include <engine/io.h>
-#include <engine/render.h>
 #include <engine/physics.h>
+#include <engine/render.h>
 #include <fmt/core.h>
 
 void Sprite::Init() {
@@ -11,8 +11,8 @@ void Sprite::Init() {
     debug::Log(GET_TRACE, "No material assigned to sprite.");
   }
   // Create body
-  physics_body = physics::CreateBody(glm::vec2(position_->x, position_->y),
-                                     static_cast<glm::vec2>(scale_));
+  physics_body =
+      physics::CreateBody(glm::vec2(position_->x, position_->y), static_cast<glm::vec2>(scale_));
 }
 
 void Sprite::Update() {

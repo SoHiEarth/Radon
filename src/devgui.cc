@@ -9,8 +9,8 @@
 #include <engine/debug.h>
 #include <engine/devgui.h>
 #include <engine/io.h>
-#include <engine/physics.h>
 #include <engine/localization.h>
+#include <engine/physics.h>
 #include <engine/render.h>
 #include <engine/telemetry.h>
 #include <imgui.h>
@@ -67,8 +67,7 @@ void dev::Init() {
   style.GrabRounding = DEVGUI_ROUNDING_LESS;
   style.TabRounding = DEVGUI_ROUNDING_LESS;
   ImFont* ui_font = imgui_io.Fonts->AddFontFromFileTTF(
-      (io::g_engine_directory + "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf")
-          .c_str(),
+      (io::g_engine_directory + "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf").c_str(),
       DEVGUI_FONT_SIZE, nullptr, imgui_io.Fonts->GetGlyphRangesDefault());
   ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
   ImGui_ImplOpenGL3_Init("#version 150");
@@ -138,8 +137,8 @@ void dev::AddConsoleMessage(const char* traceback, const char* message, std::uin
   g_console_messages.push_back(console_message);
 }
 #else
-void dev::AddConsoleMessage(const char *message, std::uint8_t type) {
-  ConsoleMessage console_message{.message_=message, .type_=ConsoleMessageType(type)};
+void dev::AddConsoleMessage(const char* message, std::uint8_t type) {
+  ConsoleMessage console_message{.message_ = message, .type_ = ConsoleMessageType(type)};
   g_console_messages.push_back(console_message);
 }
 #endif
@@ -229,13 +228,12 @@ void DrawTelemetry() {
   }
 
   ImGui::SeparatorText("Initialization Log");
-  if (ImGui::BeginTable("InitLogsTable", 2,
-                      ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
+  if (ImGui::BeginTable("InitLogsTable", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
     ImGui::TableSetupColumn("Time (ms)", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
     auto logged_timings = telemetry::DownloadTimings(ENGINE_INIT_NAME);
-    for (const auto& [name, time]  : logged_timings) {
+    for (const auto& [name, time] : logged_timings) {
       ImGui::PushID(&name);
       ImGui::TableNextRow();
       ImGui::TableSetColumnIndex(0);
@@ -479,9 +477,9 @@ void MaterialView(Material*& material) {
         if (material_path_c != nullptr) {
           std::string material_path = std::string(material_path_c);
           io::FreeMaterial(material);
-          material = io::LoadMaterial(
-              material_path + "/diffuse.png", material_path + "/specular.png",
-              material_path + "/vert.glsl", material_path + "/frag.glsl", DEFAULT_SHININESS);
+          material = io::LoadMaterial(material_path + "/diffuse.png",
+                                      material_path + "/specular.png", material_path + "/vert.glsl",
+                                      material_path + "/frag.glsl", DEFAULT_SHININESS);
           g_material_diffuse = material->diffuse_->path_;
           g_material_specular = material->specular_->path_;
           g_material_vertex = material->shader_->vertex_path_;
@@ -499,9 +497,8 @@ void MaterialView(Material*& material) {
       ImGui::DragInt("Material Shininess", &g_material_shininess);
       if (ImGui::Button("Load")) {
         io::FreeMaterial(material);
-        material =
-            io::LoadMaterial(g_material_diffuse, g_material_specular, g_material_vertex,
-                                     g_material_fragment, g_material_shininess);
+        material = io::LoadMaterial(g_material_diffuse, g_material_specular, g_material_vertex,
+                                    g_material_fragment, g_material_shininess);
       }
       ImGui::EndTabItem();
     }

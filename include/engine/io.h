@@ -50,6 +50,6 @@ void SaveString(const std::string* /*value*/, pugi::xml_node& /*base_node*/, std
 void SaveInt(const int* /*value*/, pugi::xml_node& /*base_node*/, std::string /*name*/);
 void SaveFloat(const float* /*value*/, pugi::xml_node& /*base_node*/, std::string /*name*/);
 }  // namespace serialized
-}  // namespace filesystem
+}  // namespace io
 
 #endif  // FILESYSTEM_H

@@ -9,8 +9,8 @@
 #include <classes/shader.h>
 #include <engine/debug.h>
 #include <engine/devgui.h>
-#include <engine/io.h>
 #include <engine/input.h>
+#include <engine/io.h>
 #include <engine/render.h>
 #include <fmt/core.h>
 #include <imgui.h>
@@ -30,7 +30,7 @@
 #define CAMERA_FAR_PLANE 100.0F
 #define DEFAULT_CAMERA_SPEED 0.1
 float g_camera_speed = DEFAULT_CAMERA_SPEED;
-inline void IfNoHUD(const std::function<void()> &fn) {
+inline void IfNoHUD(const std::function<void()>& fn) {
   if (!dev::g_hud_enabled)
     fn();
 }
@@ -38,16 +38,16 @@ inline void IfNoHUD(const std::function<void()> &fn) {
 enum : std::uint16_t { kDefaultWindowWidth = 800, kDefaultWindowHeight = 600 };
 using ImGui::TextColored;
 float g_camera_fov = DEFAULT_CAMERA_FOV;
-std::vector<DirectionalLight *> render::g_directional_lights;
-std::vector<PointLight *> render::g_point_lights;
-std::vector<SpotLight *> render::g_spot_lights;
+std::vector<DirectionalLight*> render::g_directional_lights;
+std::vector<PointLight*> render::g_point_lights;
+std::vector<SpotLight*> render::g_spot_lights;
 unsigned int g_vao, g_vbo;
 Framebuffer g_framebuffer;
 unsigned int g_screen_vao, g_screen_vbo;
 Shader *g_screen_shader = nullptr, *g_screen_shader_blur;
 float g_prev_render_factor = render::g_render_settings.render_factor_;
 RenderSettings render::g_render_settings{};
-GLFWwindow *render::g_window = nullptr;
+GLFWwindow* render::g_window = nullptr;
 int render::g_width = kDefaultWindowWidth, render::g_height = kDefaultWindowHeight;
 Camera render::g_camera;
 ImVec2 g_last_viewport_size = ImVec2(0.0F, 0.0F);
@@ -63,7 +63,7 @@ const std::array<float, 20> kGScreenVertices = {
 };
 void DrawRendererStatus();
 void RecreateFramebuffer();
-void FBSizeCallback(GLFWwindow *window, int width, int height);
+void FBSizeCallback(GLFWwindow* window, int width, int height);
 
 void render::Init() {
   glfwInit();
@@ -76,7 +76,7 @@ void render::Init() {
 #endif
   render::g_window = glfwCreateWindow(render::g_width, render::g_height, "Metal", nullptr, nullptr);
   if (render::g_window == nullptr) {
-    const char *error_desc;
+    const char* error_desc;
     glfwGetError(&error_desc);
     debug::Throw(GET_TRACE, std::format("Failed to create GLFW window. {}", error_desc));
   }
@@ -99,27 +99,26 @@ void render::Init() {
   glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(kGVertices), kGVertices.data(), GL_STATIC_DRAW);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), static_cast<void *>(nullptr));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), static_cast<void*>(nullptr));
   glEnableVertexAttribArray(1);
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-                        reinterpret_cast<void *>(3 * sizeof(float)));
+                        reinterpret_cast<void*>(3 * sizeof(float)));
   glEnableVertexAttribArray(2);
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-                        reinterpret_cast<void *>(6 * sizeof(float)));
+                        reinterpret_cast<void*>(6 * sizeof(float)));
   glGenVertexArrays(1, &g_screen_vao);
   glGenBuffers(1, &g_screen_vbo);
   glBindVertexArray(g_screen_vao);
   glBindBuffer(GL_ARRAY_BUFFER, g_screen_vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(kGScreenVertices), kGScreenVertices.data(), GL_STATIC_DRAW);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), static_cast<void *>(nullptr));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), static_cast<void*>(nullptr));
   glEnableVertexAttribArray(1);
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
-                        reinterpret_cast<void *>(3 * sizeof(float)));
+                        reinterpret_cast<void*>(3 * sizeof(float)));
   RecreateFramebuffer();
-  g_screen_shader =
-      io::LoadShader(io::g_engine_directory + "/screen_shader/vert.glsl",
-                             io::g_engine_directory + "/screen_shader/frag.glsl");
+  g_screen_shader = io::LoadShader(io::g_engine_directory + "/screen_shader/vert.glsl",
+                                   io::g_engine_directory + "/screen_shader/frag.glsl");
   g_screen_shader->Use();
   g_screen_shader->SetInt("scene", 0);
 
@@ -217,7 +216,7 @@ void DrawRendererStatus() {
   }
 }
 
-glm::mat4 GetTransform(const glm::vec3 &pos, const glm::vec2 &scale, const glm::vec3 &rot) {
+glm::mat4 GetTransform(const glm::vec3& pos, const glm::vec2& scale, const glm::vec3& rot) {
   auto transform = glm::mat4(1.0F);
   transform = glm::translate(transform, pos);
   transform = glm::rotate(transform, rot.z, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -227,8 +226,8 @@ glm::mat4 GetTransform(const glm::vec3 &pos, const glm::vec2 &scale, const glm::
   return transform;
 }
 
-void render::RenderTexture(const Material *material, const glm::vec3 &pos, const glm::vec2 &size,
-                           const glm::vec3 &rot) {
+void render::RenderTexture(const Material* material, const glm::vec3& pos, const glm::vec2& size,
+                           const glm::vec3& rot) {
   if (material == nullptr) {
     return;
   }
@@ -276,14 +275,14 @@ void render::RenderTexture(const Material *material, const glm::vec3 &pos, const
   glBindVertexArray(0);
 }
 
-void FBSizeCallback(GLFWwindow *window, int width, int height) {
+void FBSizeCallback(GLFWwindow* window, int width, int height) {
   render::g_width = width;
   render::g_height = height;
   RecreateFramebuffer();
   glViewport(0, 0, render::g_width, render::g_height);
 }
 
-Framebuffer render::CreateFramebuffer(FramebufferCreateInfo &create_info) {
+Framebuffer render::CreateFramebuffer(FramebufferCreateInfo& create_info) {
   Framebuffer framebuffer;
   framebuffer.width_ = create_info.width_;
   framebuffer.height_ = create_info.height_;
@@ -329,7 +328,7 @@ Framebuffer render::CreateFramebuffer(FramebufferCreateInfo &create_info) {
   return framebuffer;
 }
 
-void render::DeleteFramebuffer(Framebuffer &framebuffer) {
+void render::DeleteFramebuffer(Framebuffer& framebuffer) {
   if (!framebuffer.attachments_.empty()) {
     framebuffer.attachments_.clear();
   }
@@ -337,7 +336,7 @@ void render::DeleteFramebuffer(Framebuffer &framebuffer) {
     glDeleteRenderbuffers(1, &framebuffer.renderbuffer_);
     framebuffer.renderbuffer_ = 0;
   }
-  for (unsigned int &colorbuffer : framebuffer.colorbuffers_) {
+  for (unsigned int& colorbuffer : framebuffer.colorbuffers_) {
     if (colorbuffer != 0) {
       glDeleteTextures(1, &colorbuffer);
       colorbuffer = 0;

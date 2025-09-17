@@ -1,11 +1,11 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
+#include <box2d/box2d.h>
 #include <classes/editable.h>
 #include <glm/glm.hpp>
 #include <pugixml.hpp>
 #include <string>
-#include <box2d/box2d.h>
 
 class Material;
 class Object {
