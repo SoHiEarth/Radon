@@ -1,4 +1,5 @@
 #include <engine/physics.h>
+#include <engine/debug.h>
 #include <box2d/box2d.h>
 #include <glm/glm.hpp>
 #include <vector>
@@ -13,6 +14,7 @@ void Init() {
   b2WorldDef worldDef = b2DefaultWorldDef();
   worldDef.gravity = b2Vec2(0.0f, -1.0f);
   world = b2CreateWorld(&worldDef);
+  debug::Log(GET_TRACE, "Initialized physics");
 }
 
 void Update() {
@@ -43,6 +45,7 @@ void SetBodyPosition(b2BodyId body_id, glm::vec2 position) {
 
 void Quit() {
   b2DestroyWorld(world);
+  debug::Log(GET_TRACE, "Quit physics");
 }
 
 }  // namespace physics

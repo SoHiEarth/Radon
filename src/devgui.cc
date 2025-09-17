@@ -143,6 +143,7 @@ void dev::AddConsoleMessage(const char *message, std::uint8_t type) {
   g_console_messages.push_back(console_message);
 }
 #endif
+
 void dev::Render() {
   if (!dev::g_hud_enabled) {
     return;
@@ -160,6 +161,7 @@ void dev::Quit() {
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
+  debug::Log(GET_TRACE, "Quit GUI");
 }
 
 std::vector<float> fps_history_;
@@ -390,11 +392,6 @@ void DrawLevel() {
         }
       }
       ImGui::EndTable();
-    }
-    if (!io::g_level->objects_.empty()) {
-      for (int i = 0; i < io::g_level->objects_.size(); i++) {
-        
-      }
     }
   }
   ImGui::End();

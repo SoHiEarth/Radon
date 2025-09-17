@@ -39,7 +39,7 @@ void input::Init() {
     throw std::runtime_error("No GLFW context to initialize input");
   }
   glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-  debug::Log(GET_TRACE, "Initialized Input");
+  debug::Log(GET_TRACE, "Initialized input");
 }
 
 void input::Update() {
@@ -64,5 +64,5 @@ void input::Quit() {
   } else {
     glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   }
-  debug::Log(GET_TRACE, "Terminated Input");
+  debug::Log(GET_TRACE, "Quit input");
 }

@@ -66,7 +66,7 @@ void io::Init() {
   } else {
     io::g_engine_directory = "engine_assets";
   }
-  debug::Log(GET_TRACE, "Initialized I/O");
+  debug::Log(GET_TRACE, "Initialized io");
 }
 
 ///////////////////////////

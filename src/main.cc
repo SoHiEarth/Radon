@@ -26,6 +26,7 @@
 #define TIMER_PHYSICS_UPDATE_NAME "Physics Update"
 #define TIMER_LEVEL_RENDER_NAME "Level Render"
 #define TIMER_RENDER_RENDER_NAME "Render Render"
+#define TIMER_AUDIO_UPDATE_NAME "Audio Update"
 
 #define TIME(FUNC, NAME) \
   telemetry::BeginTimer(NAME); \
@@ -62,6 +63,9 @@ int main(int argc, char** argv) {
   input::AddHook({GLFW_KEY_F1, ButtonState::kPress},
                  []() { dev::g_hud_enabled = !dev::g_hud_enabled; });
 
+  // Testing
+  audio::Play(audio::Load("test.wav"));
+
   try {
     while (glfwWindowShouldClose(render::g_window) == 0) {
       telemetry::BeginFrame();
@@ -75,6 +79,7 @@ int main(int argc, char** argv) {
         TIME(io::g_level->Render(), TIMER_LEVEL_RENDER_NAME);
       }
       TIME(render::Render(), TIMER_RENDER_RENDER_NAME);
+      TIME(audio::Update(), TIMER_AUDIO_UPDATE_NAME);
     }
   } catch (std::exception& e) {
     debug::Log(GET_TRACE, std::format("Runtime failure: {}", e.what()));

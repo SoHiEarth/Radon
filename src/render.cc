@@ -135,7 +135,7 @@ void render::Init() {
                  []() { IfNoHUD([]() { render::g_camera.position_.y += g_camera_speed; }); });
   input::AddHook({GLFW_KEY_Q, ButtonState::kHold},
                  []() { IfNoHUD([]() { render::g_camera.position_.y -= g_camera_speed; }); });
-  debug::Log(GET_TRACE, "Initialized Rendering");
+  debug::Log(GET_TRACE, "Initialized render");
 }
 
 void render::Update() {
@@ -190,7 +190,7 @@ void render::Quit() {
     render::g_window = nullptr;
   }
   glfwTerminate();
-  debug::Log(GET_TRACE, "Terminated Rendering");
+  debug::Log(GET_TRACE, "Quit render");
 }
 
 /////////////////////////////
