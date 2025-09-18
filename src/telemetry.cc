@@ -6,7 +6,7 @@ std::map<std::string, std::chrono::milliseconds> g_durations;
 std::map<std::string, std::chrono::milliseconds> g_duration_log;
 
 void telemetry::Init() {
-  debug::Log(GET_TRACE, "Initialized telemetry");
+  debug::Log("Initialized telemetry");
 }
 
 void telemetry::BeginFrame() {
@@ -18,7 +18,7 @@ void telemetry::BeginTimer(const char* name) {
   if (g_start_points.find(name) == g_start_points.end()) {
     g_start_points.insert({name, std::chrono::high_resolution_clock::now()});
   } else {
-    debug::Warning(GET_TRACE, std::format("Timer with name '{}' already exists!", name));
+    debug::Warning(std::format("Timer with name '{}' already exists!", name));
   }
 }
 
@@ -30,7 +30,7 @@ void telemetry::EndTimer(const char* name) {
     g_durations.insert({name, duration});
     g_start_points.erase(name);
   } else {
-    debug::Warning(GET_TRACE, std::format("Timer with name '{}' does not exist!", name));
+    debug::Warning(std::format("Timer with name '{}' does not exist!", name));
   }
 }
 
@@ -38,7 +38,7 @@ void telemetry::LogTimer(const char* name) {
   if (g_durations.find(name) != g_durations.end()) {
     g_duration_log[name] = g_durations[name];
   } else {
-    debug::Warning(GET_TRACE, std::format("No duration recorded for timer with name '{}'!", name));
+    debug::Warning(std::format("No duration recorded for timer with name '{}'!", name));
   }
 }
 
@@ -52,7 +52,7 @@ std::map<std::string, std::chrono::milliseconds> telemetry::DownloadTimings(cons
   if (g_uploaded_timings.find(name) != g_uploaded_timings.end()) {
     return g_uploaded_timings[name];
   } else {
-    debug::Warning(GET_TRACE, std::format("No uploaded timings found with name '{}'!", name));
+    debug::Warning(std::format("No uploaded timings found with name '{}'!", name));
     return {};
   }
 }
@@ -68,5 +68,5 @@ std::map<std::string, std::chrono::milliseconds> telemetry::GetLog() {
 void telemetry::Quit() {
   g_durations.clear();
   g_start_points.clear();
-  debug::Log(GET_TRACE, "Quit telemetry");
+  debug::Log("Quit telemetry");
 }

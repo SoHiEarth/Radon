@@ -47,12 +47,12 @@ int main(int argc, char** argv) {
     telemetry::LogTimer(TIMER_INIT_NAME);
     auto timings = telemetry::GetTimings();
     for (const auto& [name, duration] : timings) {
-      debug::Log(GET_TRACE, std::format("Telemetry: {}: {}ms", name, duration.count()));
+      debug::Log(std::format("Telemetry: {}: {}ms", name, duration.count()));
     }
     telemetry::UploadTimings(ENGINE_INIT_NAME, timings);
 
   } catch (std::exception& e) {
-    debug::Log(GET_TRACE, std::format("Initialization failure: {}", e.what()));
+    debug::Log(std::format("Initialization failure: {}", e.what()));
     tinyfd_messageBox("Initialization Failure", e.what(), "ok", "error", 1);
     return -1;
   }
@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
       TIME(audio::Update(), TIMER_AUDIO_UPDATE_NAME);
     }
   } catch (std::exception& e) {
-    debug::Log(GET_TRACE, std::format("Runtime failure: {}", e.what()));
+    debug::Log(std::format("Runtime failure: {}", e.what()));
     tinyfd_messageBox("Runtime Failure", e.what(), "ok", "error", 1);
   }
 
@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
     input::Quit();
     render::Quit();
   } catch (std::exception& e) {
-    debug::Log(GET_TRACE, std::format("Quit failure: {}", e.what()));
+    debug::Log(std::format("Quit failure: {}", e.what()));
     tinyfd_messageBox("Quit Failure", e.what(), "ok", "error", 1);
   }
   return 0;

@@ -54,7 +54,7 @@ void Level::AddObject(Object* object, std::string_view name) {
     object->name_ = std::string(name);
   }
   if (!object->has_initialized_) {
-    debug::Log(GET_TRACE, std::format("Initializing object: {}", *object->name_));
+    debug::Log(std::format("Initializing object: {}", *object->name_));
     object->Init();
     object->has_initialized_ = true;
   }

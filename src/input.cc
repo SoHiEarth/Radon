@@ -16,11 +16,11 @@ std::map<int, bool> g_prev_frame_key_states;
 
 void input::AddHook(const Trigger& key, const std::function<void()>& hook) {
   if (glfwGetCurrentContext() == nullptr) {
-    debug::Throw(GET_TRACE, "No GLFW context to add input hook");
+    debug::Throw("No GLFW context to add input hook");
   } else {
     g_event_hooks[key] = hook;
-    debug::Log(GET_TRACE, std::format("Added input hook for key: {}\tWith state {}", key.first,
-                                      kButtonStateMap.at(key.second)));
+    debug::Log(std::format("Added input hook for key: {}\tWith state {}", key.first,
+                           kButtonStateMap.at(key.second)));
   }
 }
 
@@ -30,8 +30,8 @@ void input::RemoveHook(const Trigger& key) {
     return;
   }
   g_event_hooks.erase(key);
-  debug::Log(GET_TRACE, std::format("Removed input hook for key: {}\tWith state {}", key.first,
-                                    kButtonStateMap.at(key.second)));
+  debug::Log(std::format("Removed input hook for key: {}\tWith state {}", key.first,
+                         kButtonStateMap.at(key.second)));
 }
 
 void input::Init() {
@@ -39,7 +39,7 @@ void input::Init() {
     throw std::runtime_error("No GLFW context to initialize input");
   }
   glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-  debug::Log(GET_TRACE, "Initialized input");
+  debug::Log("Initialized input");
 }
 
 void input::Update() {
@@ -60,9 +60,9 @@ void input::Update() {
 
 void input::Quit() {
   if (render::g_window == nullptr) {
-    debug::Throw(GET_TRACE, "No GLFW context to quit input");
+    debug::Throw("No GLFW context to quit input");
   } else {
     glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   }
-  debug::Log(GET_TRACE, "Quit input");
+  debug::Log("Quit input");
 }

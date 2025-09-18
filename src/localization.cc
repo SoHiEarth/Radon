@@ -7,19 +7,18 @@ std::string localization::g_language;
 std::map<std::string, std::string> localization::g_dictionary{};
 
 void localization::Init() {
-  debug::Log(GET_TRACE, "Initialized localization");
+  debug::Log("Initialized localization");
 }
 
 void localization::Quit() {
-  debug::Log(GET_TRACE, "Quit localization");
+  debug::Log("Quit localization");
 }
 
 void localization::Load(std::string_view path) {
   pugi::xml_document doc;
   auto result = doc.load_file(path.data());
   if (!result) {
-    debug::Throw(GET_TRACE,
-                 std::format("Failed to load dictionary. {}, {}", path, result.description()));
+    debug::Throw(std::format("Failed to load dictionary. {}, {}", path, result.description()));
   }
   pugi::xml_node language_node = doc.child("language");
   g_language = language_node.attribute("name").as_string();
@@ -43,6 +42,6 @@ void localization::Save(std::string_view path) {
   }
   bool save_result = doc.save_file(path.data());
   if (!save_result) {
-    debug::Throw(GET_TRACE, std::format("Failed to save level file. {}", path));
+    debug::Throw(std::format("Failed to save level file. {}", path));
   }
 }

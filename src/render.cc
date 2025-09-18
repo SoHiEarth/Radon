@@ -78,13 +78,13 @@ void render::Init() {
   if (render::g_window == nullptr) {
     const char* error_desc;
     glfwGetError(&error_desc);
-    debug::Throw(GET_TRACE, std::format("Failed to create GLFW window. {}", error_desc));
+    debug::Throw(std::format("Failed to create GLFW window. {}", error_desc));
   }
   glfwMakeContextCurrent(render::g_window);
   glfwSetFramebufferSizeCallback(render::g_window, FBSizeCallback);
   glfwSwapInterval(1);
   if (0 == gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    debug::Throw(GET_TRACE, "Failed to initialize GLAD");
+    debug::Throw("Failed to initialize GLAD");
     glfwTerminate();
     return;
   }
@@ -134,7 +134,7 @@ void render::Init() {
                  []() { IfNoHUD([]() { render::g_camera.position_.y += g_camera_speed; }); });
   input::AddHook({GLFW_KEY_Q, ButtonState::kHold},
                  []() { IfNoHUD([]() { render::g_camera.position_.y -= g_camera_speed; }); });
-  debug::Log(GET_TRACE, "Initialized render");
+  debug::Log("Initialized render");
 }
 
 void render::Update() {
@@ -189,7 +189,7 @@ void render::Quit() {
     render::g_window = nullptr;
   }
   glfwTerminate();
-  debug::Log(GET_TRACE, "Quit render");
+  debug::Log("Quit render");
 }
 
 /////////////////////////////
@@ -322,7 +322,7 @@ Framebuffer render::CreateFramebuffer(FramebufferCreateInfo& create_info) {
     glDrawBuffers(framebuffer.attachments_.size(), framebuffer.attachments_.data());
   }
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    debug::Throw(GET_TRACE, "Failed to create framebuffer!");
+    debug::Throw("Failed to create framebuffer!");
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   return framebuffer;

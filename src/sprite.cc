@@ -8,7 +8,7 @@
 
 void Sprite::Init() {
   if (material_ == nullptr) {
-    debug::Log(GET_TRACE, "No material assigned to sprite.");
+    debug::Log("No material assigned to sprite.");
   }
   // Create body
   physics_body =

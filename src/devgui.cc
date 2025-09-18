@@ -72,7 +72,7 @@ void dev::Init() {
   ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
   ImGui_ImplOpenGL3_Init("#version 150");
   debug::SetCallback(AddConsoleMessage);
-  debug::Log(GET_TRACE, "Initialized GUI");
+  debug::Log("Initialized GUI");
 }
 
 void dev::Update() {
@@ -131,17 +131,10 @@ void dev::Update() {
   DrawMenuBar();
 }
 
-#ifndef MDEBUG_DISABLE_TRACE
 void dev::AddConsoleMessage(const char* traceback, const char* message, std::uint8_t type) {
   ConsoleMessage console_message{traceback, message, ConsoleMessageType(type)};
   g_console_messages.push_back(console_message);
 }
-#else
-void dev::AddConsoleMessage(const char* message, std::uint8_t type) {
-  ConsoleMessage console_message{.message_ = message, .type_ = ConsoleMessageType(type)};
-  g_console_messages.push_back(console_message);
-}
-#endif
 
 void dev::Render() {
   if (!dev::g_hud_enabled) {
@@ -160,7 +153,7 @@ void dev::Quit() {
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
-  debug::Log(GET_TRACE, "Quit GUI");
+  debug::Log("Quit GUI");
 }
 
 std::vector<float> fps_history_;
@@ -276,13 +269,9 @@ void DrawProperties() {
 
 void DrawDebug() {
   ImGui::Begin("Debug");
-  if (debug::g_debug_settings.kTraceSupported) {
-    ImGui::Checkbox("Trace Source File", &debug::g_debug_settings.trace_source_file_);
-    ImGui::Checkbox("Trace Function Name", &debug::g_debug_settings.trace_function_name_);
-    ImGui::Checkbox("Trace Line Number", &debug::g_debug_settings.trace_line_number_);
-  } else {
-    ImGui::Text("Build platform did not support <stacktrace>");
-  }
+  ImGui::Checkbox("Trace Source File", &debug::g_debug_settings.trace_source_file_);
+  ImGui::Checkbox("Trace Function Name", &debug::g_debug_settings.trace_function_name_);
+  ImGui::Checkbox("Trace Line Number", &debug::g_debug_settings.trace_line_number_);
   ImGui::End();
 }
 
@@ -290,19 +279,11 @@ void DrawConsole() {
   ImGui::Begin("Console");
   ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false,
                     ImGuiWindowFlags_HorizontalScrollbar);
-#ifndef MDEBUG_DISABLE_TRACE
   if (ImGui::BeginTable(
           "ConsoleTable", 3,
           ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
-#else
-  if (ImGui::BeginTable(
-          "ConsoleTable", 2,
-          ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
-#endif
     ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, CONSOLE_TYPE_WIDTH);
-#ifndef MDEBUG_DISABLE_TRACE
     ImGui::TableSetupColumn("Traceback", ImGuiTableColumnFlags_WidthFixed, CONSOLE_TRACEBACK_WIDTH);
-#endif
     ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
     for (const auto& message : g_console_messages) {
@@ -324,10 +305,8 @@ void DrawConsole() {
           break;
       }
       ImGui::TableSetColumnIndex(1);
-#ifndef MDEBUG_DISABLE_TRACE
       ImGui::Text("%s", message.traceback_.c_str());
       ImGui::TableSetColumnIndex(2);
-#endif
       ImGui::Text("%s", message.message_.c_str());
       ImGui::PopID();
     }
