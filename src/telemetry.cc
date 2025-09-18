@@ -1,5 +1,7 @@
-#include <engine/debug.h>
-#include <engine/telemetry.h>
+import metal.debug;
+import metal.telemetry;
+#include <chrono>
+#include <map>
 
 std::map<std::string, std::chrono::high_resolution_clock::time_point> g_start_points;
 std::map<std::string, std::chrono::milliseconds> g_durations;

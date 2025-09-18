@@ -1,4 +1,4 @@
-export module audio;
+export module metal.audio;
 
 export namespace audio {
 using SOUND_HANDLE = unsigned int;

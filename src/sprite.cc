@@ -1,10 +1,11 @@
-#include <classes/material.h>
-#include <classes/sprite.h>
-#include <engine/debug.h>
-#include <engine/io.h>
-#include <engine/physics.h>
-#include <engine/render.h>
+import metal.sprite;
+import metal.material;
+import metal.debug;
+import metal.io;
+import metal.physics;
+import metal.render;
 #include <fmt/core.h>
+#include <glm/glm.hpp>
 
 void Sprite::Init() {
   if (material_ == nullptr) {

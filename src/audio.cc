@@ -1,7 +1,7 @@
-import audio;
+import metal.audio;
+import metal.debug;
 #include <AL/al.h>
 #include <AL/alc.h>
-#include <engine/debug.h>
 #include <cstring>
 #include <format>
 #include <fstream>

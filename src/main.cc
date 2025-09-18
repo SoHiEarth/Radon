@@ -1,14 +1,13 @@
 #include <GLFW/glfw3.h>
-#include <classes/camera.h>
-#include <classes/level.h>
-#include <engine/audio.h>
-#include <engine/debug.h>
-#include <engine/devgui.h>
-#include <engine/input.h>
-#include <engine/io.h>
-#include <engine/physics.h>
-#include <engine/render.h>
-#include <engine/telemetry.h>
+import metal.audio;
+import metal.debug;
+import metal.level;
+import metal.devgui;
+import metal.input;
+import metal.io;
+import metal.physics;
+import metal.render;
+import metal.telemetry;
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <format>
 #define TIMER_INIT_NAME "Engine Init"
@@ -49,7 +48,7 @@ int main(int argc, char** argv) {
     for (const auto& [name, duration] : timings) {
       debug::Log(std::format("Telemetry: {}: {}ms", name, duration.count()));
     }
-    telemetry::UploadTimings(ENGINE_INIT_NAME, timings);
+    telemetry::UploadTimings("Engine Init", timings);
 
   } catch (std::exception& e) {
     debug::Log(std::format("Initialization failure: {}", e.what()));

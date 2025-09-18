@@ -1,11 +1,12 @@
-#include <classes/light.h>
-#include <classes/material.h>
-#include <classes/shader.h>
-#include <engine/io.h>
-#include <engine/render.h>
+import metal.object;
+import metal.light;
+import metal.material;
+import metal.shader;
+import metal.io;
+import metal.render;
 #include <fmt/core.h>
 #include <glad/glad.h>
-#include <glm/fwd.hpp>
+#include <glm/glm.hpp>
 
 void DirectionalLight::Init() {
   render::AddLight(this);

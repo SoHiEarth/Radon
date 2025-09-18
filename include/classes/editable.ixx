@@ -1,23 +1,24 @@
-#ifndef EDITABLE_H
-#define EDITABLE_H
-#include <classes/material.h>
+module;
+#include <string.h>
 #include <imgui.h>
-#include <imgui_stdlib.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
-#define FLOAT_STEP 0.1F
+export module metal.editable;
+export import metal.material;
 
-class IEditable {
+export class IEditable {
 public:
   virtual void RenderInterface() = 0;
   explicit IEditable(std::vector<IEditable*>& registry) {
     registry.push_back(this);
   }
 };
-template <typename T>
+
+export template <typename T>
 class Editable : public IEditable {
 public:
   T i_value_;
@@ -61,15 +62,17 @@ public:
     } else if constexpr (std::is_same_v<T, float>) {
       ImGui::DragFloat(i_label_, &i_value_);
     } else if constexpr (std::is_same_v<T, std::string>) {
-      ImGui::InputText(i_label_, &i_value_);
+      char buffer[256];
+      std::strncpy(buffer, i_value_.c_str(), sizeof(buffer));
+      if (ImGui::InputText(i_label_, buffer, sizeof(buffer))) {
+        i_value_ = std::string(buffer);
+      }
     } else if constexpr (std::is_same_v<T, glm::vec2>) {
-      ImGui::DragFloat2(i_label_, glm::value_ptr(i_value_), FLOAT_STEP);
+      ImGui::DragFloat2(i_label_, glm::value_ptr(i_value_), 0.1F);
     } else if constexpr (std::is_same_v<T, glm::vec3>) {
-      ImGui::DragFloat3(i_label_, glm::value_ptr(i_value_), FLOAT_STEP);
+      ImGui::DragFloat3(i_label_, glm::value_ptr(i_value_), 0.1F);
     } else if constexpr (std::is_same_v<T, Material*>) {
       MaterialView(i_value_);
     }
   }
 };
-
-#endif  // EDITABLE_H

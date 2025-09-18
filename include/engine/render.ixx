@@ -1,18 +1,14 @@
-#ifndef RENDER_H
-#define RENDER_H
-
+module;
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <vector>
+#include <GLFW/glfw3.h>
+export module metal.render;
+import metal.camera;
+import metal.material;
+import metal.light;
 
-class GLFWwindow;
-class Camera;
-class Material;
-class DirectionalLight;
-class PointLight;
-class SpotLight;
-
-enum : std::uint8_t {
+export enum : std::uint8_t {
   kDefaultRenderFactor = 1,
   kDefaultExposure = 1,
   kDefaultBloom = 0,
@@ -24,7 +20,7 @@ enum : std::uint8_t {
   kDefaultBrightness = 1
 };
 
-struct RenderSettings {
+export struct RenderSettings {
   float render_factor_ = kDefaultRenderFactor;
   float exposure_ = kDefaultExposure;
   bool bloom_ = static_cast<bool>(kDefaultBloom);
@@ -36,7 +32,7 @@ struct RenderSettings {
   float brightness_ = kDefaultBrightness;
 };
 
-struct FramebufferCreateInfo {
+export struct FramebufferCreateInfo {
   int num_colorbuffers_ = 0;
   int level_ = 0;
   int colorbuffer_format_;
@@ -47,7 +43,7 @@ struct FramebufferCreateInfo {
   bool create_renderbuffer_ = true;
 };
 
-struct Framebuffer {
+export struct Framebuffer {
   int width_, height_;
   unsigned int framebuffer_;
   unsigned int renderbuffer_;
@@ -55,7 +51,7 @@ struct Framebuffer {
   std::vector<unsigned int> attachments_;
 };
 
-namespace render {
+export namespace render {
 extern std::vector<DirectionalLight*> g_directional_lights;
 extern std::vector<PointLight*> g_point_lights;
 extern std::vector<SpotLight*> g_spot_lights;
@@ -111,5 +107,3 @@ void RemoveLight(T* light) {
   }
 }
 }  // namespace render
-
-#endif  // RENDER_H

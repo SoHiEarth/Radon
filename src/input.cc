@@ -1,7 +1,7 @@
+import metal.debug;
+import metal.input;
+import metal.render;
 #include <GLFW/glfw3.h>
-#include <engine/debug.h>
-#include <engine/input.h>
-#include <engine/render.h>
 #include <format>
 #include <functional>
 #include <map>
@@ -11,10 +11,10 @@ static const std::map<ButtonState, const char*> kButtonStateMap = {
     {ButtonState::kPress, "Press"},
     {ButtonState::kRelease, "Release"},
 };
-std::map<Trigger, std::function<void()>> g_event_hooks;
+std::map<std::pair<int, ButtonState>, std::function<void()>> g_event_hooks;
 std::map<int, bool> g_prev_frame_key_states;
 
-void input::AddHook(const Trigger& key, const std::function<void()>& hook) {
+void input::AddHook(const std::pair<int, ButtonState>& key, const std::function<void()>& hook) {
   if (glfwGetCurrentContext() == nullptr) {
     debug::Throw("No GLFW context to add input hook");
   } else {
@@ -24,7 +24,7 @@ void input::AddHook(const Trigger& key, const std::function<void()>& hook) {
   }
 }
 
-void input::RemoveHook(const Trigger& key) {
+void input::RemoveHook(const std::pair<int, ButtonState>& key) {
   if (glfwGetCurrentContext() == nullptr) {
     throw std::runtime_error("No GLFW context to remove input hook");
     return;

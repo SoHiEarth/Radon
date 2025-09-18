@@ -1,19 +1,18 @@
-#ifndef FILESYSTEM_H
-#define FILESYSTEM_H
-
-#include <classes/editable.h>
+module;
 #include <functional>
 #include <glm/glm.hpp>
 #include <pugixml.hpp>
+#include <string>
 #include <unordered_map>
+export module metal.io;
+import metal.editable;
+import metal.material;
+import metal.object;
+import metal.texture;
+import metal.level;
+import metal.shader;
 
-class Object;
-class Texture;
-class Level;
-class Shader;
-class Level;
-
-namespace io {
+export namespace io {
 extern Level* g_level;
 extern std::string g_engine_directory;
 extern std::unordered_map<std::string, std::function<Object*()>> g_object_factory;
@@ -31,7 +30,7 @@ Material* LoadMaterial(std::string_view diffuse, std::string_view specular, std:
 void FreeMaterial(Material*& /*material*/);
 
 // Namespace for handling XML
-namespace serialized {
+export namespace serialized {
 Level* LoadLevel(std::string_view /*path*/);
 Object* LoadObject(pugi::xml_node& /*base_node*/);
 Material* LoadMaterial(pugi::xml_node& /*base_node*/);
@@ -40,7 +39,6 @@ glm::vec2 LoadVec2(pugi::xml_node& /*base_node*/, std::string /*name*/);
 std::string LoadString(pugi::xml_node& /*base_node*/, std::string /*name*/);
 int LoadInt(pugi::xml_node& /*base_node*/, std::string /*name*/);
 float LoadFloat(pugi::xml_node& /*base_node*/, std::string /*name*/);
-
 void SaveLevel(const Level* /*level*/, std::string_view /*path*/);
 void SaveObject(const Object* /*object*/, pugi::xml_node& /*base_node*/);
 void SaveMaterial(const Material* /*material*/, pugi::xml_node& /*base_node*/);
@@ -51,5 +49,3 @@ void SaveInt(const int* /*value*/, pugi::xml_node& /*base_node*/, std::string /*
 void SaveFloat(const float* /*value*/, pugi::xml_node& /*base_node*/, std::string /*name*/);
 }  // namespace serialized
 }  // namespace io
-
-#endif  // FILESYSTEM_H

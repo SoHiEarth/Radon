@@ -1,11 +1,12 @@
-#ifndef LIGHT_H
-#define LIGHT_H
-
-#include <classes/object.h>
+module;
 #include <glm/glm.hpp>
+#include <pugixml.hpp>
+export module metal.light;
+import metal.object;
+import metal.editable;
+import metal.shader;
 
-class Shader;
-class Light : public Object {
+export class Light : public Object {
 public:
   Editable<glm::vec3> ambient_ = {glm::vec3(0.0F), "Ambient", reg_},
                       diffuse_ = {glm::vec3(0.0F), "Diffuse", reg_},
@@ -14,7 +15,7 @@ public:
   void Render() override {};
 };
 
-class DirectionalLight : public Light {
+export class DirectionalLight : public Light {
 public:
   Editable<glm::vec3> direction_ = {glm::vec3(0.0F), "Direction", reg_};
   void Init() override;
@@ -27,7 +28,7 @@ public:
   void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
 };
 
-class PointLight : public Light {
+export class PointLight : public Light {
 public:
   Editable<float> constant_ = {1.0F, "Constant", reg_}, linear_ = {0.0F, "Linear", reg_},
                   quadratic_ = {0.0F, "Quadratic", reg_};
@@ -41,7 +42,7 @@ public:
   void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
 };
 
-class SpotLight : public Light {
+export class SpotLight : public Light {
 public:
   Editable<float> constant_ = {1.0F, "Constant", reg_}, linear_ = {0.0F, "Linear", reg_},
                   quadratic_ = {0.0F, "Quadratic", reg_}, cut_off_ = {20.0F, "Cutoff", reg_},
@@ -55,5 +56,3 @@ public:
   void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
   void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
 };
-
-#endif  // LIGHT_H

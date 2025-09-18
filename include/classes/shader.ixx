@@ -1,11 +1,11 @@
-#ifndef SHADER_H
-#define SHADER_H
-
+module;
 #include <glm/glm.hpp>
 #include <string>
+#include <string_view>
 #include <utility>
+export module metal.shader;
 
-class Shader {
+export class Shader {
 public:
   std::string vertex_path_, fragment_path_;
   unsigned int id_ = 0;
@@ -18,5 +18,3 @@ public:
   Shader(std::string_view vert, std::string_view frag)
       : vertex_path_(vert), fragment_path_(frag) {};
 };
-
-#endif

@@ -1,10 +1,10 @@
-#ifndef SPRITE_H
-#define SPRITE_H
-
-#include <classes/object.h>
+module;
 #include <string>
+#include <pugixml.hpp>
+export module metal.sprite;
+import metal.object;
 
-class Sprite : public Object {
+export class Sprite : public Object {
 public:
   void Init() override;
   void Update() override;
@@ -13,10 +13,7 @@ public:
   void Load(pugi::xml_node& /*node*/ /*unused*/) override;
   void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
   ~Sprite() = default;
-
   [[nodiscard]] std::string GetTypeName() const override {
     return "Sprite";
   }
 };
-
-#endif  // SPRITE_H

@@ -1,8 +1,9 @@
-#include <classes/level.h>
-#include <classes/object.h>
-#include <engine/debug.h>
+import metal.level;
+import metal.object;
+import metal.debug;
 #include <algorithm>
 #include <format>
+#include <string_view>
 
 void Level::Init() {
   for (const auto& object : objects_) {

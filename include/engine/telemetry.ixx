@@ -1,11 +1,9 @@
-#ifndef TELEMETRY_H
-#define TELEMETRY_H
-
+module;
 #include <chrono>
 #include <map>
-#define ENGINE_INIT_NAME "Engine Init"
+export module metal.telemetry;
 
-namespace telemetry {
+export namespace telemetry {
 void Init();
 void BeginFrame();
 void BeginTimer(const char* name);
@@ -17,5 +15,3 @@ std::map<std::string, std::chrono::milliseconds> GetTimings();
 std::map<std::string, std::chrono::milliseconds> GetLog();
 void Quit();
 }  // namespace telemetry
-
-#endif  // TELEMETRY_H

@@ -1,12 +1,8 @@
-#ifndef MATERIAL_H
-#define MATERIAL_H
+export module metal.material;
+import metal.texture;
+import metal.shader;
 
-#include <string>
-
-class Texture;
-class Shader;
-
-struct Material {
+export struct Material {
   bool is_initialized_ = false;
   Texture *diffuse_ = nullptr, *specular_ = nullptr;
   Shader* shader_ = nullptr;
@@ -14,5 +10,3 @@ struct Material {
   [[nodiscard]] bool IsValid() const;
   void Bind() const;
 };
-
-#endif  // MATERIAL_H

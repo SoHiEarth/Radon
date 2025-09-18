@@ -1,14 +1,15 @@
-#ifndef OBJECT_H
-#define OBJECT_H
-
+module;
 #include <box2d/box2d.h>
-#include <classes/editable.h>
 #include <glm/glm.hpp>
 #include <pugixml.hpp>
 #include <string>
+#include <vector>
 
-class Material;
-class Object {
+export module metal.object;
+import metal.material;
+import metal.editable;
+
+export class Object {
 public:
   std::vector<IEditable*> reg_;
   Editable<std::string> name_ = {"Object", "Name", reg_};
@@ -29,5 +30,3 @@ public:
   virtual void Save(pugi::xml_node&) const = 0;
   virtual ~Object() = default;
 };
-
-#endif  // OBJECT_H

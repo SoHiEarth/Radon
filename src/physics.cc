@@ -1,6 +1,6 @@
+import metal.debug;
+import metal.physics;
 #include <box2d/box2d.h>
-#include <engine/debug.h>
-#include <engine/physics.h>
 #include <glm/glm.hpp>
 #include <vector>
 

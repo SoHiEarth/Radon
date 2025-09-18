@@ -1,11 +1,11 @@
-#include <classes/level.h>
-#include <classes/light.h>
-#include <classes/object.h>
-#include <classes/shader.h>
-#include <classes/sprite.h>
-#include <classes/texture.h>
-#include <engine/debug.h>
-#include <engine/io.h>
+import metal.level;
+import metal.light;
+import metal.object;
+import metal.shader;
+import metal.sprite;
+import metal.texture;
+import metal.debug;
+import metal.io;
 #include <fmt/core.h>
 #include <glad/glad.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
@@ -15,6 +15,7 @@
 #include <format>
 #include <fstream>
 #include <functional>
+#include <pugixml.hpp>
 #include <sstream>
 #include <unordered_map>
 #define STB_IMAGE_IMPLEMENTATION

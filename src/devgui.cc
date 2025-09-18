@@ -1,18 +1,3 @@
-// Everything in here is probably jank
-#include <GLFW/glfw3.h>
-#include <classes/level.h>
-#include <classes/light.h>
-#include <classes/material.h>
-#include <classes/shader.h>
-#include <classes/sprite.h>
-#include <classes/texture.h>
-#include <engine/debug.h>
-#include <engine/devgui.h>
-#include <engine/io.h>
-#include <engine/localization.h>
-#include <engine/physics.h>
-#include <engine/render.h>
-#include <engine/telemetry.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -21,6 +6,27 @@
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <array>
 #include <format>
+#include <vector>
+#include <map>
+#include <chrono>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+
+import metal.level;
+import metal.object;
+import metal.editable;
+import metal.material;
+import metal.shader;
+import metal.sprite;
+import metal.light;
+import metal.texture;
+import metal.debug;
+import metal.devgui;
+import metal.io;
+import metal.physics;
+import metal.render;
+import metal.telemetry;
+import metal.localization;
 
 #define IMAGE_PREVIEW_SIZE 100, 100
 #define DEVGUI_ROUNDING_MORE 8.0F
@@ -225,7 +231,7 @@ void DrawTelemetry() {
     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
     ImGui::TableSetupColumn("Time (ms)", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
-    auto logged_timings = telemetry::DownloadTimings(ENGINE_INIT_NAME);
+    auto logged_timings = telemetry::DownloadTimings("Engine Init");
     for (const auto& [name, time] : logged_timings) {
       ImGui::PushID(&name);
       ImGui::TableNextRow();
@@ -269,9 +275,9 @@ void DrawProperties() {
 
 void DrawDebug() {
   ImGui::Begin("Debug");
-  ImGui::Checkbox("Trace Source File", &debug::g_debug_settings.trace_source_file_);
-  ImGui::Checkbox("Trace Function Name", &debug::g_debug_settings.trace_function_name_);
-  ImGui::Checkbox("Trace Line Number", &debug::g_debug_settings.trace_line_number_);
+  ImGui::Checkbox("Trace Source File", &debug::trace_source_file_);
+  ImGui::Checkbox("Trace Function Name", &debug::trace_function_name_);
+  ImGui::Checkbox("Trace Line Number", &debug::trace_line_number_);
   ImGui::End();
 }
 

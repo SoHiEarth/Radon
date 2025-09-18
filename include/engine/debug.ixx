@@ -1,19 +1,16 @@
-#ifndef DEBUG_H
-#define DEBUG_H
-#include <cstdint>
+module;
 #include <functional>
 #include <source_location>
+#include <string>
 #include <string_view>
+export module metal.debug;
 
-struct DebugSettings {
-  bool enable_trace_ = true;
-  bool trace_source_file_ = false;
-  bool trace_function_name_ = true;
-  bool trace_line_number_ = false;
-};
+export namespace debug {
+extern bool enable_trace_;
+extern bool trace_source_file_;
+extern bool trace_function_name_;
+extern bool trace_line_number_;
 
-namespace debug {
-extern DebugSettings g_debug_settings;
 void SetCallback(std::function<void(const char*, const char*, std::uint8_t)> callback) noexcept;
 void Log(const char* msg,
          const std::source_location& location = std::source_location::current()) noexcept;
@@ -27,4 +24,3 @@ void Throw(const char* fmt, const std::source_location& location = std::source_l
 void Throw(std::string_view fmt,
            const std::source_location& location = std::source_location::current());
 }  // namespace debug
-#endif  // DEBUG_H

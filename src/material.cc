@@ -1,7 +1,7 @@
-#include <classes/material.h>
-#include <classes/shader.h>
-#include <classes/texture.h>
-#include <engine/io.h>
+import metal.material;
+import metal.shader;
+import metal.texture;
+import metal.io;
 #include <glad/glad.h>
 
 bool Material::IsValid() const {

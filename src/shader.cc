@@ -1,6 +1,7 @@
-#include <classes/shader.h>
+import metal.shader;
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <string_view>
 #define GET_LOCATION() glGetUniformLocation(id_, name.data())
 
 void Shader::Use() const {

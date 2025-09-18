@@ -1,11 +1,12 @@
-#ifndef LEVEL_H
-#define LEVEL_H
-
+module;
 #include <string>
+#include <string_view>
 #include <vector>
 
-class Object;
-class Level {
+export module metal.level;
+export import metal.object;
+
+export class Level {
 public:
   void Init();
   void Update();
@@ -16,5 +17,3 @@ public:
   std::string path_;
   std::vector<Object*> objects_;
 };
-
-#endif  // LEVEL_H

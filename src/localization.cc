@@ -1,7 +1,9 @@
-#include <engine/debug.h>
-#include <engine/localization.h>
+import metal.debug;
+import metal.localization;
 #include <format>
 #include <pugixml.hpp>
+#include <map>
+#include <string>
 
 std::string localization::g_language;
 std::map<std::string, std::string> localization::g_dictionary{};

@@ -3,15 +3,6 @@
 // Ok continue
 
 #include <GLFW/glfw3.h>
-#include <classes/camera.h>
-#include <classes/light.h>
-#include <classes/material.h>
-#include <classes/shader.h>
-#include <engine/debug.h>
-#include <engine/devgui.h>
-#include <engine/input.h>
-#include <engine/io.h>
-#include <engine/render.h>
 #include <fmt/core.h>
 #include <imgui.h>
 #include <array>
@@ -21,6 +12,17 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <utility>
 #include <vector>
+#include <functional>
+
+import metal.camera;
+import metal.light;
+import metal.material;
+import metal.shader;
+import metal.debug;
+import metal.devgui;
+import metal.input;
+import metal.io;
+import metal.render;
 
 #define TEXT_COLOR_RED ImVec4(1.0f, 0.0f, 0.0f, 1.0f)
 #define GUI_DRAG_STEP 0.1F
