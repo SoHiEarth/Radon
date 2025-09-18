@@ -1,6 +1,6 @@
+import audio;
 #include <AL/al.h>
 #include <AL/alc.h>
-#include <engine/audio.h>
 #include <engine/debug.h>
 #include <cstring>
 #include <format>

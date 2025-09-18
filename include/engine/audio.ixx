@@ -1,9 +1,7 @@
-#ifndef AUDIO_H
-#define AUDIO_H
+export module audio;
 
-#define SOUND_HANDLE unsigned int
-
-namespace audio {
+export namespace audio {
+using SOUND_HANDLE = unsigned int;
 void Init();
 // Called every frame to process audio.
 void Update();
@@ -19,5 +17,3 @@ void Stop(SOUND_HANDLE sound);
 void SetHeader(SOUND_HANDLE sound, float position);
 
 };  // namespace audio
-
-#endif  // AUDIO_H
