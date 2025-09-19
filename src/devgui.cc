@@ -19,6 +19,7 @@
 #include <imgui_internal.h>
 #include <imgui_stdlib.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
+#include <algorithm>
 #include <array>
 #include <format>
 
@@ -132,7 +133,7 @@ void dev::Update() {
 }
 
 void dev::AddConsoleMessage(const char* traceback, const char* message, std::uint8_t type) {
-  ConsoleMessage console_message{traceback, message, ConsoleMessageType(type)};
+  ConsoleMessage console_message{.traceback_=traceback, .message_=message, .type_=ConsoleMessageType(type)};
   g_console_messages.push_back(console_message);
 }
 
@@ -157,7 +158,7 @@ void dev::Quit() {
 }
 
 std::vector<float> fps_history_;
-std::vector<std::map<std::string, std::chrono::milliseconds>> timings_history_;
+std::vector<std::map<std::string, std::chrono::milliseconds>> g_timings_history;
 
 void DrawTelemetry() {
   ImGui::Begin("Telemetry");
@@ -179,7 +180,7 @@ void DrawTelemetry() {
     ImGui::Text("%.1f", fps);
     ImGui::TableSetColumnIndex(2);
     ImGui::PlotLines("##fps_plot", fps_history_.data(), fps_history_.size(), 0, nullptr, 0.0F,
-                     *std::max_element(fps_history_.begin(), fps_history_.end()), ImVec2(0, 50));
+                     *std::ranges::max_element(fps_history_), ImVec2(0, 50));
     ImGui::EndTable();
   }
   ImGui::SeparatorText("Update Timings");
@@ -189,9 +190,9 @@ void DrawTelemetry() {
     ImGui::TableSetupColumn("Graph", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
     auto timings = telemetry::GetTimings();
-    timings_history_.push_back(timings);
-    if (timings_history_.size() > 100) {
-      timings_history_.erase(timings_history_.begin());
+    g_timings_history.push_back(timings);
+    if (g_timings_history.size() > 100) {
+      g_timings_history.erase(g_timings_history.begin());
     }
     for (const auto& [label, time] : timings) {
       ImGui::PushID(label.c_str());
@@ -203,7 +204,7 @@ void DrawTelemetry() {
       ImGui::TableSetColumnIndex(2);
       std::array<float, 100> plot_data{};
       int plot_data_count = 0;
-      for (const auto& history_entry : timings_history_) {
+      for (const auto& history_entry : g_timings_history) {
         auto it = history_entry.find(label);
         if (it != history_entry.end() && plot_data_count < 100) {
           plot_data[plot_data_count] = it->second.count() * 1.0F;
@@ -262,7 +263,7 @@ void DrawProperties() {
     }
   }
   if (g_current_object != nullptr && old_position != *g_current_object->position_) {
-    physics::SetBodyPosition(g_current_object->physics_body, *g_current_object->position_);
+    physics::SetBodyPosition(g_current_object->physics_body_, *g_current_object->position_);
   }
   ImGui::End();
 }
@@ -277,7 +278,7 @@ void DrawDebug() {
 
 void DrawConsole() {
   ImGui::Begin("Console");
-  ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false,
+  ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), 0,
                     ImGuiWindowFlags_HorizontalScrollbar);
   if (ImGui::BeginTable(
           "ConsoleTable", 3,
@@ -291,13 +292,13 @@ void DrawConsole() {
       ImGui::PushID(&message);
       ImGui::TableSetColumnIndex(0);
       switch (message.type_) {
-        case ConsoleMessageType::ConsoleMessageType_Info:
+        case ConsoleMessageType::kConsoleMessageTypeInfo:
           ImGui::TextColored(ImVec4(0.0F, 1.0F, 0.0F, 1.0F), "Info");
           break;
-        case ConsoleMessageType::ConsoleMessageType_Warning:
+        case ConsoleMessageType::kConsoleMessageTypeWarning:
           ImGui::TextColored(ImVec4(1.0F, 1.0F, 0.0F, 1.0F), "Warning");
           break;
-        case ConsoleMessageType::ConsoleMessageType_Error:
+        case ConsoleMessageType::kConsoleMessageTypeError:
           ImGui::TextColored(ImVec4(1.0F, 0.0F, 0.0F, 1.0F), "Error");
           break;
         default:

@@ -14,7 +14,7 @@ struct DebugSettings {
 
 namespace debug {
 extern DebugSettings g_debug_settings;
-void SetCallback(std::function<void(const char*, const char*, std::uint8_t)> callback) noexcept;
+void SetCallback(std::function<void(const char*, const char*, std::uint8_t)> func) noexcept;
 void Log(const char* msg,
          const std::source_location& location = std::source_location::current()) noexcept;
 void Log(std::string_view msg,
@@ -23,8 +23,8 @@ void Warning(const char* msg,
              const std::source_location& location = std::source_location::current()) noexcept;
 void Warning(std::string_view msg,
              const std::source_location& location = std::source_location::current()) noexcept;
-void Throw(const char* fmt, const std::source_location& location = std::source_location::current());
-void Throw(std::string_view fmt,
+void Throw(const char* msg, const std::source_location& location = std::source_location::current());
+void Throw(std::string_view msg,
            const std::source_location& location = std::source_location::current());
 }  // namespace debug
 #endif  // DEBUG_H

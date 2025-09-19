@@ -53,7 +53,7 @@ void io::Init() {
       g_engine_directory = std::string(engine_path);
       bool copy_assets = tinyfd_messageBox(
           "Copy Assets", "Would you like to copy the engine assets to the current directory?",
-          "yesno", "question", 1);
+          "yesno", "question", 1) != 0;
       if (copy_assets) {
         if (!CheckFile("engine_assets")) {
           std::filesystem::create_directory("engine_assets");

@@ -1,6 +1,8 @@
 #include <engine/debug.h>
 #include <engine/telemetry.h>
 
+#include <utility>
+
 std::map<std::string, std::chrono::high_resolution_clock::time_point> g_start_points;
 std::map<std::string, std::chrono::milliseconds> g_durations;
 std::map<std::string, std::chrono::milliseconds> g_duration_log;
@@ -15,7 +17,7 @@ void telemetry::BeginFrame() {
 }
 
 void telemetry::BeginTimer(const char* name) {
-  if (g_start_points.find(name) == g_start_points.end()) {
+  if (!g_start_points.contains(name)) {
     g_start_points.insert({name, std::chrono::high_resolution_clock::now()});
   } else {
     debug::Warning(std::format("Timer with name '{}' already exists!", name));
@@ -23,7 +25,7 @@ void telemetry::BeginTimer(const char* name) {
 }
 
 void telemetry::EndTimer(const char* name) {
-  if (g_start_points.find(name) != g_start_points.end()) {
+  if (g_start_points.contains(name)) {
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(end_time - g_start_points[name]);
@@ -35,7 +37,7 @@ void telemetry::EndTimer(const char* name) {
 }
 
 void telemetry::LogTimer(const char* name) {
-  if (g_durations.find(name) != g_durations.end()) {
+  if (g_durations.contains(name)) {
     g_duration_log[name] = g_durations[name];
   } else {
     debug::Warning(std::format("No duration recorded for timer with name '{}'!", name));
@@ -45,16 +47,15 @@ void telemetry::LogTimer(const char* name) {
 std::map<std::string, std::map<std::string, std::chrono::milliseconds>> g_uploaded_timings;
 void telemetry::UploadTimings(const char* name,
                               std::map<std::string, std::chrono::milliseconds> data) {
-  g_uploaded_timings[name] = data;
+  g_uploaded_timings[name] = std::move(data);
 }
 
 std::map<std::string, std::chrono::milliseconds> telemetry::DownloadTimings(const char* name) {
-  if (g_uploaded_timings.find(name) != g_uploaded_timings.end()) {
+  if (g_uploaded_timings.contains(name)) {
     return g_uploaded_timings[name];
-  } else {
-    debug::Warning(std::format("No uploaded timings found with name '{}'!", name));
+  }     debug::Warning(std::format("No uploaded timings found with name '{}'!", name));
     return {};
-  }
+ 
 }
 
 std::map<std::string, std::chrono::milliseconds> telemetry::GetTimings() {

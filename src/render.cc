@@ -31,8 +31,9 @@
 #define DEFAULT_CAMERA_SPEED 0.1
 float g_camera_speed = DEFAULT_CAMERA_SPEED;
 inline void IfNoHUD(const std::function<void()>& fn) {
-  if (!dev::g_hud_enabled)
+  if (!dev::g_hud_enabled) {
     fn();
+}
 }
 
 enum : std::uint16_t { kDefaultWindowWidth = 800, kDefaultWindowHeight = 600 };
@@ -219,9 +220,9 @@ void DrawRendererStatus() {
 glm::mat4 GetTransform(const glm::vec3& pos, const glm::vec2& scale, const glm::vec3& rot) {
   auto transform = glm::mat4(1.0F);
   transform = glm::translate(transform, pos);
-  transform = glm::rotate(transform, rot.z, glm::vec3(0.0f, 0.0f, 1.0f));
-  transform = glm::rotate(transform, rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
-  transform = glm::rotate(transform, rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
+  transform = glm::rotate(transform, rot.z, glm::vec3(0.0F, 0.0F, 1.0F));
+  transform = glm::rotate(transform, rot.y, glm::vec3(0.0F, 1.0F, 0.0F));
+  transform = glm::rotate(transform, rot.x, glm::vec3(1.0F, 0.0F, 0.0F));
   transform = glm::scale(transform, glm::vec3(scale, 1));
   return transform;
 }

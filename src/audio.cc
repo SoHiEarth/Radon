@@ -11,18 +11,18 @@
 namespace audio {
 
 namespace {
-ALCdevice* device = nullptr;
-ALCcontext* context = nullptr;
+ALCdevice* g_device = nullptr;
+ALCcontext* g_context = nullptr;
 
 struct SoundData {
-  ALuint buffer;
-  ALuint source;
-  ALsizei frequency;
-  bool is_playing = false;
+  ALuint buffer_;
+  ALuint source_;
+  ALsizei frequency_;
+  bool is_playing_ = false;
 };
 
-std::map<SOUND_HANDLE, SoundData> sounds;
-SOUND_HANDLE next = 1;
+std::map<SOUND_HANDLE, SoundData> g_sounds;
+SOUND_HANDLE g_next = 1;
 }  // namespace
 
 void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsizei& frequency) {
@@ -52,8 +52,12 @@ void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsi
   uint32_t subchunk_1_size;
   file.read(reinterpret_cast<char*>(&subchunk_1_size), 4);
 
-  uint16_t audio_format, channels, block_align, bits_per_sample;
-  uint32_t sample_rate, byte_rate;
+  uint16_t audio_format;
+  uint16_t channels;
+  uint16_t block_align;
+  uint16_t bits_per_sample;
+  uint32_t sample_rate;
+  uint32_t byte_rate;
   file.read(reinterpret_cast<char*>(&audio_format), 2);
   file.read(reinterpret_cast<char*>(&channels), 2);
   file.read(reinterpret_cast<char*>(&sample_rate), 4);
@@ -98,47 +102,47 @@ void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsi
 }
 
 void Init() {
-  device = alcOpenDevice(nullptr);
-  if (!device) {
+  g_device = alcOpenDevice(nullptr);
+  if (g_device == nullptr) {
     debug::Throw("Failed to open OpenAL device.");
   }
-  context = alcCreateContext(device, nullptr);
-  if (!context || !alcMakeContextCurrent(context)) {
-    if (context) {
-      alcDestroyContext(context);
+  g_context = alcCreateContext(g_device, nullptr);
+  if ((g_context == nullptr) || (alcMakeContextCurrent(g_context) == 0)) {
+    if (g_context != nullptr) {
+      alcDestroyContext(g_context);
     }
-    alcCloseDevice(device);
+    alcCloseDevice(g_device);
     debug::Throw("Failed to set OpenAL context.");
   }
   debug::Log("Initialized audio");
 }
 
 void Update() {
-  for (auto& [handle, sound] : sounds) {
+  for (auto& [handle, sound] : g_sounds) {
     ALint state;
-    alGetSourcei(sound.source, AL_SOURCE_STATE, &state);
+    alGetSourcei(sound.source_, AL_SOURCE_STATE, &state);
     if (state != AL_PLAYING) {
-      alSourcePlay(sound.source);
+      alSourcePlay(sound.source_);
     }
-    sound.is_playing = false;
+    sound.is_playing_ = false;
   }
 }
 
 void Quit() {
-  for (auto& [handle, sound] : sounds) {
-    alDeleteSources(1, &sound.source);
-    alDeleteBuffers(1, &sound.buffer);
+  for (auto& [handle, sound] : g_sounds) {
+    alDeleteSources(1, &sound.source_);
+    alDeleteBuffers(1, &sound.buffer_);
   }
-  sounds.clear();
+  g_sounds.clear();
 
   alcMakeContextCurrent(nullptr);
-  if (context) {
-    alcDestroyContext(context);
-    context = nullptr;
+  if (g_context != nullptr) {
+    alcDestroyContext(g_context);
+    g_context = nullptr;
   }
-  if (device) {
-    alcCloseDevice(device);
-    device = nullptr;
+  if (g_device != nullptr) {
+    alcCloseDevice(g_device);
+    g_device = nullptr;
   }
   debug::Log("Quit audio");
 }
@@ -158,39 +162,39 @@ SOUND_HANDLE Load(const char* filepath) {
   alSourcei(source, AL_BUFFER, buffer);
   alSourcei(source, AL_LOOPING, AL_FALSE);
 
-  SOUND_HANDLE handle = next++;
-  sounds[handle] = {buffer, source};
+  SOUND_HANDLE handle = g_next++;
+  g_sounds[handle] = {.buffer=buffer, .source=source};
   return handle;
 }
 
 void Unload(SOUND_HANDLE sound) {
-  auto it = sounds.find(sound);
-  if (it != sounds.end()) {
-    alDeleteSources(1, &it->second.source);
-    alDeleteBuffers(1, &it->second.buffer);
-    sounds.erase(it);
+  auto it = g_sounds.find(sound);
+  if (it != g_sounds.end()) {
+    alDeleteSources(1, &it->second.source_);
+    alDeleteBuffers(1, &it->second.buffer_);
+    g_sounds.erase(it);
   }
 }
 
 void Play(SOUND_HANDLE sound) {
-  auto it = sounds.find(sound);
-  if (it != sounds.end()) {
-    it->second.is_playing = true;
+  auto it = g_sounds.find(sound);
+  if (it != g_sounds.end()) {
+    it->second.is_playing_ = true;
   }
 }
 
 void Stop(SOUND_HANDLE sound) {
-  auto it = sounds.find(sound);
-  if (it != sounds.end()) {
-    it->second.is_playing = false;
-    alSourceStop(it->second.source);
+  auto it = g_sounds.find(sound);
+  if (it != g_sounds.end()) {
+    it->second.is_playing_ = false;
+    alSourceStop(it->second.source_);
   }
 }
 
 void SetHeader(SOUND_HANDLE sound, float position) {
-  auto it = sounds.find(sound);
-  if (it != sounds.end()) {
-    alSourcef(it->second.source, AL_SEC_OFFSET, position);
+  auto it = g_sounds.find(sound);
+  if (it != g_sounds.end()) {
+    alSourcef(it->second.source_, AL_SEC_OFFSET, position);
   }
 }
 

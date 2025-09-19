@@ -11,7 +11,7 @@ void Sprite::Init() {
     debug::Log("No material assigned to sprite.");
   }
   // Create body
-  physics_body =
+  physics_body_ =
       physics::CreateBody(glm::vec2(position_->x, position_->y), static_cast<glm::vec2>(scale_));
 }
 
@@ -23,8 +23,8 @@ void Sprite::Update() {
   }
 
   if (!is_static_) {
-    const glm::vec2 phys_pos = physics::GetBodyPosition(physics_body);
-    position_ = glm::vec3(phys_pos, position_->z);
+    const glm::vec2 kPhysPos = physics::GetBodyPosition(physics_body_);
+    position_ = glm::vec3(kPhysPos, position_->z);
   }
 }
 
@@ -38,7 +38,7 @@ void Sprite::Quit() {
 }
 
 void Sprite::Load(pugi::xml_node& node) {
-  is_static_ = io::serialized::LoadInt(node, is_static_.i_label_);
+  is_static_ = io::serialized::LoadInt(node, is_static_.i_label_) != 0;
   name_ = io::serialized::LoadString(node, name_.i_label_);
   position_ = io::serialized::LoadVec3(node, position_.i_label_);
   rotation_ = io::serialized::LoadVec3(node, rotation_.i_label_);
@@ -46,7 +46,7 @@ void Sprite::Load(pugi::xml_node& node) {
   material_ = io::serialized::LoadMaterial(node);
 }
 void Sprite::Save(pugi::xml_node& node) const {
-  int is_static = (int) is_static_.i_value_;
+  int is_static = static_cast<int>(is_static_.i_value_);
   io::serialized::SaveInt(&is_static, node, is_static_.i_label_);
   io::serialized::SaveString(&name_.i_value_, node, name_.i_label_);
   io::serialized::SaveVec3(&position_.i_value_, node, position_.i_label_);
