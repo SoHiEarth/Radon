@@ -75,7 +75,7 @@ void render::Init() {
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-  render::g_window = glfwCreateWindow(render::g_width, render::g_height, "Metal", nullptr, nullptr);
+  render::g_window = glfwCreateWindow(render::g_width, render::g_height, "Radon", nullptr, nullptr);
   if (render::g_window == nullptr) {
     const char* error_desc;
     glfwGetError(&error_desc);
