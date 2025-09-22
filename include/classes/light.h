@@ -1,11 +1,12 @@
 #ifndef LIGHT_H
 #define LIGHT_H
 
-#include <classes/object.h>
+#include <classes/component.h>
+#include <pugixml.hpp>
 #include <glm/glm.hpp>
 
 class Shader;
-class Light : public Object {
+class Light : public Component {
 public:
   Editable<glm::vec3> ambient_ = {glm::vec3(0.0F), "Ambient", reg_},
                       diffuse_ = {glm::vec3(0.0F), "Diffuse", reg_},
@@ -16,15 +17,14 @@ public:
 
 class DirectionalLight : public Light {
 public:
-  Editable<glm::vec3> direction_ = {glm::vec3(0.0F), "Direction", reg_};
   void Init() override;
   void Quit() override;
-  void Load(pugi::xml_node& /*unused*/) override;
+  void Load(pugi::xml_node&) override;
   [[nodiscard]] std::string GetTypeName() const override {
     return "DirectionalLight";
   }
-  void Save(pugi::xml_node& /*unused*/) const override;
-  void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
+  void Save(pugi::xml_node&) const override;
+  void SetUniforms(const Shader*, int);
 };
 
 class PointLight : public Light {

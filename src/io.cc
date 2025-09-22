@@ -35,7 +35,7 @@
 Level* io::g_level = nullptr;
 enum : std::uint16_t { kLogSize = 512 };
 std::string io::g_engine_directory;
-std::unordered_map<std::string, std::function<Object*()>> io::g_object_factory = {
+std::unordered_map<std::string, std::function<Component*()>> io::g_component_factory = {
     OBJECT_FACTORY_KEY(Sprite), OBJECT_FACTORY_KEY(DirectionalLight),
     OBJECT_FACTORY_KEY(PointLight), OBJECT_FACTORY_KEY(SpotLight)};
 std::string ValidateName(std::string input);
@@ -119,7 +119,6 @@ void io::serialized::SaveLevel(const Level* level, std::string_view path) {
   pugi::xml_node root = doc.append_child("level");
   for (const auto& object : level->objects_) {
     pugi::xml_node object_node = root.append_child("object");
-    object_node.append_attribute("type") = object->GetTypeName();
     object->Save(object_node);
   }
   bool save_result = doc.save_file(path.data());
@@ -133,12 +132,16 @@ void io::serialized::SaveLevel(const Level* level, std::string_view path) {
 ////////////////////////////
 
 [[nodiscard("Pointer Discarded")]] Object* io::serialized::LoadObject(pugi::xml_node& base_node) {
+  /*
   std::string type_value = base_node.attribute("type").value();
-  auto iterator = g_object_factory.find(type_value);
-  if (iterator == g_object_factory.end()) {
+  auto iterator = g_component_factory.find(type_value);
+  if (iterator == g_component_factory.end()) {
     debug::Throw(std::format("Unknown object type: {}", type_value));
   }
   Object* object = iterator->second();
+  */
+  // Here's the plan: We create a generic object, and let the object itself handle the rest.
+  auto* object = new Object();
   object->Load(base_node);
   return object;
 }

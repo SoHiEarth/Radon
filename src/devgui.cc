@@ -6,6 +6,8 @@
 #include <classes/shader.h>
 #include <classes/sprite.h>
 #include <classes/texture.h>
+#include <classes/object.h>
+#include <classes/component.h>
 #include <engine/debug.h>
 #include <engine/devgui.h>
 #include <engine/io.h>
@@ -243,8 +245,6 @@ void DrawTelemetry() {
 
 void DrawProperties() {
   ImGui::Begin("Properties");
-  // Cache object's position, update it via physics if changed
-  auto old_position = g_current_object != nullptr ? *g_current_object->position_ : glm::vec3();
   if (g_current_object != nullptr && io::g_level != nullptr) {
     if (ImGui::Button("Remove")) {
       io::g_level->RemoveObject(g_current_object);
@@ -255,15 +255,24 @@ void DrawProperties() {
           field->RenderInterface();
         }
       }
-      MaterialView(g_current_object->material_);
+      for (const auto& component : g_current_object->components_) {
+        if (component != nullptr) {
+          ImGui::SeparatorText(component->GetTypeName().c_str());
+          for (const auto& field : component->reg_) {
+            if (field != nullptr) {
+              field->RenderInterface();
+            }
+          }
+
+          if (component->HasMaterial()) {
+            MaterialView(component->GetMaterial());
+          }
+        }
+      }
       ImGui::SeparatorText("Other Info");
-      ImGui::LabelText("Type", "%s", g_current_object->GetTypeName().c_str());
       ImGui::Value("Has Initialized", g_current_object->has_initialized_);
       ImGui::Value("Has Quit", g_current_object->has_quit_);
     }
-  }
-  if (g_current_object != nullptr && old_position != *g_current_object->position_) {
-    physics::SetBodyPosition(g_current_object->physics_body_, *g_current_object->position_);
   }
   ImGui::End();
 }
@@ -555,9 +564,17 @@ void DrawMenuEdit() {
   if (ImGui::BeginMenu("Edit")) {
     if (ImGui::BeginMenu("Add")) {
       ImGui::BeginDisabled(io::g_level == nullptr);
-      for (const auto& [name, func] : io::g_object_factory) {
-        if (ImGui::MenuItem(std::format("{}", name).c_str())) {
-          io::g_level->AddObject(func(), name);
+      if (ImGui::MenuItem("Empty Object")) {
+        if (io::g_level != nullptr) {
+          io::g_level->AddObject(new Object(), "Object");
+        }
+      }
+      ImGui::EndDisabled();
+      ImGui::BeginDisabled(io::g_level == nullptr || g_current_object == nullptr);
+      for (const auto& [name, func] : io::g_component_factory) {
+        if (ImGui::MenuItem(std::format("{}", name).c_str())) { 
+          if (io::g_level != nullptr && g_current_object != nullptr)
+            g_current_object->AddComponent(func());
         }
       }
       ImGui::EndDisabled();

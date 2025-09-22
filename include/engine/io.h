@@ -7,16 +7,17 @@
 #include <pugixml.hpp>
 #include <unordered_map>
 
-class Object;
+class Component;
 class Texture;
 class Level;
 class Shader;
 class Level;
+class Object;
 
 namespace io {
 extern Level* g_level;
 extern std::string g_engine_directory;
-extern std::unordered_map<std::string, std::function<Object*()>> g_object_factory;
+extern std::unordered_map<std::string, std::function<Component*()>> g_component_factory;
 
 void Init();
 

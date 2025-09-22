@@ -10,7 +10,6 @@
 
 namespace audio {
 
-namespace {
 ALCdevice* g_device = nullptr;
 ALCcontext* g_context = nullptr;
 
@@ -23,7 +22,6 @@ struct SoundData {
 
 std::map<SOUND_HANDLE, SoundData> g_sounds;
 SOUND_HANDLE g_next = 1;
-}  // namespace
 
 void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsizei& frequency) {
   std::ifstream file(filename, std::ios::binary);
@@ -163,7 +161,7 @@ SOUND_HANDLE Load(const char* filepath) {
   alSourcei(source, AL_LOOPING, AL_FALSE);
 
   SOUND_HANDLE handle = g_next++;
-  g_sounds[handle] = {.buffer=buffer, .source=source};
+  g_sounds[handle] = {.buffer_=buffer, .source_=source};
   return handle;
 }
 

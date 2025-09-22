@@ -6,27 +6,41 @@
 #include <glm/glm.hpp>
 #include <pugixml.hpp>
 #include <string>
+#include <vector>
 
+class Component;
 class Material;
 class Object {
 public:
   std::vector<IEditable*> reg_;
+  Editable<bool> is_static_ = {false, "Static", reg_};
   Editable<std::string> name_ = {"Object", "Name", reg_};
+  std::vector<Component*> components_;
+  // Will be replaced with a Transform component later
   Editable<glm::vec3> position_ = {glm::vec3(0.0F), "Position", reg_};
   Editable<glm::vec2> scale_ = {glm::vec2(1.0F), "Scale", reg_};
   Editable<glm::vec3> rotation_ = {glm::vec3(0.0F), "Rotation", reg_};
-  Editable<bool> is_static_ = {false, "Static", reg_};
-  b2BodyId physics_body_;
-  Material* material_ = nullptr;
+  b2BodyId physics_body_;  // Will be replaced with a physics component later
   bool has_initialized_ = false;
-  virtual void Init() {};
-  virtual void Update() {};
-  virtual void Render() {};
+  void Init();
+  void Update();
+  void Render();
   bool has_quit_ = false;
-  virtual void Quit() {};
-  virtual void Load(pugi::xml_node&) = 0;
-  [[nodiscard]] virtual std::string GetTypeName() const = 0;
-  virtual void Save(pugi::xml_node&) const = 0;
+  void Quit();
+  void Load(pugi::xml_node&);
+  void Save(pugi::xml_node&) const;
+  void AddComponent(Component* component);
+  template <typename T>
+  T* GetComponent() {
+    for (auto* component : components_) {
+      if (std::is_same_v<T, Component>) {
+        return static_cast<T*>(component);
+      }
+    }
+    return nullptr;
+  }
+
+  void RemoveComponent(Component* component);
   virtual ~Object() = default;
 };
 
