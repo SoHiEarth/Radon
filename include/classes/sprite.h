@@ -2,8 +2,8 @@
 #define SPRITE_H
 
 #include <classes/component.h>
-#include <string>
 #include <memory>
+#include <string>
 
 class Material;
 class Sprite : public Component {
@@ -13,11 +13,11 @@ public:
   void Update() override;
   void Render() override;
   void Quit() override;
-  void Load(pugi::xml_node&) override;
-  void Save(pugi::xml_node&) const override;
+  void Load(pugi::xml_node& /*node*/ /*unused*/) override;
+  void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
   ~Sprite() = default;
   std::shared_ptr<Material> material_;
-  [[nodiscard]] std::string GetTypeName() const override {
+  static [[nodiscard]] std::string GetTypeName() override {
     return "Sprite";
   }
 };

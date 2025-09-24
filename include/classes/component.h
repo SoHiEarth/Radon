@@ -1,18 +1,28 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
-#define ATTR_NO_MATERIAL  virtual const bool HasMaterial() const { return false; } \
-                          virtual std::shared_ptr<Material> GetMaterial() { return nullptr; }
-#define ATTR_HAS_MATERIAL const bool HasMaterial() const override { return true; } \
-                          std::shared_ptr<Material> GetMaterial() override { return material_; }
+#define ATTR_NO_MATERIAL                            \
+  virtual const bool HasMaterial() const {          \
+    return false;                                   \
+  }                                                 \
+  virtual std::shared_ptr<Material> GetMaterial() { \
+    return nullptr;                                 \
+  }
+#define ATTR_HAS_MATERIAL                            \
+  const bool HasMaterial() const override {          \
+    return true;                                     \
+  }                                                  \
+  std::shared_ptr<Material> GetMaterial() override { \
+    return material_;                                \
+  }
 
 #include <classes/editable.h>
-#include <pugixml.hpp>
 #include <memory>
+#include <pugixml.hpp>
 
 class Object;
 class Material;
 class Component : public std::enable_shared_from_this<Component> {
- public:
+public:
   ATTR_NO_MATERIAL;
   virtual void Init() {}
   virtual void Update() {}

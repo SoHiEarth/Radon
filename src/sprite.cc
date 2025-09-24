@@ -1,10 +1,10 @@
 #include <classes/material.h>
+#include <classes/object.h>
 #include <classes/sprite.h>
 #include <engine/debug.h>
 #include <engine/io.h>
 #include <engine/physics.h>
 #include <engine/render.h>
-#include <classes/object.h>
 #include <fmt/core.h>
 
 void Sprite::Init() {
@@ -40,8 +40,7 @@ void Sprite::Render() {
   }
 }
 
-void Sprite::Quit() {
-}
+void Sprite::Quit() {}
 
 void Sprite::Load(pugi::xml_node& node) {
   material_ = io::xml::LoadMaterial(node);

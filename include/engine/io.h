@@ -4,9 +4,9 @@
 #include <classes/editable.h>
 #include <functional>
 #include <glm/glm.hpp>
+#include <memory>
 #include <pugixml.hpp>
 #include <unordered_map>
-#include <memory>
 
 class Component;
 class Texture;
@@ -18,13 +18,16 @@ class Object;
 namespace io {
 extern std::unique_ptr<Level> g_level;
 extern std::string g_engine_directory;
-extern std::unordered_map<std::string, std::function<std::unique_ptr<Component>()>> g_component_factory;
+extern std::unordered_map<std::string, std::function<std::unique_ptr<Component>()>>
+    g_component_factory;
 
 void Init();
-std::unique_ptr<Shader> LoadShader(std::string_view /*vertex_path*/, std::string_view /*fragment_path*/);
+std::unique_ptr<Shader> LoadShader(std::string_view /*vertex_path*/,
+                                   std::string_view /*fragment_path*/);
 std::unique_ptr<Texture> LoadTexture(std::string_view /*path*/);
-std::shared_ptr<Material> LoadMaterial(std::string_view diffuse, std::string_view specular, std::string_view vertex,
-                       std::string_view fragment, float shininess);
+std::shared_ptr<Material> LoadMaterial(std::string_view diffuse, std::string_view specular,
+                                       std::string_view vertex, std::string_view fragment,
+                                       float shininess);
 
 // Namespace for handling XML
 namespace xml {
@@ -45,7 +48,7 @@ void SaveVec2(const glm::vec2& /*value*/, pugi::xml_node& /*base_node*/, std::st
 void SaveString(std::string_view /*value*/, pugi::xml_node& /*base_node*/, std::string /*name*/);
 void SaveInt(const int* /*value*/, pugi::xml_node& /*base_node*/, std::string /*name*/);
 void SaveFloat(const float* /*value*/, pugi::xml_node& /*base_node*/, std::string /*name*/);
-}  // namespace serialized
+}  // namespace xml
 }  // namespace io
 
 #endif  // FILESYSTEM_H

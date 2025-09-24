@@ -1,13 +1,13 @@
 // Everything in here is probably jank
 #include <GLFW/glfw3.h>
+#include <classes/component.h>
 #include <classes/level.h>
 #include <classes/light.h>
 #include <classes/material.h>
+#include <classes/object.h>
 #include <classes/shader.h>
 #include <classes/sprite.h>
 #include <classes/texture.h>
-#include <classes/object.h>
-#include <classes/component.h>
 #include <engine/debug.h>
 #include <engine/devgui.h>
 #include <engine/io.h>
@@ -41,7 +41,7 @@ std::string g_material_diffuse, g_material_specular, g_material_vertex, g_materi
 int g_material_shininess = DEFAULT_SHININESS;
 std::vector<ConsoleMessage> g_console_messages;
 
-void MaterialView(std::shared_ptr<Material> material);
+void g_material_view(std::shared_ptr<Material> material);
 void DrawProperties();
 void DrawDebug();
 void DrawLevel();
@@ -74,7 +74,7 @@ void dev::Init() {
       DEVGUI_FONT_SIZE, nullptr, imgui_io.Fonts->GetGlyphRangesDefault());
   ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
   ImGui_ImplOpenGL3_Init("#version 150");
-  debug::SetCallback(AddConsoleMessage);
+  debug::g_set_callback(AddConsoleMessage);
   debug::Log("Initialized GUI");
 }
 
@@ -135,7 +135,8 @@ void dev::Update() {
 }
 
 void dev::AddConsoleMessage(const char* traceback, const char* message, std::uint8_t type) {
-  ConsoleMessage console_message{.traceback_=traceback, .message_=message, .type_=ConsoleMessageType(type)};
+  ConsoleMessage console_message{
+      .traceback_ = traceback, .message_ = message, .type_ = ConsoleMessageType(type)};
   g_console_messages.push_back(console_message);
 }
 
@@ -159,16 +160,16 @@ void dev::Quit() {
   debug::Log("Quit GUI");
 }
 
-std::vector<float> fps_history_;
+std::vector<float> g_fps_history;
 std::vector<std::map<std::string, std::chrono::milliseconds>> g_timings_history;
 
 void DrawTelemetry() {
   ImGui::Begin("Telemetry");
   ImGui::SeparatorText("FPS");
   float fps = ImGui::GetIO().Framerate;
-  fps_history_.push_back(fps);
-  if (fps_history_.size() > 100) {
-    fps_history_.erase(fps_history_.begin());
+  g_fps_history.push_back(fps);
+  if (g_fps_history.size() > 100) {
+    g_fps_history.erase(fps_history_.begin());
   }
   if (ImGui::BeginTable("FPSTable", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
@@ -455,7 +456,7 @@ void DrawLocalization() {
   ImGui::End();
 }
 
-void MaterialView(std::shared_ptr<Material> material) {
+void g_material_view(std::shared_ptr<Material> material) {
   ImGui::SeparatorText("Material");
   if (ImGui::BeginTabBar("LoadType")) {
     if (ImGui::BeginTabItem("Directory")) {
@@ -567,7 +568,7 @@ void DrawMenuEdit() {
       ImGui::EndDisabled();
       ImGui::BeginDisabled(io::g_level == nullptr || g_current_object == nullptr);
       for (const auto& [name, func] : io::g_component_factory) {
-        if (ImGui::MenuItem(std::format("{}", name).c_str())) { 
+        if (ImGui::MenuItem(std::format("{}", name).c_str())) {
           if (io::g_level != nullptr && g_current_object != nullptr)
             g_current_object->AddComponent(func());
         }

@@ -33,7 +33,7 @@ float g_camera_speed = DEFAULT_CAMERA_SPEED;
 inline void IfNoHUD(const std::function<void()>& fn) {
   if (!dev::g_hud_enabled) {
     fn();
-}
+  }
 }
 
 enum : std::uint16_t { kDefaultWindowWidth = 800, kDefaultWindowHeight = 600 };
@@ -75,7 +75,8 @@ void render::Init() {
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-  render::g_window = glfwCreateWindow(render::g_width, render::g_height, "Radon Engine", nullptr, nullptr);
+  render::g_window =
+      glfwCreateWindow(render::g_width, render::g_height, "Radon Engine", nullptr, nullptr);
   if (render::g_window == nullptr) {
     const char* error_desc;
     glfwGetError(&error_desc);
@@ -227,8 +228,8 @@ glm::mat4 GetTransform(const glm::vec3& pos, const glm::vec2& scale, const glm::
   return transform;
 }
 
-void render::RenderTexture(std::shared_ptr<Material> material, const glm::vec3& pos, const glm::vec2& size,
-                           const glm::vec3& rot) {
+void render::g_render_texture(std::shared_ptr<Material> material, const glm::vec3& pos,
+                              const glm::vec2& size, const glm::vec3& rot) {
   if (material == nullptr) {
     return;
   }
@@ -367,19 +368,19 @@ void RecreateFramebuffer() {
   g_prev_render_factor = render::g_render_settings.render_factor_;
 }
 
-void render::AddLight(std::shared_ptr<DirectionalLight> light) {
+void render::g_add_light(std::shared_ptr<DirectionalLight> light) {
   g_directional_lights.push_back(light);
 }
 
-void render::AddLight(std::shared_ptr<PointLight> light) {
+void render::g_add_light(std::shared_ptr<PointLight> light) {
   g_point_lights.push_back(light);
 }
 
-void render::AddLight(std::shared_ptr<SpotLight> light) {
+void render::g_add_light(std::shared_ptr<SpotLight> light) {
   g_spot_lights.push_back(light);
 }
 
-void render::RemoveLight(std::shared_ptr<DirectionalLight> light) {
+void render::g_remove_light(std::shared_ptr<DirectionalLight> light) {
   for (int i = 0; i < g_directional_lights.size(); i++) {
     if (g_directional_lights.at(i) == light) {
       g_directional_lights.erase(g_directional_lights.begin() + i);
@@ -387,7 +388,7 @@ void render::RemoveLight(std::shared_ptr<DirectionalLight> light) {
   }
 }
 
-void render::RemoveLight(std::shared_ptr<PointLight> light) {
+void render::g_remove_light(std::shared_ptr<PointLight> light) {
   for (int i = 0; i < g_point_lights.size(); i++) {
     if (g_point_lights.at(i) == light) {
       g_point_lights.erase(g_point_lights.begin() + i);
@@ -395,7 +396,7 @@ void render::RemoveLight(std::shared_ptr<PointLight> light) {
   }
 }
 
-void render::RemoveLight(std::shared_ptr<SpotLight> light) {
+void render::g_remove_light(std::shared_ptr<SpotLight> light) {
   for (int i = 0; i < g_spot_lights.size(); i++) {
     if (g_spot_lights.at(i) == light) {
       g_spot_lights.erase(g_spot_lights.begin() + i);

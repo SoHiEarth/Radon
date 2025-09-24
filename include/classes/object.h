@@ -4,10 +4,10 @@
 #include <box2d/box2d.h>
 #include <classes/editable.h>
 #include <glm/glm.hpp>
+#include <memory>
 #include <pugixml.hpp>
 #include <string>
 #include <vector>
-#include <memory>
 
 class Component;
 class Material;
@@ -28,8 +28,8 @@ public:
   void Render();
   bool has_quit_ = false;
   void Quit();
-  void Load(pugi::xml_node&);
-  void Save(pugi::xml_node&) const;
+  void Load(pugi::xml_node& /*node*/);
+  static void Save(pugi::xml_node& /*node*/);
   void AddComponent(std::unique_ptr<Component> component);
   template <typename T>
   std::weak_ptr<T> GetComponent() {

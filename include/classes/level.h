@@ -1,14 +1,14 @@
 #ifndef LEVEL_H
 #define LEVEL_H
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 class Object;
 class Level {
 public:
-  void Init();
+  static void Init();
   void Update();
   void Render();
   void Quit();

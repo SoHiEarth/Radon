@@ -3,8 +3,8 @@
 
 #include <cstdint>
 #include <glm/glm.hpp>
-#include <vector>
 #include <memory>
+#include <vector>
 
 class GLFWwindow;
 class Camera;
@@ -70,17 +70,17 @@ void Init();
 void Update();
 void Render();
 void Quit();
-void RenderTexture(const std::shared_ptr<Material> /*material*/, const glm::vec3& /*pos*/,
+void RenderTexture(std::shared_ptr<Material> /*material*/, const glm::vec3& /*pos*/,
                    const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
 Framebuffer CreateFramebuffer(FramebufferCreateInfo& create_info);
 void DeleteFramebuffer(Framebuffer& framebuffer);
 
-void AddLight(std::shared_ptr<DirectionalLight> light);
-void AddLight(std::shared_ptr<PointLight> light);
-void AddLight(std::shared_ptr<SpotLight> light);
-void RemoveLight(std::shared_ptr<DirectionalLight> light);
-void RemoveLight(std::shared_ptr<PointLight> light);
-void RemoveLight(std::shared_ptr<SpotLight> light);
+void g_add_light(std::shared_ptr<DirectionalLight> light);
+void g_add_light(std::shared_ptr<PointLight> light);
+void g_add_light(std::shared_ptr<SpotLight> light);
+void g_remove_light(std::shared_ptr<DirectionalLight> light);
+void g_remove_light(std::shared_ptr<PointLight> light);
+void g_remove_light(std::shared_ptr<SpotLight> light);
 }  // namespace render
 
 #endif  // RENDER_H

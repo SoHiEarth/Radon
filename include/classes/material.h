@@ -1,8 +1,8 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
-#include <string>
 #include <memory>
+#include <string>
 
 class Texture;
 class Shader;

@@ -1,3 +1,4 @@
+#include <GLFW/glfw3.h>
 #include <classes/level.h>
 #include <classes/light.h>
 #include <classes/object.h>
@@ -15,10 +16,8 @@
 #include <format>
 #include <fstream>
 #include <functional>
-#include <sstream>
-#include <GLFW/glfw3.h>
 #include <pugixml.hpp>
-#include <format>
+#include <sstream>
 #include <unordered_map>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -39,9 +38,9 @@
 enum : std::uint16_t { kLogSize = 512 };
 std::unique_ptr<Level> io::g_level;
 std::string io::g_engine_directory;
-std::unordered_map<std::string, std::function<std::unique_ptr<Component>()>> io::g_component_factory = {
-    OBJECT_FACTORY_KEY(Sprite), OBJECT_FACTORY_KEY(DirectionalLight),
-    OBJECT_FACTORY_KEY(PointLight), OBJECT_FACTORY_KEY(SpotLight)};
+std::unordered_map<std::string, std::function<std::unique_ptr<Component>()>>
+    io::g_component_factory = {OBJECT_FACTORY_KEY(Sprite), OBJECT_FACTORY_KEY(DirectionalLight),
+                               OBJECT_FACTORY_KEY(PointLight), OBJECT_FACTORY_KEY(SpotLight)};
 std::string ValidateName(std::string input);
 bool CheckFile(std::string_view path) {
   return std::filesystem::exists(path);
@@ -55,9 +54,10 @@ void io::Init() {
                                                   std::filesystem::current_path().string().c_str());
     if (engine_path != nullptr) {
       g_engine_directory = std::string(engine_path);
-      bool copy_assets = tinyfd_messageBox(
-          "Copy Assets", "Would you like to copy the engine assets to the current directory?",
-          "yesno", "question", 1) != 0;
+      bool copy_assets =
+          tinyfd_messageBox("Copy Assets",
+                            "Would you like to copy the engine assets to the current directory?",
+                            "yesno", "question", 1) != 0;
       if (copy_assets) {
         if (!CheckFile("engine_assets")) {
           std::filesystem::create_directory("engine_assets");
@@ -217,11 +217,9 @@ std::unique_ptr<Texture> io::LoadTexture(std::string_view path) {
 /// Material IO functions ///
 /////////////////////////////
 
-std::shared_ptr<Material> io::LoadMaterial(std::string_view diffuse,
-                           std::string_view specular,
-                           std::string_view vertex,
-                           std::string_view fragment,
-                           float shininess) {
+std::shared_ptr<Material> io::LoadMaterial(std::string_view diffuse, std::string_view specular,
+                                           std::string_view vertex, std::string_view fragment,
+                                           float shininess) {
   auto material = std::make_shared<Material>();
   material->shininess_ = shininess;
   try {
@@ -252,7 +250,6 @@ std::shared_ptr<Material> io::xml::LoadMaterial(pugi::xml_node& node) {
 }
 
 void io::xml::SaveMaterial(const Material& material, pugi::xml_node& base_node) {
-
   if (!material.IsValid()) {
     debug::Log("Material is invalid (missing texture or shader), skipping save");
     return;
@@ -331,8 +328,7 @@ void io::xml::SaveVec2(const glm::vec2& value, pugi::xml_node& base_node, std::s
   node.append_attribute("y").set_value(value.y);
 }
 
-void io::xml::SaveString(std::string_view value, pugi::xml_node& base_node,
-                                std::string name) {
+void io::xml::SaveString(std::string_view value, pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {

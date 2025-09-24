@@ -53,9 +53,9 @@ void telemetry::UploadTimings(const char* name,
 std::map<std::string, std::chrono::milliseconds> telemetry::DownloadTimings(const char* name) {
   if (g_uploaded_timings.contains(name)) {
     return g_uploaded_timings[name];
-  }     debug::Warning(std::format("No uploaded timings found with name '{}'!", name));
-    return {};
- 
+  }
+  debug::Warning(std::format("No uploaded timings found with name '{}'!", name));
+  return {};
 }
 
 std::map<std::string, std::chrono::milliseconds> telemetry::GetTimings() {

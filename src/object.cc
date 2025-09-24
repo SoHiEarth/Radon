@@ -1,12 +1,14 @@
-#include <classes/object.h>
 #include <classes/component.h>
-#include <format>
-#include <engine/telemetry.h>
-#include <engine/io.h>
+#include <classes/object.h>
 #include <engine/debug.h>
+#include <engine/io.h>
+#include <engine/telemetry.h>
+#include <format>
 
 void Object::Init() {
-  if (has_initialized_) return;
+  if (has_initialized_) {
+    return;
+  }
   auto timer_code = std::format("Object Init {}", name_.i_value_);
   telemetry::BeginTimer(timer_code.c_str());
   for (const auto& component : components_) {
@@ -41,7 +43,9 @@ void Object::Render() {
 }
 
 void Object::Quit() {
-  if (has_quit_) return;
+  if (has_quit_) {
+    return;
+  }
   auto timer_code = std::format("Object Quit {}", name_.i_value_);
   telemetry::BeginTimer(timer_code.c_str());
   for (const auto& component : components_) {
@@ -65,7 +69,7 @@ void Object::Load(pugi::xml_node& node) {
   }
 }
 
-void Object::Save(pugi::xml_node& node) const {
+void Object::Save(pugi::xml_node& node) {
   int is_static_int = static_cast<int>(is_static_.i_value_);
   io::xml::SaveInt(&is_static_int, node, is_static_.i_label_);
   io::xml::SaveString(name_.i_value_, node, name_.i_label_);
@@ -77,20 +81,22 @@ void Object::Save(pugi::xml_node& node) const {
   }
 }
 
-void Object::AddComponent(std::unique_ptr<Component> component) {
+void Object::add_component_(std::unique_ptr<Component> component) {
   if (component == nullptr) {
     return;
   }
   for (const auto& existing_component : components_) {
-    if (existing_component != nullptr && existing_component->GetTypeName() == component->GetTypeName()) {
-      debug::Throw(std::format("Object already has a component of type {}.", component->GetTypeName()));
+    if (existing_component != nullptr &&
+        existing_component->GetTypeName() == component->GetTypeName()) {
+      debug::Throw(
+          std::format("Object already has a component of type {}.", component->GetTypeName()));
     }
   }
   component->parent_ = shared_from_this();
   components_.push_back(std::move(component));
 }
 
-void Object::RemoveComponent(std::weak_ptr<Component> component) {
+void Object::remove_component_(std::weak_ptr<Component> component) {
   if (auto com = component.lock()) {
     auto it = std::find_if(
         components_.begin(), components_.end(),
