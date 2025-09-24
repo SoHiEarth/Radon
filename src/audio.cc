@@ -163,7 +163,7 @@ SOUND_HANDLE Load(const char* filepath) {
   alSourcei(source, AL_LOOPING, AL_FALSE);
 
   SOUND_HANDLE handle = g_next++;
-  g_sounds[handle] = {.buffer=buffer, .source=source};
+  g_sounds[handle] = {.buffer_ = buffer, .source_ =source};
   return handle;
 }
 
