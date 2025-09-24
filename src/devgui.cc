@@ -36,12 +36,12 @@
 #define CONSOLE_TYPE_WIDTH 50.0F
 #define CONSOLE_TRACEBACK_WIDTH 200.0F
 bool dev::g_hud_enabled = false, g_disable_hud_after_frame = false;
-Object* g_current_object = nullptr;
+std::shared_ptr<Object> g_current_object;
 std::string g_material_diffuse, g_material_specular, g_material_vertex, g_material_fragment;
 int g_material_shininess = DEFAULT_SHININESS;
 std::vector<ConsoleMessage> g_console_messages;
 
-void MaterialView(Material*& material);
+void MaterialView(std::shared_ptr<Material> material);
 void DrawProperties();
 void DrawDebug();
 void DrawLevel();
@@ -334,8 +334,7 @@ void DevNewLevel() {
   const char* file =
       tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1, filter_patterns, "Level Files");
   if (file != nullptr) {
-    io::FreeLevel(io::g_level);
-    io::g_level = new Level();
+    io::g_level = std::make_unique<Level>();
     io::g_level->path_ = file;
   }
 }
@@ -345,8 +344,7 @@ void DevOpenLevel() {
   const char* file =
       tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
   if (file != nullptr) {
-    io::FreeLevel(io::g_level);
-    io::g_level = io::serialized::LoadLevel(file);
+    io::g_level = io::xml::LoadLevel(file);
     g_current_object = nullptr;
   }
 }
@@ -370,7 +368,7 @@ void DrawLevel() {
       for (const auto& object : io::g_level->objects_) {
         if (object != nullptr) {
           ImGui::TableNextRow();
-          ImGui::PushID(object);
+          ImGui::PushID(static_cast<std::string>(object->name_).c_str());
           ImGui::TableSetColumnIndex(0);
           if (ImGui::Selectable(std::format("{}", *object->name_).c_str())) {
             g_current_object = object;
@@ -457,7 +455,7 @@ void DrawLocalization() {
   ImGui::End();
 }
 
-void MaterialView(Material*& material) {
+void MaterialView(std::shared_ptr<Material> material) {
   ImGui::SeparatorText("Material");
   if (ImGui::BeginTabBar("LoadType")) {
     if (ImGui::BeginTabItem("Directory")) {
@@ -465,7 +463,6 @@ void MaterialView(Material*& material) {
         char* material_path_c = tinyfd_selectFolderDialog("Select Material Directory", "");
         if (material_path_c != nullptr) {
           std::string material_path = std::string(material_path_c);
-          io::FreeMaterial(material);
           material = io::LoadMaterial(material_path + "/diffuse.png",
                                       material_path + "/specular.png", material_path + "/vert.glsl",
                                       material_path + "/frag.glsl", DEFAULT_SHININESS);
@@ -485,7 +482,6 @@ void MaterialView(Material*& material) {
       ImGui::InputText("Material Fragment", &g_material_fragment);
       ImGui::DragInt("Material Shininess", &g_material_shininess);
       if (ImGui::Button("Load")) {
-        io::FreeMaterial(material);
         material = io::LoadMaterial(g_material_diffuse, g_material_specular, g_material_vertex,
                                     g_material_fragment, g_material_shininess);
       }
@@ -494,8 +490,7 @@ void MaterialView(Material*& material) {
     ImGui::EndTabBar();
   }
   if (ImGui::Button("Clear")) {
-    io::FreeMaterial(material);
-    material = nullptr;
+    material.reset();
   }
   if (material == nullptr) {
     ImGui::TextColored({1, 0, 0, 1}, "No material loaded");
@@ -538,7 +533,7 @@ void DrawMenuFile() {
     ImGui::BeginDisabled(io::g_level == nullptr);
     if (ImGui::MenuItem("Save")) {
       if (io::g_level != nullptr) {
-        io::serialized::SaveLevel(io::g_level, io::g_level->path_);
+        io::xml::SaveLevel(*io::g_level, io::g_level->path_);
       }
     }
     if (ImGui::MenuItem("Save As")) {
@@ -547,7 +542,7 @@ void DrawMenuFile() {
         const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1,
                                                  filter_patterns, "Level Files");
         if (file != nullptr) {
-          io::serialized::SaveLevel(io::g_level, file);
+          io::xml::SaveLevel(*io::g_level, file);
           io::g_level->path_ = file;
         }
       }
@@ -566,7 +561,7 @@ void DrawMenuEdit() {
       ImGui::BeginDisabled(io::g_level == nullptr);
       if (ImGui::MenuItem("Empty Object")) {
         if (io::g_level != nullptr) {
-          io::g_level->AddObject(new Object(), "Object");
+          io::g_level->AddObject(std::make_shared<Object>(), "Object");
         }
       }
       ImGui::EndDisabled();

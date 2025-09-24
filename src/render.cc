@@ -39,13 +39,13 @@ inline void IfNoHUD(const std::function<void()>& fn) {
 enum : std::uint16_t { kDefaultWindowWidth = 800, kDefaultWindowHeight = 600 };
 using ImGui::TextColored;
 float g_camera_fov = DEFAULT_CAMERA_FOV;
-std::vector<DirectionalLight*> render::g_directional_lights;
-std::vector<PointLight*> render::g_point_lights;
-std::vector<SpotLight*> render::g_spot_lights;
+std::vector<std::shared_ptr<DirectionalLight>> render::g_directional_lights;
+std::vector<std::shared_ptr<PointLight>> render::g_point_lights;
+std::vector<std::shared_ptr<SpotLight>> render::g_spot_lights;
 unsigned int g_vao, g_vbo;
 Framebuffer g_framebuffer;
 unsigned int g_screen_vao, g_screen_vbo;
-Shader *g_screen_shader = nullptr, *g_screen_shader_blur;
+std::unique_ptr<Shader> g_screen_shader, g_screen_shader_blur;
 float g_prev_render_factor = render::g_render_settings.render_factor_;
 RenderSettings render::g_render_settings{};
 GLFWwindow* render::g_window = nullptr;
@@ -75,7 +75,7 @@ void render::Init() {
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-  render::g_window = glfwCreateWindow(render::g_width, render::g_height, "Radon", nullptr, nullptr);
+  render::g_window = glfwCreateWindow(render::g_width, render::g_height, "Radon Engine", nullptr, nullptr);
   if (render::g_window == nullptr) {
     const char* error_desc;
     glfwGetError(&error_desc);
@@ -227,7 +227,7 @@ glm::mat4 GetTransform(const glm::vec3& pos, const glm::vec2& scale, const glm::
   return transform;
 }
 
-void render::RenderTexture(const Material* material, const glm::vec3& pos, const glm::vec2& size,
+void render::RenderTexture(std::shared_ptr<Material> material, const glm::vec3& pos, const glm::vec2& size,
                            const glm::vec3& rot) {
   if (material == nullptr) {
     return;
@@ -248,7 +248,6 @@ void render::RenderTexture(const Material* material, const glm::vec3& pos, const
   material->shader_->SetMat4("view", view);
   material->shader_->SetMat4("projection", projection);
   material->shader_->SetVec3("viewPos", render::g_camera.position_);
-
   material->shader_->SetInt("NUM_DIRECTIONAL_LIGHTS",
                             static_cast<int>(g_directional_lights.size()));
   for (int i = 0; i < g_directional_lights.size(); i++) {
@@ -366,4 +365,40 @@ void RecreateFramebuffer() {
   create_info.create_renderbuffer_ = true;
   g_framebuffer = render::CreateFramebuffer(create_info);
   g_prev_render_factor = render::g_render_settings.render_factor_;
+}
+
+void render::AddLight(std::shared_ptr<DirectionalLight> light) {
+  g_directional_lights.push_back(light);
+}
+
+void render::AddLight(std::shared_ptr<PointLight> light) {
+  g_point_lights.push_back(light);
+}
+
+void render::AddLight(std::shared_ptr<SpotLight> light) {
+  g_spot_lights.push_back(light);
+}
+
+void render::RemoveLight(std::shared_ptr<DirectionalLight> light) {
+  for (int i = 0; i < g_directional_lights.size(); i++) {
+    if (g_directional_lights.at(i) == light) {
+      g_directional_lights.erase(g_directional_lights.begin() + i);
+    }
+  }
+}
+
+void render::RemoveLight(std::shared_ptr<PointLight> light) {
+  for (int i = 0; i < g_point_lights.size(); i++) {
+    if (g_point_lights.at(i) == light) {
+      g_point_lights.erase(g_point_lights.begin() + i);
+    }
+  }
+}
+
+void render::RemoveLight(std::shared_ptr<SpotLight> light) {
+  for (int i = 0; i < g_spot_lights.size(); i++) {
+    if (g_spot_lights.at(i) == light) {
+      g_spot_lights.erase(g_spot_lights.begin() + i);
+    }
+  }
 }

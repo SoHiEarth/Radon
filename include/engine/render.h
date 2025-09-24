@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <vector>
+#include <memory>
 
 class GLFWwindow;
 class Camera;
@@ -56,9 +57,9 @@ struct Framebuffer {
 };
 
 namespace render {
-extern std::vector<DirectionalLight*> g_directional_lights;
-extern std::vector<PointLight*> g_point_lights;
-extern std::vector<SpotLight*> g_spot_lights;
+extern std::vector<std::shared_ptr<DirectionalLight>> g_directional_lights;
+extern std::vector<std::shared_ptr<PointLight>> g_point_lights;
+extern std::vector<std::shared_ptr<SpotLight>> g_spot_lights;
 extern RenderSettings g_render_settings;
 extern GLFWwindow* g_window;
 extern int g_width;
@@ -69,47 +70,17 @@ void Init();
 void Update();
 void Render();
 void Quit();
-void RenderTexture(const Material* /*material*/, const glm::vec3& /*pos*/,
+void RenderTexture(const std::shared_ptr<Material> /*material*/, const glm::vec3& /*pos*/,
                    const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
 Framebuffer CreateFramebuffer(FramebufferCreateInfo& create_info);
 void DeleteFramebuffer(Framebuffer& framebuffer);
 
-template <typename T>
-void AddLight(T* light) {
-  if (light == nullptr) {
-    return;
-  }
-  if constexpr (std::is_same_v<T, DirectionalLight>) {
-    g_directional_lights.push_back(light);
-  } else if constexpr (std::is_same_v<T, PointLight>) {
-    g_point_lights.push_back(light);
-  } else if constexpr (std::is_same_v<T, SpotLight>) {
-    g_spot_lights.push_back(light);
-  }
-}
-
-template <typename T>
-void RemoveLight(T* light) {
-  if (light == nullptr) {
-    return;
-  }
-  std::vector<T*>* light_list = nullptr;
-  if constexpr (std::is_same_v<T, DirectionalLight>) {
-    light_list = &g_directional_lights;
-  } else if constexpr (std::is_same_v<T, PointLight>) {
-    light_list = &g_point_lights;
-  } else if constexpr (std::is_same_v<T, SpotLight>) {
-    light_list = &g_spot_lights;
-  }
-  if (light_list == nullptr) {
-    return;
-  }
-  for (int i = 0; i < light_list->size(); i++) {
-    if (light_list->at(i) == light) {
-      light_list->erase(light_list->begin() + i);
-    }
-  }
-}
+void AddLight(std::shared_ptr<DirectionalLight> light);
+void AddLight(std::shared_ptr<PointLight> light);
+void AddLight(std::shared_ptr<SpotLight> light);
+void RemoveLight(std::shared_ptr<DirectionalLight> light);
+void RemoveLight(std::shared_ptr<PointLight> light);
+void RemoveLight(std::shared_ptr<SpotLight> light);
 }  // namespace render
 
 #endif  // RENDER_H

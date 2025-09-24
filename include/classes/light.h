@@ -4,6 +4,7 @@
 #include <classes/component.h>
 #include <pugixml.hpp>
 #include <glm/glm.hpp>
+#include <memory>
 
 class Shader;
 class Light : public Component {
@@ -24,7 +25,7 @@ public:
     return "DirectionalLight";
   }
   void Save(pugi::xml_node&) const override;
-  void SetUniforms(const Shader*, int);
+  void SetUniforms(const std::unique_ptr<Shader>&, int);
 };
 
 class PointLight : public Light {
@@ -38,7 +39,7 @@ public:
     return "PointLight";
   }
   void Save(pugi::xml_node& /*unused*/) const override;
-  void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
+  void SetUniforms(const std::unique_ptr<Shader>& /*shader*/, int /*kPos*/);
 };
 
 class SpotLight : public Light {
@@ -53,7 +54,7 @@ public:
     return "SpotLight";
   }
   void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
-  void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
+  void SetUniforms(const std::unique_ptr<Shader>& /*shader*/, int /*kPos*/);
 };
 
 #endif  // LIGHT_H

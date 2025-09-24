@@ -8,63 +8,68 @@
 #include <glm/fwd.hpp>
 #include <classes/object.h>
 #include <classes/component.h>
+#include <memory>
 
 void DirectionalLight::Init() {
-  render::AddLight(this);
+  render::AddLight(std::static_pointer_cast<DirectionalLight>(shared_from_this()));
 }
 
 void DirectionalLight::Quit() {
-  render::RemoveLight(this);
+  render::RemoveLight(std::static_pointer_cast<DirectionalLight>(shared_from_this()));
 }
 
 void DirectionalLight::Load(pugi::xml_node& node) {
-  ambient_ = io::serialized::LoadVec3(node, ambient_.i_label_);
-  diffuse_ = io::serialized::LoadVec3(node, diffuse_.i_label_);
-  specular_ = io::serialized::LoadVec3(node, specular_.i_label_);
+  ambient_ = io::xml::LoadVec3(node, ambient_.i_label_);
+  diffuse_ = io::xml::LoadVec3(node, diffuse_.i_label_);
+  specular_ = io::xml::LoadVec3(node, specular_.i_label_);
 }
 
 void DirectionalLight::Save(pugi::xml_node& node) const {
-  io::serialized::SaveVec3(&ambient_.i_value_, node, ambient_.i_label_);
-  io::serialized::SaveVec3(&diffuse_.i_value_, node, diffuse_.i_label_);
-  io::serialized::SaveVec3(&specular_.i_value_, node, specular_.i_label_);
+  io::xml::SaveVec3(ambient_.i_value_, node, ambient_.i_label_);
+  io::xml::SaveVec3(diffuse_.i_value_, node, diffuse_.i_label_);
+  io::xml::SaveVec3(specular_.i_value_, node, specular_.i_label_);
 }
 
-void DirectionalLight::SetUniforms(const Shader* shader, const int kPos) {
+void DirectionalLight::SetUniforms(const std::unique_ptr<Shader>& shader, const int kPos) {
   std::string prefix = "directional_lights[" + std::to_string(kPos) + "]";
-  shader->SetVec3(prefix + ".direction", static_cast<glm::vec3>(parent_->rotation_));
+  if (auto parent = parent_.lock()) {
+  shader->SetVec3(prefix + ".direction", static_cast<glm::vec3>(parent->rotation_));
+  }
   shader->SetVec3(prefix + ".ambient", static_cast<glm::vec3>(ambient_));
   shader->SetVec3(prefix + ".diffuse", static_cast<glm::vec3>(diffuse_));
   shader->SetVec3(prefix + ".specular", static_cast<glm::vec3>(specular_));
 }
 
 void PointLight::Init() {
-  render::AddLight(this);
+  render::AddLight(std::static_pointer_cast<PointLight>(shared_from_this()));
 }
 
 void PointLight::Quit() {
-  render::RemoveLight(this);
+  render::RemoveLight(std::static_pointer_cast<PointLight>(shared_from_this()));
 }
 
 void PointLight::Load(pugi::xml_node& node) {
-  ambient_ = io::serialized::LoadVec3(node, ambient_.i_label_);
-  diffuse_ = io::serialized::LoadVec3(node, diffuse_.i_label_);
-  specular_ = io::serialized::LoadVec3(node, specular_.i_label_);
-  constant_ = io::serialized::LoadFloat(node, constant_.i_label_);
-  linear_ = io::serialized::LoadFloat(node, linear_.i_label_);
-  quadratic_ = io::serialized::LoadFloat(node, quadratic_.i_label_);
+  ambient_ = io::xml::LoadVec3(node, ambient_.i_label_);
+  diffuse_ = io::xml::LoadVec3(node, diffuse_.i_label_);
+  specular_ = io::xml::LoadVec3(node, specular_.i_label_);
+  constant_ = io::xml::LoadFloat(node, constant_.i_label_);
+  linear_ = io::xml::LoadFloat(node, linear_.i_label_);
+  quadratic_ = io::xml::LoadFloat(node, quadratic_.i_label_);
 }
 void PointLight::Save(pugi::xml_node& node) const {
-  io::serialized::SaveVec3(&ambient_.i_value_, node, ambient_.i_label_);
-  io::serialized::SaveVec3(&diffuse_.i_value_, node, diffuse_.i_label_);
-  io::serialized::SaveVec3(&specular_.i_value_, node, specular_.i_label_);
-  io::serialized::SaveFloat(&constant_.i_value_, node, constant_.i_label_);
-  io::serialized::SaveFloat(&linear_.i_value_, node, linear_.i_label_);
-  io::serialized::SaveFloat(&quadratic_.i_value_, node, quadratic_.i_label_);
+  io::xml::SaveVec3(ambient_.i_value_, node, ambient_.i_label_);
+  io::xml::SaveVec3(diffuse_.i_value_, node, diffuse_.i_label_);
+  io::xml::SaveVec3(specular_.i_value_, node, specular_.i_label_);
+  io::xml::SaveFloat(&constant_.i_value_, node, constant_.i_label_);
+  io::xml::SaveFloat(&linear_.i_value_, node, linear_.i_label_);
+  io::xml::SaveFloat(&quadratic_.i_value_, node, quadratic_.i_label_);
 }
 
-void PointLight::SetUniforms(const Shader* shader, const int kPos) {
+void PointLight::SetUniforms(const std::unique_ptr<Shader>& shader, const int kPos) {
   std::string prefix = "point_lights[" + std::to_string(kPos) + "]";
-  shader->SetVec3(prefix + ".position", static_cast<glm::vec3>(parent_->position_));
+  if (auto parent = parent_.lock()) {
+    shader->SetVec3(prefix + ".position", static_cast<glm::vec3>(parent->position_));
+  }
   shader->SetVec3(prefix + ".ambient", static_cast<glm::vec3>(ambient_));
   shader->SetVec3(prefix + ".diffuse", static_cast<glm::vec3>(diffuse_));
   shader->SetVec3(prefix + ".specular", static_cast<glm::vec3>(specular_));
@@ -74,39 +79,41 @@ void PointLight::SetUniforms(const Shader* shader, const int kPos) {
 }
 
 void SpotLight::Init() {
-  render::AddLight(this);
+  render::AddLight(std::static_pointer_cast<SpotLight>(shared_from_this()));
 }
 
 void SpotLight::Quit() {
-  render::RemoveLight(this);
+  render::RemoveLight(std::static_pointer_cast<SpotLight>(shared_from_this()));
 }
 
 void SpotLight::Load(pugi::xml_node& node) {
-  ambient_ = io::serialized::LoadVec3(node, ambient_.i_label_);
-  diffuse_ = io::serialized::LoadVec3(node, diffuse_.i_label_);
-  specular_ = io::serialized::LoadVec3(node, specular_.i_label_);
-  constant_ = io::serialized::LoadFloat(node, constant_.i_label_);
-  linear_ = io::serialized::LoadFloat(node, linear_.i_label_);
-  quadratic_ = io::serialized::LoadFloat(node, quadratic_.i_label_);
-  cut_off_ = io::serialized::LoadFloat(node, cut_off_.i_label_);
-  outer_cut_off_ = io::serialized::LoadFloat(node, outer_cut_off_.i_label_);
+  ambient_ = io::xml::LoadVec3(node, ambient_.i_label_);
+  diffuse_ = io::xml::LoadVec3(node, diffuse_.i_label_);
+  specular_ = io::xml::LoadVec3(node, specular_.i_label_);
+  constant_ = io::xml::LoadFloat(node, constant_.i_label_);
+  linear_ = io::xml::LoadFloat(node, linear_.i_label_);
+  quadratic_ = io::xml::LoadFloat(node, quadratic_.i_label_);
+  cut_off_ = io::xml::LoadFloat(node, cut_off_.i_label_);
+  outer_cut_off_ = io::xml::LoadFloat(node, outer_cut_off_.i_label_);
 }
 
 void SpotLight::Save(pugi::xml_node& node) const {
-  io::serialized::SaveVec3(&ambient_.i_value_, node, ambient_.i_label_);
-  io::serialized::SaveVec3(&diffuse_.i_value_, node, diffuse_.i_label_);
-  io::serialized::SaveVec3(&specular_.i_value_, node, specular_.i_label_);
-  io::serialized::SaveFloat(&constant_.i_value_, node, constant_.i_label_);
-  io::serialized::SaveFloat(&linear_.i_value_, node, linear_.i_label_);
-  io::serialized::SaveFloat(&quadratic_.i_value_, node, quadratic_.i_label_);
-  io::serialized::SaveFloat(&cut_off_.i_value_, node, cut_off_.i_label_);
-  io::serialized::SaveFloat(&outer_cut_off_.i_value_, node, outer_cut_off_.i_label_);
+  io::xml::SaveVec3(ambient_.i_value_, node, ambient_.i_label_);
+  io::xml::SaveVec3(diffuse_.i_value_, node, diffuse_.i_label_);
+  io::xml::SaveVec3(specular_.i_value_, node, specular_.i_label_);
+  io::xml::SaveFloat(&constant_.i_value_, node, constant_.i_label_);
+  io::xml::SaveFloat(&linear_.i_value_, node, linear_.i_label_);
+  io::xml::SaveFloat(&quadratic_.i_value_, node, quadratic_.i_label_);
+  io::xml::SaveFloat(&cut_off_.i_value_, node, cut_off_.i_label_);
+  io::xml::SaveFloat(&outer_cut_off_.i_value_, node, outer_cut_off_.i_label_);
 }
 
-void SpotLight::SetUniforms(const Shader* shader, const int kPos) {
+void SpotLight::SetUniforms(const std::unique_ptr<Shader>& shader, const int kPos) {
   std::string prefix = "spot_lights[" + std::to_string(kPos) + "]";
-  shader->SetVec3(prefix + ".position", static_cast<glm::vec3>(parent_->position_));
-  shader->SetVec3(prefix + ".direction", static_cast<glm::vec3>(parent_->rotation_));
+  if (auto parent = parent_.lock()) {
+    shader->SetVec3(prefix + ".position", static_cast<glm::vec3>(parent->position_));
+    shader->SetVec3(prefix + ".direction", static_cast<glm::vec3>(parent->rotation_));
+  }
   shader->SetVec3(prefix + ".ambient", static_cast<glm::vec3>(ambient_));
   shader->SetVec3(prefix + ".diffuse", static_cast<glm::vec3>(diffuse_));
   shader->SetVec3(prefix + ".specular", static_cast<glm::vec3>(specular_));

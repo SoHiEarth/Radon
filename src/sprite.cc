@@ -33,17 +33,19 @@ void Sprite::Update() {
 }
 
 void Sprite::Render() {
-  render::RenderTexture(material_, static_cast<glm::vec3>(parent_->position_),
-                        static_cast<glm::vec2>(parent_->scale_), static_cast<glm::vec3>(parent_->rotation_));
+  if (auto parent = parent_.lock()) {
+    render::RenderTexture(material_, static_cast<glm::vec3>(parent->position_),
+                          static_cast<glm::vec2>(parent->scale_),
+                          static_cast<glm::vec3>(parent->rotation_));
+  }
 }
 
 void Sprite::Quit() {
-  io::FreeMaterial(material_);
 }
 
 void Sprite::Load(pugi::xml_node& node) {
-  material_ = io::serialized::LoadMaterial(node);
+  material_ = io::xml::LoadMaterial(node);
 }
 void Sprite::Save(pugi::xml_node& node) const {
-  io::serialized::SaveMaterial(material_, node);
+  io::xml::SaveMaterial(*material_, node);
 }
