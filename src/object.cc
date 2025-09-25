@@ -69,7 +69,7 @@ void Object::Load(pugi::xml_node& node) {
   }
 }
 
-void Object::Save(pugi::xml_node& node) {
+void Object::Save(pugi::xml_node& node) const {
   int is_static_int = static_cast<int>(is_static_.i_value_);
   io::xml::SaveInt(&is_static_int, node, is_static_.i_label_);
   io::xml::SaveString(name_.i_value_, node, name_.i_label_);
@@ -81,7 +81,7 @@ void Object::Save(pugi::xml_node& node) {
   }
 }
 
-void Object::add_component_(std::unique_ptr<Component> component) {
+void Object::AddComponent(std::unique_ptr<Component> component) {
   if (component == nullptr) {
     return;
   }
@@ -96,7 +96,7 @@ void Object::add_component_(std::unique_ptr<Component> component) {
   components_.push_back(std::move(component));
 }
 
-void Object::remove_component_(std::weak_ptr<Component> component) {
+void Object::RemoveComponent(std::weak_ptr<Component> component) {
   if (auto com = component.lock()) {
     auto it = std::find_if(
         components_.begin(), components_.end(),

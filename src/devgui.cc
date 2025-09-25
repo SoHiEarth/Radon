@@ -41,7 +41,7 @@ std::string g_material_diffuse, g_material_specular, g_material_vertex, g_materi
 int g_material_shininess = DEFAULT_SHININESS;
 std::vector<ConsoleMessage> g_console_messages;
 
-void g_material_view(std::shared_ptr<Material> material);
+void MaterialView(std::shared_ptr<Material> material);
 void DrawProperties();
 void DrawDebug();
 void DrawLevel();
@@ -160,16 +160,16 @@ void dev::Quit() {
   debug::Log("Quit GUI");
 }
 
-std::vector<float> g_fps_history;
+std::vector<float> g_fps_history_;
 std::vector<std::map<std::string, std::chrono::milliseconds>> g_timings_history;
 
 void DrawTelemetry() {
   ImGui::Begin("Telemetry");
   ImGui::SeparatorText("FPS");
   float fps = ImGui::GetIO().Framerate;
-  g_fps_history.push_back(fps);
-  if (g_fps_history.size() > 100) {
-    g_fps_history.erase(fps_history_.begin());
+  g_fps_history_.push_back(fps);
+  if (g_fps_history_.size() > 100) {
+    g_fps_history_.erase(g_fps_history_.begin());
   }
   if (ImGui::BeginTable("FPSTable", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
@@ -182,8 +182,8 @@ void DrawTelemetry() {
     ImGui::TableSetColumnIndex(1);
     ImGui::Text("%.1f", fps);
     ImGui::TableSetColumnIndex(2);
-    ImGui::PlotLines("##fps_plot", fps_history_.data(), fps_history_.size(), 0, nullptr, 0.0F,
-                     *std::ranges::max_element(fps_history_), ImVec2(0, 50));
+    ImGui::PlotLines("##fps_plot", g_fps_history_.data(), g_fps_history_.size(), 0, nullptr, 0.0F,
+                     *std::ranges::max_element(g_fps_history_), ImVec2(0, 50));
     ImGui::EndTable();
   }
   ImGui::SeparatorText("Update Timings");
@@ -456,7 +456,7 @@ void DrawLocalization() {
   ImGui::End();
 }
 
-void g_material_view(std::shared_ptr<Material> material) {
+void MaterialView(std::shared_ptr<Material> material) {
   ImGui::SeparatorText("Material");
   if (ImGui::BeginTabBar("LoadType")) {
     if (ImGui::BeginTabItem("Directory")) {

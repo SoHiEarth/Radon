@@ -1,3 +1,7 @@
+// 
+#include <glad/glad.h>
+//
+
 #include <GLFW/glfw3.h>
 #include <classes/level.h>
 #include <classes/light.h>
@@ -8,7 +12,6 @@
 #include <engine/debug.h>
 #include <engine/io.h>
 #include <fmt/core.h>
-#include <glad/glad.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <algorithm>
 #include <array>

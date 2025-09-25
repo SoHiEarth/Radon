@@ -1,7 +1,7 @@
 #include <classes/shader.h>
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
-#define GET_LOCATION() glGetUniformLocation(id_, name.data())
+#define GET_LOCATION() glGetUniformLocation(id_, kName.data())
 
 void Shader::Use() const {
   glUseProgram(id_);

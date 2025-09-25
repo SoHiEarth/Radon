@@ -30,7 +30,7 @@ void DirectionalLight::Save(pugi::xml_node& node) const {
   io::xml::SaveVec3(specular_.i_value_, node, specular_.i_label_);
 }
 
-static void DirectionalLight::SetUniforms(const std::unique_ptr<Shader>& shader, const int kPos) {
+void DirectionalLight::SetUniforms(const std::unique_ptr<Shader>& shader, const int kPos) {
   std::string prefix = "directional_lights[" + std::to_string(kPos) + "]";
   if (auto parent = parent_.lock()) {
     shader->SetVec3(prefix + ".direction", static_cast<glm::vec3>(parent->rotation_));
@@ -65,7 +65,7 @@ void PointLight::Save(pugi::xml_node& node) const {
   io::xml::SaveFloat(&quadratic_.i_value_, node, quadratic_.i_label_);
 }
 
-static void PointLight::SetUniforms(const std::unique_ptr<Shader>& shader, const int kPos) {
+void PointLight::SetUniforms(const std::unique_ptr<Shader>& shader, const int kPos) {
   std::string prefix = "point_lights[" + std::to_string(kPos) + "]";
   if (auto parent = parent_.lock()) {
     shader->SetVec3(prefix + ".position", static_cast<glm::vec3>(parent->position_));
@@ -108,7 +108,7 @@ void SpotLight::Save(pugi::xml_node& node) const {
   io::xml::SaveFloat(&outer_cut_off_.i_value_, node, outer_cut_off_.i_label_);
 }
 
-static void SpotLight::SetUniforms(const std::unique_ptr<Shader>& shader, const int kPos) {
+void SpotLight::SetUniforms(const std::unique_ptr<Shader>& shader, const int kPos) {
   std::string prefix = "spot_lights[" + std::to_string(kPos) + "]";
   if (auto parent = parent_.lock()) {
     shader->SetVec3(prefix + ".position", static_cast<glm::vec3>(parent->position_));

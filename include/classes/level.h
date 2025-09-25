@@ -8,7 +8,7 @@
 class Object;
 class Level {
 public:
-  static void Init();
+  void Init();
   void Update();
   void Render();
   void Quit();

@@ -17,7 +17,7 @@ public:
   void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
   ~Sprite() = default;
   std::shared_ptr<Material> material_;
-  static [[nodiscard]] std::string GetTypeName() override {
+  [[nodiscard]] std::string GetTypeName() const override {
     return "Sprite";
   }
 };

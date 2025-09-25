@@ -29,7 +29,7 @@ public:
   bool has_quit_ = false;
   void Quit();
   void Load(pugi::xml_node& /*node*/);
-  static void Save(pugi::xml_node& /*node*/);
+  void Save(pugi::xml_node& /*node*/) const;
   void AddComponent(std::unique_ptr<Component> component);
   template <typename T>
   std::weak_ptr<T> GetComponent() {

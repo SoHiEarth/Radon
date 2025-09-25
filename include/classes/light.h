@@ -21,7 +21,7 @@ public:
   void Init() override;
   void Quit() override;
   void Load(pugi::xml_node& /*node*/ /*unused*/) override;
-  static [[nodiscard]] std::string GetTypeName() override {
+  [[nodiscard]] std::string GetTypeName() const override {
     return "DirectionalLight";
   }
   void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
@@ -35,7 +35,7 @@ public:
   void Init() override;
   void Quit() override;
   void Load(pugi::xml_node& /*unused*/) override;
-  static [[nodiscard]] std::string GetTypeName() override {
+  [[nodiscard]] std::string GetTypeName() const override {
     return "PointLight";
   }
   void Save(pugi::xml_node& /*unused*/) const override;
@@ -50,7 +50,7 @@ public:
   void Init() override;
   void Quit() override;
   void Load(pugi::xml_node& /*node*/ /*unused*/) override;
-  static [[nodiscard]] std::string GetTypeName() override {
+  [[nodiscard]] std::string GetTypeName() const override {
     return "SpotLight";
   }
   void Save(pugi::xml_node& /*node*/ /*unused*/) const override;

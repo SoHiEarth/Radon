@@ -228,7 +228,7 @@ glm::mat4 GetTransform(const glm::vec3& pos, const glm::vec2& scale, const glm::
   return transform;
 }
 
-void render::g_render_texture(std::shared_ptr<Material> material, const glm::vec3& pos,
+void render::RenderTexture(std::shared_ptr<Material> material, const glm::vec3& pos,
                               const glm::vec2& size, const glm::vec3& rot) {
   if (material == nullptr) {
     return;
