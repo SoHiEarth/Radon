@@ -283,7 +283,7 @@ void FBSizeCallback(GLFWwindow* window, int width, int height) {
   glViewport(0, 0, render::g_width, render::g_height);
 }
 
-Framebuffer render::CreateFramebuffer(FramebufferCreateInfo& create_info) {
+Framebuffer render::CreateFramebuffer(const FramebufferCreateInfo& create_info) {
   Framebuffer framebuffer;
   framebuffer.width_ = create_info.width_;
   framebuffer.height_ = create_info.height_;
@@ -346,6 +346,38 @@ void render::DeleteFramebuffer(Framebuffer& framebuffer) {
   if (framebuffer.framebuffer_ != 0) {
     glDeleteFramebuffers(1, &framebuffer.framebuffer_);
     framebuffer.framebuffer_ = 0;
+  }
+}
+
+void render::SetRenderDrawMode(const RenderDrawMode& mode) {
+  switch (mode) {
+    case RenderDrawMode::kFill:
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+      break;
+    case RenderDrawMode::kLine:
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+      break;
+    case RenderDrawMode::kPoint:
+      glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+      break;
+    default:
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+      break;
+  }
+}
+
+const RenderDrawMode render::GetRenderDrawMode() {
+  GLint mode;
+  glGetIntegerv(GL_POLYGON_MODE, &mode);
+  switch (mode) {
+    case GL_FILL:
+      return RenderDrawMode::kFill;
+    case GL_LINE:
+      return RenderDrawMode::kLine;
+    case GL_POINT:
+      return RenderDrawMode::kPoint;
+    default:
+      return RenderDrawMode::kFill;
   }
 }
 

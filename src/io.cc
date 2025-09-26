@@ -106,7 +106,7 @@ std::unique_ptr<Level> io::xml::LoadLevel(std::string_view path) {
   auto level = std::make_unique<Level>();
   level->path_ = path;
   for (pugi::xml_node object_node : root.children("object")) {
-    level->AddObject(io::xml::LoadObject(object_node));
+    level->objects_.push_back(io::xml::LoadObject(object_node));
   }
   glfwSetWindowTitle(glfwGetCurrentContext(), std::format("Radon Engine - {}", path).c_str());
   debug::Log(std::format("Successfully loaded {}", path));
@@ -118,8 +118,8 @@ void io::xml::SaveLevel(const Level& level, std::string_view path) {
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child("level");
   for (const auto& object : level.objects_) {
-    pugi::xml_node object_node = root.append_child("object");
-    object->Save(object_node);
+    auto child = root.append_child("object");
+    io::xml::SaveObject(*object, child);
   }
   bool save_result = doc.save_file(path.data());
   if (!save_result) {
@@ -133,11 +133,39 @@ void io::xml::SaveLevel(const Level& level, std::string_view path) {
 
 std::shared_ptr<Object> io::xml::LoadObject(pugi::xml_node& base_node) {
   auto object = std::make_shared<Object>();
+
+  // Transform is required, so read it first
+  auto transform_node = base_node.child("transform");
+  if (transform_node) {
+    object->transform_.Load(transform_node);
+  } else {
+    debug::Warning("Object is missing required Transform component, reverting to default values.");
+  }
+
+  for (auto& component_node : base_node.children("componentheader")) {
+    std::string component_type = component_node.attribute("type").as_string();
+    if (g_component_factory.find(component_type) != g_component_factory.end()) {
+      object->AddComponent(g_component_factory[component_type]());
+    } else {
+      debug::Warning(std::format("Component type {} not found in factory, skipping", component_type));
+    }
+  }
+
   object->Load(base_node);
   return object;
 }
 
 void io::xml::SaveObject(const Object& object, pugi::xml_node& base_node) {
+  // Write transform
+  auto transform_node = base_node.append_child("transform");
+  object.transform_.Save(transform_node);
+
+  // First, write the component headers
+  for (const auto& component : object.GetAllComponents()) {
+    pugi::xml_node component_node = base_node.append_child("componentheader");
+    component_node.append_attribute("type").set_value(component->GetTypeName().c_str());
+  }
+
   object.Save(base_node);
 }
 

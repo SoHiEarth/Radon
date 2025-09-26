@@ -1,4 +1,3 @@
-// Everything in here is probably jank
 #include <GLFW/glfw3.h>
 #include <classes/component.h>
 #include <classes/level.h>
@@ -381,26 +380,27 @@ void DrawLevel() {
     if (ImGui::Button("Open Level")) {
       DevOpenLevel();
     }
+    ImGui::End();
+    return;
   }
-  if (io::g_level != nullptr) {
-    ImGui::LabelText("Level Path", "%s", io::g_level->path_.c_str());
-    ImGui::SeparatorText("Scene Objects");
-    if (ImGui::BeginTable(
-            "AddObjectTable", 1,
-            ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
-      for (const auto& object : io::g_level->objects_) {
-        if (object != nullptr) {
-          ImGui::TableNextRow();
-          ImGui::PushID(static_cast<std::string>(object->name_).c_str());
-          ImGui::TableSetColumnIndex(0);
-          if (ImGui::Selectable(std::format("{}", *object->name_).c_str())) {
-            g_current_object = object;
-          }
-          ImGui::PopID();
+  ImGui::LabelText("Level Path", "%s", io::g_level->path_.c_str());
+  ImGui::SeparatorText("Scene Objects");
+  if (ImGui::BeginTable("AddObjectTable", 1,
+          ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
+    int object_index = 0;
+    for (const auto& object : io::g_level->objects_) {
+      if (object != nullptr) {
+        ImGui::TableNextRow();
+        ImGui::PushID(object_index);
+        ImGui::TableSetColumnIndex(0);
+        if (ImGui::Selectable(std::format("{}", *object->name_).c_str())) {
+          g_current_object = object;
         }
+        ImGui::PopID();
       }
-      ImGui::EndTable();
+      object_index++;
     }
+    ImGui::EndTable();
   }
   ImGui::End();
 }
@@ -618,6 +618,21 @@ void DrawMenuView() {
 
 void DrawMenuEngine() {
   if (ImGui::BeginMenu("Engine")) {
+    if (ImGui::BeginMenu("Render")) {
+      if (ImGui::BeginMenu("Draw Mode")) {
+        if (ImGui::MenuItem("Fill", nullptr, render::GetRenderDrawMode() == RenderDrawMode::kFill)) {
+          render::SetRenderDrawMode(RenderDrawMode::kFill);
+        }
+        if (ImGui::MenuItem("Line", nullptr, render::GetRenderDrawMode() == RenderDrawMode::kLine)) {
+          render::SetRenderDrawMode(RenderDrawMode::kLine);
+        }
+        if (ImGui::MenuItem("Point", nullptr, render::GetRenderDrawMode() == RenderDrawMode::kPoint)) {
+          render::SetRenderDrawMode(RenderDrawMode::kPoint);
+        }
+        ImGui::EndMenu();
+      }
+      ImGui::EndMenu();
+    }
     ImGui::EndMenu();
   }
 }

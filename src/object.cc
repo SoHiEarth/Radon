@@ -58,8 +58,6 @@ void Object::Quit() {
 void Object::Load(pugi::xml_node& node) {
   name_ = io::xml::LoadString(node, name_.i_label_);
   for (auto& component : components_) {
-    if (!component)
-      continue;
     component->parent_ = shared_from_this();
     component->Load(node);
   }

@@ -13,7 +13,7 @@ class Component;
 class Object : public std::enable_shared_from_this<Object> {
 public:
   Transform transform_;
-  std::vector<IEditable*> reg_;
+  std::vector<IEditable*> reg_{};
   Editable<std::string> name_ = {"Object", "Name", reg_};
   bool has_initialized_ = false;
   bool has_quit_ = false;
@@ -34,7 +34,7 @@ public:
     return {};
   }
   void RemoveComponent(std::shared_ptr<Component> component);
-  const std::vector<std::shared_ptr<Component>>& GetAllComponents() {
+  const std::vector<std::shared_ptr<Component>>& GetAllComponents() const {
     return components_;
   }
   virtual ~Object() = default;
