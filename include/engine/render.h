@@ -24,20 +24,22 @@ struct RenderSettings {
 struct FramebufferCreateInfo {
   int num_colorbuffers_ = 0;
   int level_ = 0;
-  int colorbuffer_format_;
-  int width_, height_;
-  int border_;
-  int format_, type_;
+  int colorbuffer_format_ = 0;
+  int width_ = 0;
+  int height_ = 0;
+  int border_ = 0;
+  int format_ = 0;
+  int type_ = 0;
   bool same_colorbuffer_attachment_ = false;
   bool create_renderbuffer_ = true;
 };
 
 struct Framebuffer {
-  int width_, height_;
-  unsigned int framebuffer_;
-  unsigned int renderbuffer_;
-  std::vector<unsigned int> colorbuffers_;
-  std::vector<unsigned int> attachments_;
+  int width_ = 0, height_ = 0;
+  unsigned int framebuffer_ = 0;
+  unsigned int renderbuffer_ = 0;
+  std::vector<unsigned int> colorbuffers_{};
+  std::vector<unsigned int> attachments_{};
 };
 
 enum class RenderDrawMode : std::uint8_t {
@@ -60,20 +62,19 @@ void Init();
 void Update();
 void Render();
 void Quit();
-void RenderTexture(std::shared_ptr<Material> /*material*/, const glm::vec3& /*pos*/,
-                   const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
-Framebuffer CreateFramebuffer(const FramebufferCreateInfo& create_info);
-void DeleteFramebuffer(Framebuffer& framebuffer);
+void RenderTexture(std::shared_ptr<Material>, const glm::vec3&, const glm::vec2&, const glm::vec3&);
+Framebuffer CreateFramebuffer(const FramebufferCreateInfo&);
+void DeleteFramebuffer(Framebuffer&);
 
-void SetRenderDrawMode(const RenderDrawMode& mode);
+void SetRenderDrawMode(const RenderDrawMode&);
 const RenderDrawMode GetRenderDrawMode();
 
-void g_add_light(std::shared_ptr<DirectionalLight> light);
-void g_add_light(std::shared_ptr<PointLight> light);
-void g_add_light(std::shared_ptr<SpotLight> light);
-void g_remove_light(std::shared_ptr<DirectionalLight> light);
-void g_remove_light(std::shared_ptr<PointLight> light);
-void g_remove_light(std::shared_ptr<SpotLight> light);
+void g_add_light(std::shared_ptr<DirectionalLight>);
+void g_add_light(std::shared_ptr<PointLight>);
+void g_add_light(std::shared_ptr<SpotLight>);
+void g_remove_light(std::shared_ptr<DirectionalLight>);
+void g_remove_light(std::shared_ptr<PointLight>);
+void g_remove_light(std::shared_ptr<SpotLight>);
 }  // namespace render
 
 #endif  // RENDER_H

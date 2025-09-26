@@ -26,13 +26,13 @@
 #include <classes/physicsobject.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-#define MATERIAL_KEY_NAME "Material"
-#define MATERIAL_DIFFUSE_KEY_NAME "diffuse"
-#define MATERIAL_SPECULAR_KEY_NAME "specular"
-#define MATERIAL_VERTEX_KEY_NAME "vs"
-#define MATERIAL_FRAGMENT_KEY_NAME "fs"
-#define MATERIAL_SHININESS_KEY_NAME "shininess"
-#define MATERIAL_SHININESS_DEFAULT_VALUE 32.0F
+constexpr const char* MATERIAL_KEY_NAME = "Material";
+constexpr const char* MATERIAL_DIFFUSE_KEY_NAME = "diffuse";
+constexpr const char* MATERIAL_SPECULAR_KEY_NAME = "specular";
+constexpr const char* MATERIAL_VERTEX_KEY_NAME = "vs";
+constexpr const char* MATERIAL_FRAGMENT_KEY_NAME = "fs";
+constexpr const char* MATERIAL_SHININESS_KEY_NAME = "shininess";
+constexpr float MATERIAL_SHININESS_DEFAULT_VALUE = 32.0F;
 #define OBJECT_FACTORY_KEY(Object)                \
   {                                               \
     #Object, {                                    \
@@ -43,14 +43,14 @@
 enum : std::uint16_t { kLogSize = 512 };
 std::unique_ptr<Level> io::g_level;
 std::string io::g_engine_directory;
-std::unordered_map<std::string, std::function<std::unique_ptr<Component>()>>
+std::unordered_map<std::string_view, std::function<std::unique_ptr<Component>()>>
     io::g_component_factory = {OBJECT_FACTORY_KEY(Transform),
                                OBJECT_FACTORY_KEY(MeshRenderer),
                                OBJECT_FACTORY_KEY(PhysicsObject),
   OBJECT_FACTORY_KEY(DirectionalLight), OBJECT_FACTORY_KEY(PointLight), OBJECT_FACTORY_KEY(SpotLight)
 };
 std::string ValidateName(std::string input);
-bool CheckFile(std::string_view path) {
+static bool CheckFile(std::string_view path) {
   return std::filesystem::exists(path);
 }
 
@@ -197,7 +197,7 @@ std::unique_ptr<Shader> io::LoadShader(std::string_view vertex_path,
   glAttachShader(program, fragment);
   glLinkProgram(program);
   int success;
-  std::array<char, kLogSize> log;
+  std::array<char, kLogSize> log{};
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if (success == 0) {
     glGetProgramInfoLog(program, kLogSize, nullptr, log.data());
@@ -216,8 +216,7 @@ std::unique_ptr<Shader> io::LoadShader(std::string_view vertex_path,
 ////////////////////////////
 
 std::unique_ptr<Texture> io::LoadTexture(std::string_view path) {
-  auto texture = std::make_unique<Texture>();
-  texture->path_ = path;
+  auto texture = std::make_unique<Texture>(path);
   glGenTextures(1, &texture->id_);
   stbi_set_flip_vertically_on_load(1);
   unsigned char* data =
@@ -268,7 +267,6 @@ std::shared_ptr<Material> io::LoadMaterial(std::string_view diffuse, std::string
   material->shader_->Use();
   material->shader_->SetInt("material.diffuse", 0);
   material->shader_->SetInt("material.specular", 1);
-  material->is_initialized_ = true;
   return material;
 }
 
@@ -306,88 +304,72 @@ void io::xml::SaveMaterial(const Material& material, pugi::xml_node& base_node) 
 /// Serialized IO functions ///
 ///////////////////////////////
 
-glm::vec3 io::xml::LoadVec3(pugi::xml_node& base_node, std::string name) {
-  name = ValidateName(name);
-  pugi::xml_node node = base_node.child(name);
-  glm::vec3 value;
+glm::vec3 io::xml::LoadVec3(pugi::xml_node& base_node, std::string_view name) {
+  pugi::xml_node node = base_node.child(ValidateName(name.data()));
+  glm::vec3 value{};
   value.x = node.attribute("x").as_float(0.0F);
   value.y = node.attribute("y").as_float(0.0F);
   value.z = node.attribute("z").as_float(0.0F);
   return value;
 }
 
-glm::vec2 io::xml::LoadVec2(pugi::xml_node& base_node, std::string name) {
-  name = ValidateName(name);
-  pugi::xml_node node = base_node.child(name);
-  glm::vec2 value;
+glm::vec2 io::xml::LoadVec2(pugi::xml_node& base_node, std::string_view name) {
+  pugi::xml_node node = base_node.child(ValidateName(name.data()));
+  glm::vec2 value{};
   value.x = node.attribute("x").as_float(0.0F);
   value.y = node.attribute("y").as_float(0.0F);
   return value;
 }
 
-std::string io::xml::LoadString(pugi::xml_node& base_node, std::string name) {
-  name = ValidateName(name);
-  pugi::xml_node node = base_node.child(name);
+std::string io::xml::LoadString(pugi::xml_node& base_node, std::string_view name) {
+  pugi::xml_node node = base_node.child(ValidateName(name.data()));
   return node.attribute("value").as_string("");
 }
 
-int io::xml::LoadInt(pugi::xml_node& base_node, std::string name) {
-  name = ValidateName(name);
-  pugi::xml_node node = base_node.child(name);
+int io::xml::LoadInt(pugi::xml_node& base_node, std::string_view name) {
+  pugi::xml_node node = base_node.child(ValidateName(name.data()));
   return node.attribute("value").as_int(0);
 }
 
-float io::xml::LoadFloat(pugi::xml_node& base_node, std::string name) {
-  name = ValidateName(name);
-  pugi::xml_node node = base_node.child(name);
+float io::xml::LoadFloat(pugi::xml_node& base_node, std::string_view name) {
+  pugi::xml_node node = base_node.child(ValidateName(name.data()));
   return node.attribute("value").as_float(0.0F);
 }
 
-void io::xml::SaveVec3(const glm::vec3& value, pugi::xml_node& base_node, std::string name) {
-  name = ValidateName(name);
-  pugi::xml_node node = base_node.child(name);
+inline pugi::xml_node GetOrCreateNode(pugi::xml_node& base_node, std::string_view name) {
+  auto val_name = ValidateName(name.data());
+  pugi::xml_node node = base_node.child(val_name);
   if (!node) {
-    node = base_node.append_child(name);
+    node = base_node.append_child(val_name);
   }
+  return node;
+}
+
+void io::xml::SaveVec3(const glm::vec3& value, pugi::xml_node& base_node, std::string_view name) {
+  auto node = GetOrCreateNode(base_node, name);
   node.append_attribute("x").set_value(value.x);
   node.append_attribute("y").set_value(value.y);
   node.append_attribute("z").set_value(value.z);
 }
 
-void io::xml::SaveVec2(const glm::vec2& value, pugi::xml_node& base_node, std::string name) {
-  name = ValidateName(name);
-  pugi::xml_node node = base_node.child(name);
-  if (!node) {
-    node = base_node.append_child(name);
-  }
+void io::xml::SaveVec2(const glm::vec2& value, pugi::xml_node& base_node, std::string_view name) {
+  auto node = GetOrCreateNode(base_node, name);
   node.append_attribute("x").set_value(value.x);
   node.append_attribute("y").set_value(value.y);
 }
 
-void io::xml::SaveString(std::string_view value, pugi::xml_node& base_node, std::string name) {
-  name = ValidateName(name);
-  pugi::xml_node node = base_node.child(name);
-  if (!node) {
-    node = base_node.append_child(name);
-  }
+void io::xml::SaveString(std::string_view value, pugi::xml_node& base_node, std::string_view name) {
+  auto node = GetOrCreateNode(base_node, name);
   node.append_attribute("value").set_value(value.data());
 }
 
-void io::xml::SaveInt(const int* value, pugi::xml_node& base_node, std::string name) {
-  name = ValidateName(name);
-  pugi::xml_node node = base_node.child(name);
-  if (!node) {
-    node = base_node.append_child(name);
-  }
+void io::xml::SaveInt(const int* value, pugi::xml_node& base_node, std::string_view name) {
+  auto node = GetOrCreateNode(base_node, name);
   node.append_attribute("value").set_value(*value);
 }
 
-void io::xml::SaveFloat(const float* value, pugi::xml_node& base_node, std::string name) {
-  name = ValidateName(name);
-  pugi::xml_node node = base_node.child(name);
-  if (!node) {
-    node = base_node.append_child(name);
-  }
+void io::xml::SaveFloat(const float* value, pugi::xml_node& base_node, std::string_view name) {
+  auto node = GetOrCreateNode(base_node, name);
   node.append_attribute("value").set_value(*value);
 }
 
@@ -425,7 +407,7 @@ std::string ReadFile(std::string_view path) {
   const char* code_data = code.data();
   unsigned int shader;
   int success;
-  std::array<char, kLogSize> log;
+  std::array<char, kLogSize> log{};
   shader = glCreateShader(type);
   glShaderSource(shader, 1, &code_data, nullptr);
   glCompileShader(shader);

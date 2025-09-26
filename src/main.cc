@@ -11,21 +11,21 @@
 #include <engine/telemetry.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <format>
-#define TIMER_INIT_NAME "Engine Init"
-#define TIMER_IO_INIT_NAME "I/O Init"
-#define TIMER_RENDER_INIT_NAME "Render Init"
-#define TIMER_DEVGUI_INIT_NAME "Dev GUI Init"
-#define TIMER_INPUT_INIT_NAME "Input Init"
-#define TIMER_AUDIO_INIT_NAME "Audio Init"
-#define TIMER_PHYSICS_INIT_NAME "Physics Init"
+constexpr const char* TIMER_INIT_NAME = "Engine Init";
+constexpr const char* TIMER_IO_INIT_NAME = "I/O Init";
+constexpr const char* TIMER_RENDER_INIT_NAME = "Render Init";
+constexpr const char* TIMER_DEVGUI_INIT_NAME = "Dev GUI Init";
+constexpr const char* TIMER_INPUT_INIT_NAME = "Input Init";
+constexpr const char* TIMER_AUDIO_INIT_NAME = "Audio Init";
+constexpr const char* TIMER_PHYSICS_INIT_NAME = "Physics Init";
 
-#define TIMER_INPUT_UPDATE_NAME "Input Update"
-#define TIMER_LEVEL_UPDATE_NAME "Level Update"
-#define TIMER_RENDER_UPDATE_NAME "Render Update"
-#define TIMER_PHYSICS_UPDATE_NAME "Physics Update"
-#define TIMER_LEVEL_RENDER_NAME "Level Render"
-#define TIMER_RENDER_RENDER_NAME "Render Render"
-#define TIMER_AUDIO_UPDATE_NAME "Audio Update"
+constexpr const char* TIMER_INPUT_UPDATE_NAME = "Input Update";
+constexpr const char* TIMER_LEVEL_UPDATE_NAME = "Level Update";
+constexpr const char* TIMER_RENDER_UPDATE_NAME = "Render Update";
+constexpr const char* TIMER_PHYSICS_UPDATE_NAME = "Physics Update";
+constexpr const char* TIMER_LEVEL_RENDER_NAME = "Level Render";
+constexpr const char* TIMER_RENDER_RENDER_NAME = "Render Render";
+constexpr const char* TIMER_AUDIO_UPDATE_NAME = "Audio Update";
 
 #define TIME(FUNC, NAME)       \
   telemetry::BeginTimer(NAME); \

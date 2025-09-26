@@ -5,8 +5,8 @@
 
 void PhysicsObject::Init() {
   if (auto parent = parent_.lock()) {
-    auto position_ = parent->transform_.position_;
-    auto scale_ = parent->transform_.scale_;
+    const auto& position_ = parent->transform_.position_;
+    const auto& scale_ = parent->transform_.scale_;
     physics_body_ =
         physics::CreateBody(glm::vec2(position_->x, position_->y), static_cast<glm::vec2>(scale_));
   }
@@ -19,11 +19,3 @@ void PhysicsObject::Update() {
     parent->transform_.position_ = glm::vec3(kPhysPos, parent->transform_.position_->z);
   }
 }
-
-void PhysicsObject::Render() {}
-
-void PhysicsObject::Quit() {}
-
-void PhysicsObject::Load(pugi::xml_node& /*node*/ /*unused*/) {}
-
-void PhysicsObject::Save(pugi::xml_node& /*node*/ /*unused*/) const {}

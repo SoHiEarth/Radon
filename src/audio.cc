@@ -14,14 +14,14 @@ ALCdevice* g_device = nullptr;
 ALCcontext* g_context = nullptr;
 
 struct SoundData {
-  ALuint buffer_;
-  ALuint source_;
-  ALsizei frequency_;
+  ALuint buffer_{};
+  ALuint source_{};
+  ALsizei frequency_{};
   bool is_playing_ = false;
 };
 
-std::map<SOUND_HANDLE, SoundData> g_sounds;
-SOUND_HANDLE g_next = 1;
+std::map<SoundHandle, SoundData> g_sounds;
+SoundHandle g_next = 1;
 
 void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsizei& frequency) {
   std::ifstream file(filename, std::ios::binary);
@@ -47,15 +47,15 @@ void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsi
     debug::Throw(std::format("Invalid WAV file (missing fmt ): {}", filename));
   }
 
-  uint32_t subchunk_1_size;
+  uint32_t subchunk_1_size = 0;
   file.read(reinterpret_cast<char*>(&subchunk_1_size), 4);
 
-  uint16_t audio_format;
-  uint16_t channels;
-  uint16_t block_align;
-  uint16_t bits_per_sample;
-  uint32_t sample_rate;
-  uint32_t byte_rate;
+  uint16_t audio_format = 0;
+  uint16_t channels = 0;
+  uint16_t block_align = 0;
+  uint16_t bits_per_sample = 0;
+  uint32_t sample_rate = 0;
+  uint32_t byte_rate = 0;
   file.read(reinterpret_cast<char*>(&audio_format), 2);
   file.read(reinterpret_cast<char*>(&channels), 2);
   file.read(reinterpret_cast<char*>(&sample_rate), 4);
@@ -145,7 +145,7 @@ void Quit() {
   debug::Log("Quit audio");
 }
 
-SOUND_HANDLE Load(const char* filepath) {
+SoundHandle Load(const char* filepath) {
   std::vector<char> data;
   ALenum format;
   ALsizei frequency;
@@ -160,12 +160,12 @@ SOUND_HANDLE Load(const char* filepath) {
   alSourcei(source, AL_BUFFER, buffer);
   alSourcei(source, AL_LOOPING, AL_FALSE);
 
-  SOUND_HANDLE handle = g_next++;
+  SoundHandle handle = g_next++;
   g_sounds[handle] = {.buffer_ = buffer, .source_ = source};
   return handle;
 }
 
-void Unload(SOUND_HANDLE sound) {
+void Unload(SoundHandle sound) {
   auto it = g_sounds.find(sound);
   if (it != g_sounds.end()) {
     alDeleteSources(1, &it->second.source_);
@@ -174,14 +174,14 @@ void Unload(SOUND_HANDLE sound) {
   }
 }
 
-void Play(SOUND_HANDLE sound) {
+void Play(SoundHandle sound) {
   auto it = g_sounds.find(sound);
   if (it != g_sounds.end()) {
     it->second.is_playing_ = true;
   }
 }
 
-void Stop(SOUND_HANDLE sound) {
+void Stop(SoundHandle sound) {
   auto it = g_sounds.find(sound);
   if (it != g_sounds.end()) {
     it->second.is_playing_ = false;
@@ -189,7 +189,7 @@ void Stop(SOUND_HANDLE sound) {
   }
 }
 
-void SetHeader(SOUND_HANDLE sound, float position) {
+void SetHeader(SoundHandle sound, float position) {
   auto it = g_sounds.find(sound);
   if (it != g_sounds.end()) {
     alSourcef(it->second.source_, AL_SEC_OFFSET, position);

@@ -7,12 +7,6 @@
 #include <engine/render.h>
 #include <fmt/core.h>
 
-void MeshRenderer::Init() {
-  if (material_ == nullptr) {
-    debug::Log("No material assigned to renderer.");
-  }
-}
-
 void MeshRenderer::Update() {
   if (material_ != nullptr) {
     if (material_->shininess_ <= 0) {
@@ -29,8 +23,6 @@ void MeshRenderer::Render() {
                           static_cast<glm::vec3>(parent->transform_.rotation_));
   }
 }
-
-void MeshRenderer::Quit() {}
 
 void MeshRenderer::Load(pugi::xml_node& node) {
   material_ = io::xml::LoadMaterial(node);

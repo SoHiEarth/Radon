@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#define FLOAT_STEP 0.1F
+constexpr float FLOAT_STEP = 0.1F;
 
 class IEditable {
 public:

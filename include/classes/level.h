@@ -12,8 +12,8 @@ public:
   void Update();
   void Render();
   void Quit();
-  void AddObject(std::shared_ptr<Object> /*object*/, std::string_view /*name*/ = "Object");
-  void RemoveObject(std::shared_ptr<Object> /*object*/);
+  void AddObject(std::shared_ptr<Object>, std::string_view = "Object");
+  void RemoveObject(std::shared_ptr<Object>);
   std::string path_;
   std::vector<std::shared_ptr<Object>> objects_;
 };

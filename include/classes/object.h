@@ -1,7 +1,6 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include <box2d/box2d.h>
 #include <classes/editable.h>
 #include <memory>
 #include <pugixml.hpp>
@@ -12,7 +11,7 @@
 class Component;
 class Object : public std::enable_shared_from_this<Object> {
 public:
-  Transform transform_;
+  Transform transform_{};
   std::vector<IEditable*> reg_{};
   Editable<std::string> name_ = {"Object", "Name", reg_};
   bool has_initialized_ = false;
@@ -21,9 +20,9 @@ public:
   void Update();
   void Render();
   void Quit();
-  void Load(pugi::xml_node& /*node*/);
-  void Save(pugi::xml_node& /*node*/) const;
-  void AddComponent(std::shared_ptr<Component> component);
+  void Load(pugi::xml_node&);
+  void Save(pugi::xml_node&) const;
+  void AddComponent(std::shared_ptr<Component>);
   template <typename T>
   std::weak_ptr<T> GetComponent() {
     for (auto& component : components_) {

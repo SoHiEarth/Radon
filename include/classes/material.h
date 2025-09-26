@@ -8,7 +8,6 @@ class Texture;
 class Shader;
 
 struct Material {
-  bool is_initialized_ = false;
   std::unique_ptr<Texture> diffuse_, specular_;
   std::unique_ptr<Shader> shader_;
   float shininess_ = 0;

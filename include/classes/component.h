@@ -33,8 +33,8 @@ public:
   std::vector<IEditable*> reg_;
   bool has_initialized_ = false;
   bool has_quit_ = false;
-  virtual void Load(pugi::xml_node&) = 0;
-  virtual void Save(pugi::xml_node&) const = 0;
+  virtual void Load(pugi::xml_node&) {};
+  virtual void Save(pugi::xml_node&) const {};
   [[nodiscard]] virtual std::string GetTypeName() const = 0;
   virtual ~Component() = default;
 };

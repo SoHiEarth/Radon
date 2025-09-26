@@ -22,15 +22,15 @@
 #include <utility>
 #include <vector>
 
-#define TEXT_COLOR_RED ImVec4(1.0f, 0.0f, 0.0f, 1.0f)
-#define GUI_DRAG_STEP 0.1F
-#define IMAGE_SIZE ImVec2(100, 100)
-#define DEFAULT_CAMERA_FOV 60.0F
-#define CAMERA_NEAR_PLANE 0.1F
-#define CAMERA_FAR_PLANE 100.0F
-#define DEFAULT_CAMERA_SPEED 0.1
+constexpr ImVec4 TEXT_COLOR_RED = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+constexpr float GUI_DRAG_STEP = 0.1F;
+constexpr ImVec2 IMAGE_SIZE = ImVec2(100, 100);
+constexpr float DEFAULT_CAMERA_FOV = 60.0F;
+constexpr float CAMERA_NEAR_PLANE = 0.1F;
+constexpr float CAMERA_FAR_PLANE = 100.0F;
+constexpr float DEFAULT_CAMERA_SPEED = 0.1;
 float g_camera_speed = DEFAULT_CAMERA_SPEED;
-inline void IfNoHUD(const std::function<void()>& fn) {
+static inline void IfNoHUD(const std::function<void()>& fn) {
   if (!dev::g_hud_enabled) {
     fn();
   }
@@ -218,7 +218,7 @@ void DrawRendererStatus() {
   }
 }
 
-glm::mat4 GetTransform(const glm::vec3& pos, const glm::vec2& scale, const glm::vec3& rot) {
+static glm::mat4 GetTransform(const glm::vec3& pos, const glm::vec2& scale, const glm::vec3& rot) {
   auto transform = glm::mat4(1.0F);
   transform = glm::translate(transform, pos);
   transform = glm::rotate(transform, rot.z, glm::vec3(0.0F, 0.0F, 1.0F));

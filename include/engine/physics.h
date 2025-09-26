@@ -5,9 +5,9 @@
 namespace physics {
 void Init();
 void Update();
-b2BodyId CreateBody(glm::vec2 position, glm::vec2 scale);
-glm::vec2 GetBodyPosition(b2BodyId body_id);
-void SetBodyPosition(b2BodyId body_id, glm::vec2 position);
+b2BodyId CreateBody(glm::vec2, glm::vec2);
+glm::vec2 GetBodyPosition(b2BodyId);
+void SetBodyPosition(b2BodyId, glm::vec2);
 void Quit();
 };  // namespace physics
 #endif  // PHYSICS_H

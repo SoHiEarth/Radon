@@ -24,16 +24,16 @@
 #include <array>
 #include <format>
 
-#define IMAGE_PREVIEW_SIZE 100, 100
-#define DEVGUI_ROUNDING_MORE 8.0F
-#define DEVGUI_ROUNDING_LESS 6.0F
-#define DEVGUI_FONT_SIZE 18.0F
-#define DEFAULT_SHININESS 32.0F
-#define DOCK_LEFT_WIDTH 0.3F
-#define DOCK_RIGHT_WIDTH 0.3F
-#define DOCK_BOTTOM_HEIGHT 0.4F
-#define CONSOLE_TYPE_WIDTH 50.0F
-#define CONSOLE_TRACEBACK_WIDTH 200.0F
+constexpr ImVec2 IMAGE_PREVIEW_SIZE = ImVec2(100.0F, 100.0F);
+constexpr float DEVGUI_ROUNDING_MORE = 8.0F;
+constexpr float DEVGUI_ROUNDING_LESS = 6.0F;
+constexpr float DEVGUI_FONT_SIZE = 18.0F;
+constexpr float DEFAULT_SHININESS = 32.0F;
+constexpr float DOCK_LEFT_WIDTH = 0.3F;
+constexpr float DOCK_RIGHT_WIDTH = 0.3F;
+constexpr float DOCK_BOTTOM_HEIGHT = 0.4F;
+constexpr float CONSOLE_TYPE_WIDTH = 50.0F;
+constexpr float CONSOLE_TRACEBACK_WIDTH = 200.0F;
 bool dev::g_hud_enabled = false, g_disable_hud_after_frame = false;
 std::shared_ptr<Object> g_current_object;
 std::string g_material_diffuse, g_material_specular, g_material_vertex, g_material_fragment;
@@ -404,7 +404,8 @@ void DrawLevel() {
   }
   ImGui::End();
 }
-#define BUFFER_SIZE 128
+constexpr int BUFFER_SIZE = 128;
+
 void DrawLocalization() {
   ImGui::Begin("Localization");
   ImGui::InputText("Language", &localization::g_language);
@@ -426,7 +427,7 @@ void DrawLocalization() {
       ImGui::TableNextRow();
       ImGui::PushID(index);
       ImGui::TableSetColumnIndex(0);
-      std::array<char, BUFFER_SIZE> key_buffer;
+      std::array<char, BUFFER_SIZE> key_buffer{};
       strncpy(key_buffer.data(), key.c_str(), sizeof(key_buffer));
       key_buffer[sizeof(key_buffer) - 1] = '\0';
       if (ImGui::InputText("##Key", key_buffer.data(), sizeof(key_buffer))) {

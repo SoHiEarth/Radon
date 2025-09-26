@@ -11,7 +11,6 @@ void Level::Init() {
     if (object != nullptr) {
       if (!object->has_initialized_ && !object->has_quit_) {
         object->Init();
-        object->has_initialized_ = true;
       }
     }
   }
@@ -42,7 +41,6 @@ void Level::Quit() {
     if (object != nullptr) {
       if (object->has_initialized_ && !object->has_quit_) {
         object->Quit();
-        object->has_quit_ = true;
       }
     }
   }
