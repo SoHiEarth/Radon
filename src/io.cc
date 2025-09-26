@@ -7,7 +7,8 @@
 #include <classes/light.h>
 #include <classes/object.h>
 #include <classes/shader.h>
-#include <classes/sprite.h>
+#include <classes/meshrenderer.h>
+#include <classes/transform.h>
 #include <classes/texture.h>
 #include <engine/debug.h>
 #include <engine/io.h>
@@ -22,6 +23,7 @@
 #include <pugixml.hpp>
 #include <sstream>
 #include <unordered_map>
+#include <classes/physicsobject.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #define MATERIAL_KEY_NAME "Material"
@@ -42,8 +44,11 @@ enum : std::uint16_t { kLogSize = 512 };
 std::unique_ptr<Level> io::g_level;
 std::string io::g_engine_directory;
 std::unordered_map<std::string, std::function<std::unique_ptr<Component>()>>
-    io::g_component_factory = {OBJECT_FACTORY_KEY(Sprite), OBJECT_FACTORY_KEY(DirectionalLight),
-                               OBJECT_FACTORY_KEY(PointLight), OBJECT_FACTORY_KEY(SpotLight)};
+    io::g_component_factory = {OBJECT_FACTORY_KEY(Transform),
+                               OBJECT_FACTORY_KEY(MeshRenderer),
+                               OBJECT_FACTORY_KEY(PhysicsObject),
+  OBJECT_FACTORY_KEY(DirectionalLight), OBJECT_FACTORY_KEY(PointLight), OBJECT_FACTORY_KEY(SpotLight)
+};
 std::string ValidateName(std::string input);
 bool CheckFile(std::string_view path) {
   return std::filesystem::exists(path);

@@ -3,34 +3,27 @@
 
 #include <box2d/box2d.h>
 #include <classes/editable.h>
-#include <glm/glm.hpp>
 #include <memory>
 #include <pugixml.hpp>
 #include <string>
 #include <vector>
+#include <classes/transform.h>
 
 class Component;
-class Material;
 class Object : public std::enable_shared_from_this<Object> {
 public:
+  Transform transform_;
   std::vector<IEditable*> reg_;
-  Editable<bool> is_static_ = {false, "Static", reg_};
   Editable<std::string> name_ = {"Object", "Name", reg_};
-  std::vector<std::unique_ptr<Component>> components_;
-  // Will be replaced with a Transform component later
-  Editable<glm::vec3> position_ = {glm::vec3(0.0F), "Position", reg_};
-  Editable<glm::vec2> scale_ = {glm::vec2(1.0F), "Scale", reg_};
-  Editable<glm::vec3> rotation_ = {glm::vec3(0.0F), "Rotation", reg_};
-  b2BodyId physics_body_;  // Will be replaced with a physics component later
   bool has_initialized_ = false;
+  bool has_quit_ = false;
   void Init();
   void Update();
   void Render();
-  bool has_quit_ = false;
   void Quit();
   void Load(pugi::xml_node& /*node*/);
   void Save(pugi::xml_node& /*node*/) const;
-  void AddComponent(std::unique_ptr<Component> component);
+  void AddComponent(std::shared_ptr<Component> component);
   template <typename T>
   std::weak_ptr<T> GetComponent() {
     for (auto& component : components_) {
@@ -38,11 +31,15 @@ public:
         return casted;
       }
     }
-    return nullptr;
+    return {};
   }
-
-  void RemoveComponent(std::weak_ptr<Component> component);
+  void RemoveComponent(std::shared_ptr<Component> component);
+  const std::vector<std::shared_ptr<Component>>& GetAllComponents() {
+    return components_;
+  }
   virtual ~Object() = default;
+private:
+  std::vector<std::shared_ptr<Component>> components_ = {};
 };
 
 #endif  // OBJECT_H

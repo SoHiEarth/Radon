@@ -9,6 +9,7 @@
 #include <glad/glad.h>
 #include <glm/fwd.hpp>
 #include <memory>
+#include <classes/transform.h>
 
 void DirectionalLight::Init() {
   render::g_add_light(std::static_pointer_cast<DirectionalLight>(shared_from_this()));
@@ -33,7 +34,8 @@ void DirectionalLight::Save(pugi::xml_node& node) const {
 void DirectionalLight::SetUniforms(const std::unique_ptr<Shader>& shader, const int kPos) {
   std::string prefix = "directional_lights[" + std::to_string(kPos) + "]";
   if (auto parent = parent_.lock()) {
-    shader->SetVec3(prefix + ".direction", static_cast<glm::vec3>(parent->rotation_));
+    auto parent_transform = parent->GetComponent<Transform>();
+    shader->SetVec3(prefix + ".direction", static_cast<glm::vec3>(parent->transform_.rotation_));
   }
   shader->SetVec3(prefix + ".ambient", static_cast<glm::vec3>(ambient_));
   shader->SetVec3(prefix + ".diffuse", static_cast<glm::vec3>(diffuse_));
@@ -68,7 +70,7 @@ void PointLight::Save(pugi::xml_node& node) const {
 void PointLight::SetUniforms(const std::unique_ptr<Shader>& shader, const int kPos) {
   std::string prefix = "point_lights[" + std::to_string(kPos) + "]";
   if (auto parent = parent_.lock()) {
-    shader->SetVec3(prefix + ".position", static_cast<glm::vec3>(parent->position_));
+    shader->SetVec3(prefix + ".position", static_cast<glm::vec3>(parent->transform_.position_));
   }
   shader->SetVec3(prefix + ".ambient", static_cast<glm::vec3>(ambient_));
   shader->SetVec3(prefix + ".diffuse", static_cast<glm::vec3>(diffuse_));
@@ -111,8 +113,8 @@ void SpotLight::Save(pugi::xml_node& node) const {
 void SpotLight::SetUniforms(const std::unique_ptr<Shader>& shader, const int kPos) {
   std::string prefix = "spot_lights[" + std::to_string(kPos) + "]";
   if (auto parent = parent_.lock()) {
-    shader->SetVec3(prefix + ".position", static_cast<glm::vec3>(parent->position_));
-    shader->SetVec3(prefix + ".direction", static_cast<glm::vec3>(parent->rotation_));
+    shader->SetVec3(prefix + ".position", static_cast<glm::vec3>(parent->transform_.position_));
+    shader->SetVec3(prefix + ".direction", static_cast<glm::vec3>(parent->transform_.rotation_));
   }
   shader->SetVec3(prefix + ".ambient", static_cast<glm::vec3>(ambient_));
   shader->SetVec3(prefix + ".diffuse", static_cast<glm::vec3>(diffuse_));

@@ -6,7 +6,7 @@
 #include <classes/material.h>
 #include <classes/object.h>
 #include <classes/shader.h>
-#include <classes/sprite.h>
+#include <classes/meshrenderer.h>
 #include <classes/texture.h>
 #include <engine/debug.h>
 #include <engine/devgui.h>
@@ -41,7 +41,7 @@ std::string g_material_diffuse, g_material_specular, g_material_vertex, g_materi
 int g_material_shininess = DEFAULT_SHININESS;
 std::vector<ConsoleMessage> g_console_messages;
 
-void MaterialView(std::shared_ptr<Material> material);
+void MaterialView(std::shared_ptr<Material>& material);
 void DrawProperties();
 void DrawDebug();
 void DrawLevel();
@@ -256,19 +256,41 @@ void DrawProperties() {
           field->RenderInterface();
         }
       }
-      for (const auto& component : g_current_object->components_) {
-        if (component != nullptr) {
-          ImGui::SeparatorText(component->GetTypeName().c_str());
-          for (const auto& field : component->reg_) {
-            if (field != nullptr) {
-              field->RenderInterface();
-            }
-          }
-
-          if (component->HasMaterial()) {
-            MaterialView(component->GetMaterial());
+      if (ImGui::CollapsingHeader("Transform (Base)")) {
+        for (const auto& field : g_current_object->transform_.reg_) {
+          if (field != nullptr) {
+            field->RenderInterface();
           }
         }
+      }
+      int i = 0;
+      for (const auto& component : g_current_object->GetAllComponents()) {
+        ImGui::PushID(i);
+        if (component != nullptr) {
+          if (ImGui::CollapsingHeader(component->GetTypeName().c_str())) {
+            for (const auto& field : component->reg_) {
+              if (field != nullptr) {
+                field->RenderInterface();
+              }
+            }
+            if (component->HasMaterial()) {
+              MaterialView(component->GetMaterial());
+            }
+            if (ImGui::Button("...")) {
+              ImGui::OpenPopup("Component Utilities");
+            }
+            if (ImGui::BeginPopup("Component Utilities", NULL)) {
+              if (ImGui::Button("Remove Component")) {
+                g_current_object->RemoveComponent(component);
+                ImGui::CloseCurrentPopup();
+              };
+              ImGui::EndPopup();
+            }
+          }
+          
+        }
+        ImGui::PopID();
+        i++;
       }
       ImGui::SeparatorText("Other Info");
       ImGui::Value("Has Initialized", g_current_object->has_initialized_);
@@ -456,7 +478,7 @@ void DrawLocalization() {
   ImGui::End();
 }
 
-void MaterialView(std::shared_ptr<Material> material) {
+void MaterialView(std::shared_ptr<Material>& material) {
   ImGui::SeparatorText("Material");
   if (ImGui::BeginTabBar("LoadType")) {
     if (ImGui::BeginTabItem("Directory")) {

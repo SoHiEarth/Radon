@@ -4,14 +4,15 @@
   virtual const bool HasMaterial() const {          \
     return false;                                   \
   }                                                 \
-  virtual std::shared_ptr<Material> GetMaterial() { \
-    return nullptr;                                 \
+  virtual std::shared_ptr<Material>& GetMaterial() { \
+    static std::shared_ptr<Material> null_material = nullptr; \
+    return null_material;                             \
   }
 #define ATTR_HAS_MATERIAL                            \
   const bool HasMaterial() const override {          \
     return true;                                     \
   }                                                  \
-  std::shared_ptr<Material> GetMaterial() override { \
+  std::shared_ptr<Material>& GetMaterial() override { \
     return material_;                                \
   }
 
