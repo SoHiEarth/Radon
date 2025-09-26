@@ -8,18 +8,19 @@ std::string GetTrace(const std::source_location& location) {
   std::string trace;
   if (debug::g_debug_settings.trace_source_file_) {
     trace += location.file_name();
-}
+  }
   if (debug::g_debug_settings.trace_source_file_) {
     trace += "(" + std::to_string(location.line()) + ":" + std::to_string(location.column()) + ")";
-}
+  }
   if (debug::g_debug_settings.trace_function_name_) {
     trace += location.function_name();
-}
+  }
   return trace;
 }
 
 std::function<void(const char*, const char*, std::uint8_t)> g_debug_callback = nullptr;
-void debug::SetCallback(std::function<void(const char*, const char*, std::uint8_t)> func) noexcept {
+void debug::g_set_callback(
+    std::function<void(const char*, const char*, std::uint8_t)> func) noexcept {
   g_debug_callback = std::move(func);
   debug::Log("Set debug callback");
 }

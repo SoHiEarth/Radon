@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <glm/glm.hpp>
+#include <memory>
 #include <vector>
 
 class GLFWwindow;
@@ -14,26 +15,10 @@ class SpotLight;
 
 enum : std::uint8_t {
   kDefaultRenderFactor = 1,
-  kDefaultExposure = 1,
-  kDefaultBloom = 0,
-  kDefaultBloomAmount = 10,
-  kDefaultDithering = 0,
-  kDefaultPixelation = 1,
-  kDefaultScanlines = 0,
-  kDefaultScanlinesIntensity = 1,
-  kDefaultBrightness = 1
 };
 
 struct RenderSettings {
   float render_factor_ = kDefaultRenderFactor;
-  float exposure_ = kDefaultExposure;
-  bool bloom_ = static_cast<bool>(kDefaultBloom);
-  int bloom_amount_ = kDefaultBloomAmount;
-  bool dithering_ = static_cast<bool>(kDefaultDithering);
-  float pixelation_ = kDefaultPixelation;
-  bool scanlines_ = static_cast<bool>(kDefaultScanlines);
-  float scanline_intensity_ = kDefaultScanlinesIntensity;
-  float brightness_ = kDefaultBrightness;
 };
 
 struct FramebufferCreateInfo {
@@ -55,10 +40,16 @@ struct Framebuffer {
   std::vector<unsigned int> attachments_;
 };
 
+enum class RenderDrawMode : std::uint8_t {
+  kFill = 0,
+  kLine = 1,
+  kPoint = 2
+};
+
 namespace render {
-extern std::vector<DirectionalLight*> g_directional_lights;
-extern std::vector<PointLight*> g_point_lights;
-extern std::vector<SpotLight*> g_spot_lights;
+extern std::vector<std::shared_ptr<DirectionalLight>> g_directional_lights;
+extern std::vector<std::shared_ptr<PointLight>> g_point_lights;
+extern std::vector<std::shared_ptr<SpotLight>> g_spot_lights;
 extern RenderSettings g_render_settings;
 extern GLFWwindow* g_window;
 extern int g_width;
@@ -69,47 +60,20 @@ void Init();
 void Update();
 void Render();
 void Quit();
-void RenderTexture(const Material* /*material*/, const glm::vec3& /*pos*/,
+void RenderTexture(std::shared_ptr<Material> /*material*/, const glm::vec3& /*pos*/,
                    const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
-Framebuffer CreateFramebuffer(FramebufferCreateInfo& create_info);
+Framebuffer CreateFramebuffer(const FramebufferCreateInfo& create_info);
 void DeleteFramebuffer(Framebuffer& framebuffer);
 
-template <typename T>
-void AddLight(T* light) {
-  if (light == nullptr) {
-    return;
-  }
-  if constexpr (std::is_same_v<T, DirectionalLight>) {
-    g_directional_lights.push_back(light);
-  } else if constexpr (std::is_same_v<T, PointLight>) {
-    g_point_lights.push_back(light);
-  } else if constexpr (std::is_same_v<T, SpotLight>) {
-    g_spot_lights.push_back(light);
-  }
-}
+void SetRenderDrawMode(const RenderDrawMode& mode);
+const RenderDrawMode GetRenderDrawMode();
 
-template <typename T>
-void RemoveLight(T* light) {
-  if (light == nullptr) {
-    return;
-  }
-  std::vector<T*>* light_list = nullptr;
-  if constexpr (std::is_same_v<T, DirectionalLight>) {
-    light_list = &g_directional_lights;
-  } else if constexpr (std::is_same_v<T, PointLight>) {
-    light_list = &g_point_lights;
-  } else if constexpr (std::is_same_v<T, SpotLight>) {
-    light_list = &g_spot_lights;
-  }
-  if (light_list == nullptr) {
-    return;
-  }
-  for (int i = 0; i < light_list->size(); i++) {
-    if (light_list->at(i) == light) {
-      light_list->erase(light_list->begin() + i);
-    }
-  }
-}
+void g_add_light(std::shared_ptr<DirectionalLight> light);
+void g_add_light(std::shared_ptr<PointLight> light);
+void g_add_light(std::shared_ptr<SpotLight> light);
+void g_remove_light(std::shared_ptr<DirectionalLight> light);
+void g_remove_light(std::shared_ptr<PointLight> light);
+void g_remove_light(std::shared_ptr<SpotLight> light);
 }  // namespace render
 
 #endif  // RENDER_H

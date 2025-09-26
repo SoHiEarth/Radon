@@ -1,6 +1,7 @@
 #ifndef LEVEL_H
 #define LEVEL_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -11,10 +12,10 @@ public:
   void Update();
   void Render();
   void Quit();
-  void AddObject(Object* /*object*/, std::string_view /*name*/ = "Object");
-  void RemoveObject(Object* /*object*/);
+  void AddObject(std::shared_ptr<Object> /*object*/, std::string_view /*name*/ = "Object");
+  void RemoveObject(std::shared_ptr<Object> /*object*/);
   std::string path_;
-  std::vector<Object*> objects_;
+  std::vector<std::shared_ptr<Object>> objects_;
 };
 
 #endif  // LEVEL_H

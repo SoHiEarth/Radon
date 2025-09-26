@@ -1,13 +1,18 @@
+// 
+#include <glad/glad.h>
+//
+
+#include <GLFW/glfw3.h>
 #include <classes/level.h>
 #include <classes/light.h>
 #include <classes/object.h>
 #include <classes/shader.h>
-#include <classes/sprite.h>
+#include <classes/meshrenderer.h>
+#include <classes/transform.h>
 #include <classes/texture.h>
 #include <engine/debug.h>
 #include <engine/io.h>
 #include <fmt/core.h>
-#include <glad/glad.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <algorithm>
 #include <array>
@@ -15,8 +20,10 @@
 #include <format>
 #include <fstream>
 #include <functional>
+#include <pugixml.hpp>
 #include <sstream>
 #include <unordered_map>
+#include <classes/physicsobject.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #define MATERIAL_KEY_NAME "Material"
@@ -26,18 +33,22 @@
 #define MATERIAL_FRAGMENT_KEY_NAME "fs"
 #define MATERIAL_SHININESS_KEY_NAME "shininess"
 #define MATERIAL_SHININESS_DEFAULT_VALUE 32.0F
-#define OBJECT_FACTORY_KEY(Object)  \
-  {                                 \
-    #Object, {                      \
-      []() { return new Object(); } \
-    }                               \
+#define OBJECT_FACTORY_KEY(Object)                \
+  {                                               \
+    #Object, {                                    \
+      []() { return std::make_unique<Object>(); } \
+    }                                             \
   }
-Level* io::g_level = nullptr;
+
 enum : std::uint16_t { kLogSize = 512 };
+std::unique_ptr<Level> io::g_level;
 std::string io::g_engine_directory;
-std::unordered_map<std::string, std::function<Object*()>> io::g_object_factory = {
-    OBJECT_FACTORY_KEY(Sprite), OBJECT_FACTORY_KEY(DirectionalLight),
-    OBJECT_FACTORY_KEY(PointLight), OBJECT_FACTORY_KEY(SpotLight)};
+std::unordered_map<std::string, std::function<std::unique_ptr<Component>()>>
+    io::g_component_factory = {OBJECT_FACTORY_KEY(Transform),
+                               OBJECT_FACTORY_KEY(MeshRenderer),
+                               OBJECT_FACTORY_KEY(PhysicsObject),
+  OBJECT_FACTORY_KEY(DirectionalLight), OBJECT_FACTORY_KEY(PointLight), OBJECT_FACTORY_KEY(SpotLight)
+};
 std::string ValidateName(std::string input);
 bool CheckFile(std::string_view path) {
   return std::filesystem::exists(path);
@@ -51,9 +62,10 @@ void io::Init() {
                                                   std::filesystem::current_path().string().c_str());
     if (engine_path != nullptr) {
       g_engine_directory = std::string(engine_path);
-      bool copy_assets = tinyfd_messageBox(
-          "Copy Assets", "Would you like to copy the engine assets to the current directory?",
-          "yesno", "question", 1) != 0;
+      bool copy_assets =
+          tinyfd_messageBox("Copy Assets",
+                            "Would you like to copy the engine assets to the current directory?",
+                            "yesno", "question", 1) != 0;
       if (copy_assets) {
         if (!CheckFile("engine_assets")) {
           std::filesystem::create_directory("engine_assets");
@@ -76,7 +88,7 @@ void io::Init() {
 ///  Level IO functions ///
 ///////////////////////////
 
-[[nodiscard("Pointer Discarded")]] Level* io::serialized::LoadLevel(std::string_view path) {
+std::unique_ptr<Level> io::xml::LoadLevel(std::string_view path) {
   if (!CheckFile(path)) {
     debug::Throw(std::format("Requested file does not exist. {}", path));
   }
@@ -91,36 +103,23 @@ void io::Init() {
     debug::Throw(std::format("Requested file {} is not a valid level file", path));
   }
 
-  auto* level = new Level();
+  auto level = std::make_unique<Level>();
   level->path_ = path;
   for (pugi::xml_node object_node : root.children("object")) {
-    level->AddObject(io::serialized::LoadObject(object_node));
+    level->objects_.push_back(io::xml::LoadObject(object_node));
   }
+  glfwSetWindowTitle(glfwGetCurrentContext(), std::format("Radon Engine - {}", path).c_str());
   debug::Log(std::format("Successfully loaded {}", path));
   level->Init();
   return level;
 }
 
-void io::FreeLevel(Level* level) {
-  if (level == nullptr) {
-    return;
-  }
-  for (auto* object : level->objects_) {
-    object->Quit();
-    object->has_quit_ = true;
-    FreeObject(object);
-  }
-  delete level;
-  level = nullptr;
-}
-
-void io::serialized::SaveLevel(const Level* level, std::string_view path) {
+void io::xml::SaveLevel(const Level& level, std::string_view path) {
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child("level");
-  for (const auto& object : level->objects_) {
-    pugi::xml_node object_node = root.append_child("object");
-    object_node.append_attribute("type") = object->GetTypeName();
-    object->Save(object_node);
+  for (const auto& object : level.objects_) {
+    auto child = root.append_child("object");
+    io::xml::SaveObject(*object, child);
   }
   bool save_result = doc.save_file(path.data());
   if (!save_result) {
@@ -132,34 +131,42 @@ void io::serialized::SaveLevel(const Level* level, std::string_view path) {
 ///  Object IO functions ///
 ////////////////////////////
 
-[[nodiscard("Pointer Discarded")]] Object* io::serialized::LoadObject(pugi::xml_node& base_node) {
-  std::string type_value = base_node.attribute("type").value();
-  auto iterator = g_object_factory.find(type_value);
-  if (iterator == g_object_factory.end()) {
-    debug::Throw(std::format("Unknown object type: {}", type_value));
+std::shared_ptr<Object> io::xml::LoadObject(pugi::xml_node& base_node) {
+  auto object = std::make_shared<Object>();
+
+  // Transform is required, so read it first
+  auto transform_node = base_node.child("transform");
+  if (transform_node) {
+    object->transform_.Load(transform_node);
+  } else {
+    debug::Warning("Object is missing required Transform component, reverting to default values.");
   }
-  Object* object = iterator->second();
+
+  for (auto& component_node : base_node.children("componentheader")) {
+    std::string component_type = component_node.attribute("type").as_string();
+    if (g_component_factory.find(component_type) != g_component_factory.end()) {
+      object->AddComponent(g_component_factory[component_type]());
+    } else {
+      debug::Warning(std::format("Component type {} not found in factory, skipping", component_type));
+    }
+  }
+
   object->Load(base_node);
   return object;
 }
 
-void io::FreeObject(Object*& object) {
-  if (object == nullptr) {
-    return;
-  }
-  if (object->has_initialized_ && !object->has_quit_) {
-    object->Quit();
-    object->has_quit_ = true;
-  }
-  delete object;
-  object = nullptr;
-}
+void io::xml::SaveObject(const Object& object, pugi::xml_node& base_node) {
+  // Write transform
+  auto transform_node = base_node.append_child("transform");
+  object.transform_.Save(transform_node);
 
-void io::serialized::SaveObject(const Object* object, pugi::xml_node& base_node) {
-  if (object == nullptr) {
-    return;
+  // First, write the component headers
+  for (const auto& component : object.GetAllComponents()) {
+    pugi::xml_node component_node = base_node.append_child("componentheader");
+    component_node.append_attribute("type").set_value(component->GetTypeName().c_str());
   }
-  object->Save(base_node);
+
+  object.Save(base_node);
 }
 
 ///////////////////////////
@@ -169,8 +176,8 @@ void io::serialized::SaveObject(const Object* object, pugi::xml_node& base_node)
 std::string ReadFile(std::string_view path);
 unsigned int CompileShader(std::string_view code, int type);
 
-[[nodiscard("Pointer Discarded")]] Shader* io::LoadShader(std::string_view vertex_path,
-                                                          std::string_view fragment_path) {
+std::unique_ptr<Shader> io::LoadShader(std::string_view vertex_path,
+                                       std::string_view fragment_path) {
   if (!CheckFile(vertex_path) || !CheckFile(fragment_path)) {
     debug::Throw(
         std::format("Requested shader file does not exist. {}, {}", vertex_path, fragment_path));
@@ -199,36 +206,24 @@ unsigned int CompileShader(std::string_view code, int type);
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);
-  auto* shader = new Shader(vertex_path, fragment_path);
+  auto shader = std::make_unique<Shader>(vertex_path, fragment_path);
   shader->id_ = program;
   return shader;
-}
-
-void io::FreeShader(Shader*& shader) {
-  if (shader == nullptr) {
-    return;
-  }
-  glDeleteProgram(shader->id_);
-  delete shader;
-  shader = nullptr;
 }
 
 ////////////////////////////
 /// Texture IO functions ///
 ////////////////////////////
 
-[[nodiscard("Pointer Discarded")]] Texture* io::LoadTexture(std::string_view path) {
-  auto* texture = new Texture();
+std::unique_ptr<Texture> io::LoadTexture(std::string_view path) {
+  auto texture = std::make_unique<Texture>();
   texture->path_ = path;
   glGenTextures(1, &texture->id_);
   stbi_set_flip_vertically_on_load(1);
   unsigned char* data =
       stbi_load(path.data(), &texture->width_, &texture->height_, &texture->channels_, 0);
   if (data == nullptr) {
-    delete texture;
-    texture = nullptr;
     debug::Throw(std::format("Failed to load texture. Details: {}", path));
-    return nullptr;
   }
   GLenum format = GL_RGB;
   switch (texture->channels_) {
@@ -254,34 +249,21 @@ void io::FreeShader(Shader*& shader) {
   return texture;
 }
 
-void io::FreeTexture(Texture*& texture) {
-  if (texture == nullptr) {
-    return;
-  }
-  glDeleteTextures(1, &texture->id_);
-  delete texture;
-  texture = nullptr;
-}
-
 /////////////////////////////
 /// Material IO functions ///
 /////////////////////////////
 
-[[nodiscard("Pointer Discarded")]] Material* io::LoadMaterial(std::string_view diffuse,
-                                                              std::string_view specular,
-                                                              std::string_view vertex,
-                                                              std::string_view fragment,
-                                                              float shininess) {
-  auto* material = new Material();
+std::shared_ptr<Material> io::LoadMaterial(std::string_view diffuse, std::string_view specular,
+                                           std::string_view vertex, std::string_view fragment,
+                                           float shininess) {
+  auto material = std::make_shared<Material>();
   material->shininess_ = shininess;
   try {
     material->diffuse_ = io::LoadTexture(diffuse);
     material->specular_ = io::LoadTexture(specular);
     material->shader_ = io::LoadShader(vertex, fragment);
   } catch (std::runtime_error& e) {
-    debug::Log(std::format("Material load failed. {}", e.what()));
-    io::FreeMaterial(material);
-    return nullptr;
+    debug::Warning(std::format("Material load failed. {}", e.what()));
   }
   material->shader_->Use();
   material->shader_->SetInt("material.diffuse", 0);
@@ -290,18 +272,7 @@ void io::FreeTexture(Texture*& texture) {
   return material;
 }
 
-void io::FreeMaterial(Material*& material) {
-  if (material == nullptr) {
-    return;
-  }
-  io::FreeTexture(material->diffuse_);
-  io::FreeTexture(material->specular_);
-  io::FreeShader(material->shader_);
-  delete material;
-  material = nullptr;
-}
-
-[[nodiscard("Pointer Discarded")]] Material* io::serialized::LoadMaterial(pugi::xml_node& node) {
+std::shared_ptr<Material> io::xml::LoadMaterial(pugi::xml_node& node) {
   pugi::xml_node material_node = node.child(MATERIAL_KEY_NAME);
   if (!material_node) {
     return nullptr;
@@ -314,12 +285,8 @@ void io::FreeMaterial(Material*& material) {
                               .as_float(MATERIAL_SHININESS_DEFAULT_VALUE));
 }
 
-void io::serialized::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
-  if (material == nullptr) {
-    return;
-  }
-
-  if (!material->IsValid()) {
+void io::xml::SaveMaterial(const Material& material, pugi::xml_node& base_node) {
+  if (!material.IsValid()) {
     debug::Log("Material is invalid (missing texture or shader), skipping save");
     return;
   }
@@ -328,18 +295,18 @@ void io::serialized::SaveMaterial(const Material* material, pugi::xml_node& base
   if (!node) {
     node = base_node.append_child(MATERIAL_KEY_NAME);
   }
-  node.append_attribute(MATERIAL_DIFFUSE_KEY_NAME).set_value(material->diffuse_->path_);
-  node.append_attribute(MATERIAL_SPECULAR_KEY_NAME).set_value(material->specular_->path_);
-  node.append_attribute(MATERIAL_VERTEX_KEY_NAME).set_value(material->shader_->vertex_path_);
-  node.append_attribute(MATERIAL_FRAGMENT_KEY_NAME).set_value(material->shader_->fragment_path_);
-  node.append_attribute(MATERIAL_SHININESS_KEY_NAME).set_value(material->shininess_);
+  node.append_attribute(MATERIAL_DIFFUSE_KEY_NAME).set_value(material.diffuse_->path_);
+  node.append_attribute(MATERIAL_SPECULAR_KEY_NAME).set_value(material.specular_->path_);
+  node.append_attribute(MATERIAL_VERTEX_KEY_NAME).set_value(material.shader_->vertex_path_);
+  node.append_attribute(MATERIAL_FRAGMENT_KEY_NAME).set_value(material.shader_->fragment_path_);
+  node.append_attribute(MATERIAL_SHININESS_KEY_NAME).set_value(material.shininess_);
 }
 
 ///////////////////////////////
 /// Serialized IO functions ///
 ///////////////////////////////
 
-glm::vec3 io::serialized::LoadVec3(pugi::xml_node& base_node, std::string name) {
+glm::vec3 io::xml::LoadVec3(pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   glm::vec3 value;
@@ -349,7 +316,7 @@ glm::vec3 io::serialized::LoadVec3(pugi::xml_node& base_node, std::string name) 
   return value;
 }
 
-glm::vec2 io::serialized::LoadVec2(pugi::xml_node& base_node, std::string name) {
+glm::vec2 io::xml::LoadVec2(pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   glm::vec2 value;
@@ -358,56 +325,55 @@ glm::vec2 io::serialized::LoadVec2(pugi::xml_node& base_node, std::string name) 
   return value;
 }
 
-std::string io::serialized::LoadString(pugi::xml_node& base_node, std::string name) {
+std::string io::xml::LoadString(pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   return node.attribute("value").as_string("");
 }
 
-int io::serialized::LoadInt(pugi::xml_node& base_node, std::string name) {
+int io::xml::LoadInt(pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   return node.attribute("value").as_int(0);
 }
 
-float io::serialized::LoadFloat(pugi::xml_node& base_node, std::string name) {
+float io::xml::LoadFloat(pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   return node.attribute("value").as_float(0.0F);
 }
 
-void io::serialized::SaveVec3(const glm::vec3* value, pugi::xml_node& base_node, std::string name) {
+void io::xml::SaveVec3(const glm::vec3& value, pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {
     node = base_node.append_child(name);
   }
-  node.append_attribute("x").set_value(value->x);
-  node.append_attribute("y").set_value(value->y);
-  node.append_attribute("z").set_value(value->z);
+  node.append_attribute("x").set_value(value.x);
+  node.append_attribute("y").set_value(value.y);
+  node.append_attribute("z").set_value(value.z);
 }
 
-void io::serialized::SaveVec2(const glm::vec2* value, pugi::xml_node& base_node, std::string name) {
+void io::xml::SaveVec2(const glm::vec2& value, pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {
     node = base_node.append_child(name);
   }
-  node.append_attribute("x").set_value(value->x);
-  node.append_attribute("y").set_value(value->y);
+  node.append_attribute("x").set_value(value.x);
+  node.append_attribute("y").set_value(value.y);
 }
 
-void io::serialized::SaveString(const std::string* value, pugi::xml_node& base_node,
-                                std::string name) {
+void io::xml::SaveString(std::string_view value, pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {
     node = base_node.append_child(name);
   }
-  node.append_attribute("value").set_value(value->c_str());
+  node.append_attribute("value").set_value(value.data());
 }
 
-void io::serialized::SaveInt(const int* value, pugi::xml_node& base_node, std::string name) {
+void io::xml::SaveInt(const int* value, pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {
@@ -416,7 +382,7 @@ void io::serialized::SaveInt(const int* value, pugi::xml_node& base_node, std::s
   node.append_attribute("value").set_value(*value);
 }
 
-void io::serialized::SaveFloat(const float* value, pugi::xml_node& base_node, std::string name) {
+void io::xml::SaveFloat(const float* value, pugi::xml_node& base_node, std::string name) {
   name = ValidateName(name);
   pugi::xml_node node = base_node.child(name);
   if (!node) {

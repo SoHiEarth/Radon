@@ -33,19 +33,19 @@ float g_camera_speed = DEFAULT_CAMERA_SPEED;
 inline void IfNoHUD(const std::function<void()>& fn) {
   if (!dev::g_hud_enabled) {
     fn();
-}
+  }
 }
 
 enum : std::uint16_t { kDefaultWindowWidth = 800, kDefaultWindowHeight = 600 };
 using ImGui::TextColored;
 float g_camera_fov = DEFAULT_CAMERA_FOV;
-std::vector<DirectionalLight*> render::g_directional_lights;
-std::vector<PointLight*> render::g_point_lights;
-std::vector<SpotLight*> render::g_spot_lights;
+std::vector<std::shared_ptr<DirectionalLight>> render::g_directional_lights;
+std::vector<std::shared_ptr<PointLight>> render::g_point_lights;
+std::vector<std::shared_ptr<SpotLight>> render::g_spot_lights;
 unsigned int g_vao, g_vbo;
 Framebuffer g_framebuffer;
 unsigned int g_screen_vao, g_screen_vbo;
-Shader *g_screen_shader = nullptr, *g_screen_shader_blur;
+std::unique_ptr<Shader> g_screen_shader, g_screen_shader_blur;
 float g_prev_render_factor = render::g_render_settings.render_factor_;
 RenderSettings render::g_render_settings{};
 GLFWwindow* render::g_window = nullptr;
@@ -75,7 +75,8 @@ void render::Init() {
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-  render::g_window = glfwCreateWindow(render::g_width, render::g_height, "Radon", nullptr, nullptr);
+  render::g_window =
+      glfwCreateWindow(render::g_width, render::g_height, "Radon Engine", nullptr, nullptr);
   if (render::g_window == nullptr) {
     const char* error_desc;
     glfwGetError(&error_desc);
@@ -227,8 +228,8 @@ glm::mat4 GetTransform(const glm::vec3& pos, const glm::vec2& scale, const glm::
   return transform;
 }
 
-void render::RenderTexture(const Material* material, const glm::vec3& pos, const glm::vec2& size,
-                           const glm::vec3& rot) {
+void render::RenderTexture(std::shared_ptr<Material> material, const glm::vec3& pos,
+                              const glm::vec2& size, const glm::vec3& rot) {
   if (material == nullptr) {
     return;
   }
@@ -248,7 +249,6 @@ void render::RenderTexture(const Material* material, const glm::vec3& pos, const
   material->shader_->SetMat4("view", view);
   material->shader_->SetMat4("projection", projection);
   material->shader_->SetVec3("viewPos", render::g_camera.position_);
-
   material->shader_->SetInt("NUM_DIRECTIONAL_LIGHTS",
                             static_cast<int>(g_directional_lights.size()));
   for (int i = 0; i < g_directional_lights.size(); i++) {
@@ -283,7 +283,7 @@ void FBSizeCallback(GLFWwindow* window, int width, int height) {
   glViewport(0, 0, render::g_width, render::g_height);
 }
 
-Framebuffer render::CreateFramebuffer(FramebufferCreateInfo& create_info) {
+Framebuffer render::CreateFramebuffer(const FramebufferCreateInfo& create_info) {
   Framebuffer framebuffer;
   framebuffer.width_ = create_info.width_;
   framebuffer.height_ = create_info.height_;
@@ -349,6 +349,38 @@ void render::DeleteFramebuffer(Framebuffer& framebuffer) {
   }
 }
 
+void render::SetRenderDrawMode(const RenderDrawMode& mode) {
+  switch (mode) {
+    case RenderDrawMode::kFill:
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+      break;
+    case RenderDrawMode::kLine:
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+      break;
+    case RenderDrawMode::kPoint:
+      glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+      break;
+    default:
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+      break;
+  }
+}
+
+const RenderDrawMode render::GetRenderDrawMode() {
+  GLint mode;
+  glGetIntegerv(GL_POLYGON_MODE, &mode);
+  switch (mode) {
+    case GL_FILL:
+      return RenderDrawMode::kFill;
+    case GL_LINE:
+      return RenderDrawMode::kLine;
+    case GL_POINT:
+      return RenderDrawMode::kPoint;
+    default:
+      return RenderDrawMode::kFill;
+  }
+}
+
 void RecreateFramebuffer() {
   render::DeleteFramebuffer(g_framebuffer);
   int framebuffer_width = std::max(1, render::g_width) / render::g_render_settings.render_factor_;
@@ -366,4 +398,40 @@ void RecreateFramebuffer() {
   create_info.create_renderbuffer_ = true;
   g_framebuffer = render::CreateFramebuffer(create_info);
   g_prev_render_factor = render::g_render_settings.render_factor_;
+}
+
+void render::g_add_light(std::shared_ptr<DirectionalLight> light) {
+  g_directional_lights.push_back(light);
+}
+
+void render::g_add_light(std::shared_ptr<PointLight> light) {
+  g_point_lights.push_back(light);
+}
+
+void render::g_add_light(std::shared_ptr<SpotLight> light) {
+  g_spot_lights.push_back(light);
+}
+
+void render::g_remove_light(std::shared_ptr<DirectionalLight> light) {
+  for (int i = 0; i < g_directional_lights.size(); i++) {
+    if (g_directional_lights.at(i) == light) {
+      g_directional_lights.erase(g_directional_lights.begin() + i);
+    }
+  }
+}
+
+void render::g_remove_light(std::shared_ptr<PointLight> light) {
+  for (int i = 0; i < g_point_lights.size(); i++) {
+    if (g_point_lights.at(i) == light) {
+      g_point_lights.erase(g_point_lights.begin() + i);
+    }
+  }
+}
+
+void render::g_remove_light(std::shared_ptr<SpotLight> light) {
+  for (int i = 0; i < g_spot_lights.size(); i++) {
+    if (g_spot_lights.at(i) == light) {
+      g_spot_lights.erase(g_spot_lights.begin() + i);
+    }
+  }
 }

@@ -1,3 +1,4 @@
+#include <GLFW/glfw3.h>
 #include <classes/level.h>
 #include <classes/object.h>
 #include <engine/debug.h>
@@ -5,6 +6,7 @@
 #include <format>
 
 void Level::Init() {
+  glfwSetWindowTitle(glfwGetCurrentContext(), std::format("Radon Engine - {}", path_).c_str());
   for (const auto& object : objects_) {
     if (object != nullptr) {
       if (!object->has_initialized_ && !object->has_quit_) {
@@ -46,7 +48,7 @@ void Level::Quit() {
   }
 }
 
-void Level::AddObject(Object* object, std::string_view name) {
+void Level::AddObject(std::shared_ptr<Object> object, std::string_view name) {
   if (object == nullptr) {
     return;
   }
@@ -61,7 +63,7 @@ void Level::AddObject(Object* object, std::string_view name) {
   objects_.push_back(object);
 }
 
-void Level::RemoveObject(Object* object) {
+void Level::RemoveObject(std::shared_ptr<Object> object) {
   if (object == nullptr) {
     return;
   }
@@ -72,7 +74,6 @@ void Level::RemoveObject(Object* object) {
       (*it)->Quit();
       (*it)->has_quit_ = true;
     }
-    delete *it;
     objects_.erase(it);
   }
 }

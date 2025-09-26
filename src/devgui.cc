@@ -1,10 +1,11 @@
-// Everything in here is probably jank
 #include <GLFW/glfw3.h>
+#include <classes/component.h>
 #include <classes/level.h>
 #include <classes/light.h>
 #include <classes/material.h>
+#include <classes/object.h>
 #include <classes/shader.h>
-#include <classes/sprite.h>
+#include <classes/meshrenderer.h>
 #include <classes/texture.h>
 #include <engine/debug.h>
 #include <engine/devgui.h>
@@ -34,12 +35,12 @@
 #define CONSOLE_TYPE_WIDTH 50.0F
 #define CONSOLE_TRACEBACK_WIDTH 200.0F
 bool dev::g_hud_enabled = false, g_disable_hud_after_frame = false;
-Object* g_current_object = nullptr;
+std::shared_ptr<Object> g_current_object;
 std::string g_material_diffuse, g_material_specular, g_material_vertex, g_material_fragment;
 int g_material_shininess = DEFAULT_SHININESS;
 std::vector<ConsoleMessage> g_console_messages;
 
-void MaterialView(Material*& material);
+void MaterialView(std::shared_ptr<Material>& material);
 void DrawProperties();
 void DrawDebug();
 void DrawLevel();
@@ -72,7 +73,7 @@ void dev::Init() {
       DEVGUI_FONT_SIZE, nullptr, imgui_io.Fonts->GetGlyphRangesDefault());
   ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
   ImGui_ImplOpenGL3_Init("#version 150");
-  debug::SetCallback(AddConsoleMessage);
+  debug::g_set_callback(AddConsoleMessage);
   debug::Log("Initialized GUI");
 }
 
@@ -133,7 +134,8 @@ void dev::Update() {
 }
 
 void dev::AddConsoleMessage(const char* traceback, const char* message, std::uint8_t type) {
-  ConsoleMessage console_message{.traceback_=traceback, .message_=message, .type_=ConsoleMessageType(type)};
+  ConsoleMessage console_message{
+      .traceback_ = traceback, .message_ = message, .type_ = ConsoleMessageType(type)};
   g_console_messages.push_back(console_message);
 }
 
@@ -157,16 +159,16 @@ void dev::Quit() {
   debug::Log("Quit GUI");
 }
 
-std::vector<float> fps_history_;
+std::vector<float> g_fps_history_;
 std::vector<std::map<std::string, std::chrono::milliseconds>> g_timings_history;
 
 void DrawTelemetry() {
   ImGui::Begin("Telemetry");
   ImGui::SeparatorText("FPS");
   float fps = ImGui::GetIO().Framerate;
-  fps_history_.push_back(fps);
-  if (fps_history_.size() > 100) {
-    fps_history_.erase(fps_history_.begin());
+  g_fps_history_.push_back(fps);
+  if (g_fps_history_.size() > 100) {
+    g_fps_history_.erase(g_fps_history_.begin());
   }
   if (ImGui::BeginTable("FPSTable", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
@@ -179,8 +181,8 @@ void DrawTelemetry() {
     ImGui::TableSetColumnIndex(1);
     ImGui::Text("%.1f", fps);
     ImGui::TableSetColumnIndex(2);
-    ImGui::PlotLines("##fps_plot", fps_history_.data(), fps_history_.size(), 0, nullptr, 0.0F,
-                     *std::ranges::max_element(fps_history_), ImVec2(0, 50));
+    ImGui::PlotLines("##fps_plot", g_fps_history_.data(), g_fps_history_.size(), 0, nullptr, 0.0F,
+                     *std::ranges::max_element(g_fps_history_), ImVec2(0, 50));
     ImGui::EndTable();
   }
   ImGui::SeparatorText("Update Timings");
@@ -243,8 +245,6 @@ void DrawTelemetry() {
 
 void DrawProperties() {
   ImGui::Begin("Properties");
-  // Cache object's position, update it via physics if changed
-  auto old_position = g_current_object != nullptr ? *g_current_object->position_ : glm::vec3();
   if (g_current_object != nullptr && io::g_level != nullptr) {
     if (ImGui::Button("Remove")) {
       io::g_level->RemoveObject(g_current_object);
@@ -255,15 +255,46 @@ void DrawProperties() {
           field->RenderInterface();
         }
       }
-      MaterialView(g_current_object->material_);
+      if (ImGui::CollapsingHeader("Transform (Base)")) {
+        for (const auto& field : g_current_object->transform_.reg_) {
+          if (field != nullptr) {
+            field->RenderInterface();
+          }
+        }
+      }
+      int i = 0;
+      for (const auto& component : g_current_object->GetAllComponents()) {
+        ImGui::PushID(i);
+        if (component != nullptr) {
+          if (ImGui::CollapsingHeader(component->GetTypeName().c_str())) {
+            for (const auto& field : component->reg_) {
+              if (field != nullptr) {
+                field->RenderInterface();
+              }
+            }
+            if (component->HasMaterial()) {
+              MaterialView(component->GetMaterial());
+            }
+            if (ImGui::Button("...")) {
+              ImGui::OpenPopup("Component Utilities");
+            }
+            if (ImGui::BeginPopup("Component Utilities", NULL)) {
+              if (ImGui::Button("Remove Component")) {
+                g_current_object->RemoveComponent(component);
+                ImGui::CloseCurrentPopup();
+              };
+              ImGui::EndPopup();
+            }
+          }
+          
+        }
+        ImGui::PopID();
+        i++;
+      }
       ImGui::SeparatorText("Other Info");
-      ImGui::LabelText("Type", "%s", g_current_object->GetTypeName().c_str());
       ImGui::Value("Has Initialized", g_current_object->has_initialized_);
       ImGui::Value("Has Quit", g_current_object->has_quit_);
     }
-  }
-  if (g_current_object != nullptr && old_position != *g_current_object->position_) {
-    physics::SetBodyPosition(g_current_object->physics_body_, *g_current_object->position_);
   }
   ImGui::End();
 }
@@ -325,8 +356,7 @@ void DevNewLevel() {
   const char* file =
       tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1, filter_patterns, "Level Files");
   if (file != nullptr) {
-    io::FreeLevel(io::g_level);
-    io::g_level = new Level();
+    io::g_level = std::make_unique<Level>();
     io::g_level->path_ = file;
   }
 }
@@ -336,8 +366,7 @@ void DevOpenLevel() {
   const char* file =
       tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
   if (file != nullptr) {
-    io::FreeLevel(io::g_level);
-    io::g_level = io::serialized::LoadLevel(file);
+    io::g_level = io::xml::LoadLevel(file);
     g_current_object = nullptr;
   }
 }
@@ -351,26 +380,27 @@ void DrawLevel() {
     if (ImGui::Button("Open Level")) {
       DevOpenLevel();
     }
+    ImGui::End();
+    return;
   }
-  if (io::g_level != nullptr) {
-    ImGui::LabelText("Level Path", "%s", io::g_level->path_.c_str());
-    ImGui::SeparatorText("Scene Objects");
-    if (ImGui::BeginTable(
-            "AddObjectTable", 1,
-            ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
-      for (const auto& object : io::g_level->objects_) {
-        if (object != nullptr) {
-          ImGui::TableNextRow();
-          ImGui::PushID(object);
-          ImGui::TableSetColumnIndex(0);
-          if (ImGui::Selectable(std::format("{}", *object->name_).c_str())) {
-            g_current_object = object;
-          }
-          ImGui::PopID();
+  ImGui::LabelText("Level Path", "%s", io::g_level->path_.c_str());
+  ImGui::SeparatorText("Scene Objects");
+  if (ImGui::BeginTable("AddObjectTable", 1,
+          ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
+    int object_index = 0;
+    for (const auto& object : io::g_level->objects_) {
+      if (object != nullptr) {
+        ImGui::TableNextRow();
+        ImGui::PushID(object_index);
+        ImGui::TableSetColumnIndex(0);
+        if (ImGui::Selectable(std::format("{}", *object->name_).c_str())) {
+          g_current_object = object;
         }
+        ImGui::PopID();
       }
-      ImGui::EndTable();
+      object_index++;
     }
+    ImGui::EndTable();
   }
   ImGui::End();
 }
@@ -448,7 +478,7 @@ void DrawLocalization() {
   ImGui::End();
 }
 
-void MaterialView(Material*& material) {
+void MaterialView(std::shared_ptr<Material>& material) {
   ImGui::SeparatorText("Material");
   if (ImGui::BeginTabBar("LoadType")) {
     if (ImGui::BeginTabItem("Directory")) {
@@ -456,7 +486,6 @@ void MaterialView(Material*& material) {
         char* material_path_c = tinyfd_selectFolderDialog("Select Material Directory", "");
         if (material_path_c != nullptr) {
           std::string material_path = std::string(material_path_c);
-          io::FreeMaterial(material);
           material = io::LoadMaterial(material_path + "/diffuse.png",
                                       material_path + "/specular.png", material_path + "/vert.glsl",
                                       material_path + "/frag.glsl", DEFAULT_SHININESS);
@@ -476,7 +505,6 @@ void MaterialView(Material*& material) {
       ImGui::InputText("Material Fragment", &g_material_fragment);
       ImGui::DragInt("Material Shininess", &g_material_shininess);
       if (ImGui::Button("Load")) {
-        io::FreeMaterial(material);
         material = io::LoadMaterial(g_material_diffuse, g_material_specular, g_material_vertex,
                                     g_material_fragment, g_material_shininess);
       }
@@ -485,8 +513,7 @@ void MaterialView(Material*& material) {
     ImGui::EndTabBar();
   }
   if (ImGui::Button("Clear")) {
-    io::FreeMaterial(material);
-    material = nullptr;
+    material.reset();
   }
   if (material == nullptr) {
     ImGui::TextColored({1, 0, 0, 1}, "No material loaded");
@@ -529,7 +556,7 @@ void DrawMenuFile() {
     ImGui::BeginDisabled(io::g_level == nullptr);
     if (ImGui::MenuItem("Save")) {
       if (io::g_level != nullptr) {
-        io::serialized::SaveLevel(io::g_level, io::g_level->path_);
+        io::xml::SaveLevel(*io::g_level, io::g_level->path_);
       }
     }
     if (ImGui::MenuItem("Save As")) {
@@ -538,7 +565,7 @@ void DrawMenuFile() {
         const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1,
                                                  filter_patterns, "Level Files");
         if (file != nullptr) {
-          io::serialized::SaveLevel(io::g_level, file);
+          io::xml::SaveLevel(*io::g_level, file);
           io::g_level->path_ = file;
         }
       }
@@ -555,9 +582,17 @@ void DrawMenuEdit() {
   if (ImGui::BeginMenu("Edit")) {
     if (ImGui::BeginMenu("Add")) {
       ImGui::BeginDisabled(io::g_level == nullptr);
-      for (const auto& [name, func] : io::g_object_factory) {
+      if (ImGui::MenuItem("Empty Object")) {
+        if (io::g_level != nullptr) {
+          io::g_level->AddObject(std::make_shared<Object>(), "Object");
+        }
+      }
+      ImGui::EndDisabled();
+      ImGui::BeginDisabled(io::g_level == nullptr || g_current_object == nullptr);
+      for (const auto& [name, func] : io::g_component_factory) {
         if (ImGui::MenuItem(std::format("{}", name).c_str())) {
-          io::g_level->AddObject(func(), name);
+          if (io::g_level != nullptr && g_current_object != nullptr)
+            g_current_object->AddComponent(func());
         }
       }
       ImGui::EndDisabled();
@@ -583,6 +618,21 @@ void DrawMenuView() {
 
 void DrawMenuEngine() {
   if (ImGui::BeginMenu("Engine")) {
+    if (ImGui::BeginMenu("Render")) {
+      if (ImGui::BeginMenu("Draw Mode")) {
+        if (ImGui::MenuItem("Fill", nullptr, render::GetRenderDrawMode() == RenderDrawMode::kFill)) {
+          render::SetRenderDrawMode(RenderDrawMode::kFill);
+        }
+        if (ImGui::MenuItem("Line", nullptr, render::GetRenderDrawMode() == RenderDrawMode::kLine)) {
+          render::SetRenderDrawMode(RenderDrawMode::kLine);
+        }
+        if (ImGui::MenuItem("Point", nullptr, render::GetRenderDrawMode() == RenderDrawMode::kPoint)) {
+          render::SetRenderDrawMode(RenderDrawMode::kPoint);
+        }
+        ImGui::EndMenu();
+      }
+      ImGui::EndMenu();
+    }
     ImGui::EndMenu();
   }
 }

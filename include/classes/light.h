@@ -1,11 +1,13 @@
 #ifndef LIGHT_H
 #define LIGHT_H
 
-#include <classes/object.h>
+#include <classes/component.h>
 #include <glm/glm.hpp>
+#include <memory>
+#include <pugixml.hpp>
 
 class Shader;
-class Light : public Object {
+class Light : public Component {
 public:
   Editable<glm::vec3> ambient_ = {glm::vec3(0.0F), "Ambient", reg_},
                       diffuse_ = {glm::vec3(0.0F), "Diffuse", reg_},
@@ -16,15 +18,14 @@ public:
 
 class DirectionalLight : public Light {
 public:
-  Editable<glm::vec3> direction_ = {glm::vec3(0.0F), "Direction", reg_};
   void Init() override;
   void Quit() override;
-  void Load(pugi::xml_node& /*unused*/) override;
+  void Load(pugi::xml_node& /*node*/ /*unused*/) override;
   [[nodiscard]] std::string GetTypeName() const override {
     return "DirectionalLight";
   }
-  void Save(pugi::xml_node& /*unused*/) const override;
-  void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
+  void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
+  void SetUniforms(const std::unique_ptr<Shader>&, int);
 };
 
 class PointLight : public Light {
@@ -38,7 +39,7 @@ public:
     return "PointLight";
   }
   void Save(pugi::xml_node& /*unused*/) const override;
-  void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
+  void SetUniforms(const std::unique_ptr<Shader>& /*shader*/, int /*kPos*/);
 };
 
 class SpotLight : public Light {
@@ -53,7 +54,7 @@ public:
     return "SpotLight";
   }
   void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
-  void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
+  void SetUniforms(const std::unique_ptr<Shader>& /*shader*/, int /*kPos*/);
 };
 
 #endif  // LIGHT_H
