@@ -17,7 +17,7 @@ namespace dev {
 extern bool g_hud_enabled;
 void Init();
 void Update();
-void AddConsoleMessage(const char*, const char*, std::uint8_t);
+void AddConsoleMessage(const char* /*traceback*/, const char* /*message*/, std::uint8_t /*type*/);
 void Render();
 void Quit();
 }  // namespace dev

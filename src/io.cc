@@ -1,15 +1,16 @@
-// 
+//
 #include <glad/glad.h>
 //
 
 #include <GLFW/glfw3.h>
 #include <classes/level.h>
 #include <classes/light.h>
-#include <classes/object.h>
-#include <classes/shader.h>
 #include <classes/meshrenderer.h>
-#include <classes/transform.h>
+#include <classes/object.h>
+#include <classes/physicsobject.h>
+#include <classes/shader.h>
 #include <classes/texture.h>
+#include <classes/transform.h>
 #include <engine/debug.h>
 #include <engine/io.h>
 #include <fmt/core.h>
@@ -23,16 +24,15 @@
 #include <pugixml.hpp>
 #include <sstream>
 #include <unordered_map>
-#include <classes/physicsobject.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-constexpr const char* MATERIAL_KEY_NAME = "Material";
-constexpr const char* MATERIAL_DIFFUSE_KEY_NAME = "diffuse";
-constexpr const char* MATERIAL_SPECULAR_KEY_NAME = "specular";
-constexpr const char* MATERIAL_VERTEX_KEY_NAME = "vs";
-constexpr const char* MATERIAL_FRAGMENT_KEY_NAME = "fs";
-constexpr const char* MATERIAL_SHININESS_KEY_NAME = "shininess";
-constexpr float MATERIAL_SHININESS_DEFAULT_VALUE = 32.0F;
+constexpr const char* kMaterialKeyName = "Material";
+constexpr const char* kMaterialDiffuseKeyName = "diffuse";
+constexpr const char* kMaterialSpecularKeyName = "specular";
+constexpr const char* kMaterialVertexKeyName = "vs";
+constexpr const char* kMaterialFragmentKeyName = "fs";
+constexpr const char* kMaterialShininessKeyName = "shininess";
+constexpr float kMaterialShininessDefaultValue = 32.0F;
 #define OBJECT_FACTORY_KEY(Object)                \
   {                                               \
     #Object, {                                    \
@@ -44,11 +44,10 @@ enum : std::uint16_t { kLogSize = 512 };
 std::unique_ptr<Level> io::g_level;
 std::string io::g_engine_directory;
 std::unordered_map<std::string_view, std::function<std::unique_ptr<Component>()>>
-    io::g_component_factory = {OBJECT_FACTORY_KEY(Transform),
-                               OBJECT_FACTORY_KEY(MeshRenderer),
-                               OBJECT_FACTORY_KEY(PhysicsObject),
-  OBJECT_FACTORY_KEY(DirectionalLight), OBJECT_FACTORY_KEY(PointLight), OBJECT_FACTORY_KEY(SpotLight)
-};
+    io::g_component_factory = {
+        OBJECT_FACTORY_KEY(Transform),     OBJECT_FACTORY_KEY(MeshRenderer),
+        OBJECT_FACTORY_KEY(PhysicsObject), OBJECT_FACTORY_KEY(DirectionalLight),
+        OBJECT_FACTORY_KEY(PointLight),    OBJECT_FACTORY_KEY(SpotLight)};
 std::string ValidateName(std::string input);
 static bool CheckFile(std::string_view path) {
   return std::filesystem::exists(path);
@@ -136,7 +135,7 @@ std::shared_ptr<Object> io::xml::LoadObject(pugi::xml_node& base_node) {
 
   // Transform is required, so read it first
   auto transform_node = base_node.child("transform");
-  if (transform_node) {
+  if (transform_node != nullptr) {
     object->transform_.Load(transform_node);
   } else {
     debug::Warning("Object is missing required Transform component, reverting to default values.");
@@ -144,10 +143,11 @@ std::shared_ptr<Object> io::xml::LoadObject(pugi::xml_node& base_node) {
 
   for (auto& component_node : base_node.children("componentheader")) {
     std::string component_type = component_node.attribute("type").as_string();
-    if (g_component_factory.find(component_type) != g_component_factory.end()) {
+    if (g_component_factory.contains(component_type)) {
       object->AddComponent(g_component_factory[component_type]());
     } else {
-      debug::Warning(std::format("Component type {} not found in factory, skipping", component_type));
+      debug::Warning(
+          std::format("Component type {} not found in factory, skipping", component_type));
     }
   }
 
@@ -271,16 +271,16 @@ std::shared_ptr<Material> io::LoadMaterial(std::string_view diffuse, std::string
 }
 
 std::shared_ptr<Material> io::xml::LoadMaterial(pugi::xml_node& node) {
-  pugi::xml_node material_node = node.child(MATERIAL_KEY_NAME);
+  pugi::xml_node material_node = node.child(kMaterialKeyName);
   if (!material_node) {
     return nullptr;
   }
-  return io::LoadMaterial(material_node.attribute(MATERIAL_DIFFUSE_KEY_NAME).as_string(),
-                          material_node.attribute(MATERIAL_SPECULAR_KEY_NAME).as_string(),
-                          material_node.attribute(MATERIAL_VERTEX_KEY_NAME).as_string(),
-                          material_node.attribute(MATERIAL_FRAGMENT_KEY_NAME).as_string(),
-                          material_node.attribute(MATERIAL_SHININESS_KEY_NAME)
-                              .as_float(MATERIAL_SHININESS_DEFAULT_VALUE));
+  return io::LoadMaterial(
+      material_node.attribute(kMaterialDiffuseKeyName).as_string(),
+      material_node.attribute(kMaterialSpecularKeyName).as_string(),
+      material_node.attribute(kMaterialVertexKeyName).as_string(),
+      material_node.attribute(kMaterialFragmentKeyName).as_string(),
+      material_node.attribute(kMaterialShininessKeyName).as_float(kMaterialShininessDefaultValue));
 }
 
 void io::xml::SaveMaterial(const Material& material, pugi::xml_node& base_node) {
@@ -289,15 +289,15 @@ void io::xml::SaveMaterial(const Material& material, pugi::xml_node& base_node) 
     return;
   }
 
-  pugi::xml_node node = base_node.child(MATERIAL_KEY_NAME);
+  pugi::xml_node node = base_node.child(kMaterialKeyName);
   if (!node) {
-    node = base_node.append_child(MATERIAL_KEY_NAME);
+    node = base_node.append_child(kMaterialKeyName);
   }
-  node.append_attribute(MATERIAL_DIFFUSE_KEY_NAME).set_value(material.diffuse_->path_);
-  node.append_attribute(MATERIAL_SPECULAR_KEY_NAME).set_value(material.specular_->path_);
-  node.append_attribute(MATERIAL_VERTEX_KEY_NAME).set_value(material.shader_->vertex_path_);
-  node.append_attribute(MATERIAL_FRAGMENT_KEY_NAME).set_value(material.shader_->fragment_path_);
-  node.append_attribute(MATERIAL_SHININESS_KEY_NAME).set_value(material.shininess_);
+  node.append_attribute(kMaterialDiffuseKeyName).set_value(material.diffuse_->kPath);
+  node.append_attribute(kMaterialSpecularKeyName).set_value(material.specular_->kPath);
+  node.append_attribute(kMaterialVertexKeyName).set_value(material.shader_->kVertexPath);
+  node.append_attribute(kMaterialFragmentKeyName).set_value(material.shader_->kFragmentPath);
+  node.append_attribute(kMaterialShininessKeyName).set_value(material.shininess_);
 }
 
 ///////////////////////////////

@@ -3,9 +3,9 @@
 #include <classes/level.h>
 #include <classes/light.h>
 #include <classes/material.h>
+#include <classes/meshrenderer.h>
 #include <classes/object.h>
 #include <classes/shader.h>
-#include <classes/meshrenderer.h>
 #include <classes/texture.h>
 #include <engine/debug.h>
 #include <engine/devgui.h>
@@ -24,20 +24,20 @@
 #include <array>
 #include <format>
 
-constexpr ImVec2 IMAGE_PREVIEW_SIZE = ImVec2(100.0F, 100.0F);
-constexpr float DEVGUI_ROUNDING_MORE = 8.0F;
-constexpr float DEVGUI_ROUNDING_LESS = 6.0F;
-constexpr float DEVGUI_FONT_SIZE = 18.0F;
-constexpr float DEFAULT_SHININESS = 32.0F;
-constexpr float DOCK_LEFT_WIDTH = 0.3F;
-constexpr float DOCK_RIGHT_WIDTH = 0.3F;
-constexpr float DOCK_BOTTOM_HEIGHT = 0.4F;
-constexpr float CONSOLE_TYPE_WIDTH = 50.0F;
-constexpr float CONSOLE_TRACEBACK_WIDTH = 200.0F;
+constexpr ImVec2 kImagePreviewSize = ImVec2(100.0F, 100.0F);
+constexpr float kDevguiRoundingMore = 8.0F;
+constexpr float kDevguiRoundingLess = 6.0F;
+constexpr float kDevguiFontSize = 18.0F;
+constexpr float kDefaultShininess = 32.0F;
+constexpr float kDockLeftWidth = 0.3F;
+constexpr float kDockRightWidth = 0.3F;
+constexpr float kDockBottomHeight = 0.4F;
+constexpr float kConsoleTypeWidth = 50.0F;
+constexpr float kConsoleTracebackWidth = 200.0F;
 bool dev::g_hud_enabled = false, g_disable_hud_after_frame = false;
 std::shared_ptr<Object> g_current_object;
 std::string g_material_diffuse, g_material_specular, g_material_vertex, g_material_fragment;
-int g_material_shininess = DEFAULT_SHININESS;
+int g_material_shininess = kDefaultShininess;
 std::vector<ConsoleMessage> g_console_messages;
 
 void MaterialView(std::shared_ptr<Material>& material);
@@ -61,19 +61,19 @@ void dev::Init() {
   imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   imgui_io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
   ImGuiStyle& style = ImGui::GetStyle();
-  style.WindowRounding = DEVGUI_ROUNDING_MORE;
-  style.ChildRounding = DEVGUI_ROUNDING_MORE;
-  style.FrameRounding = DEVGUI_ROUNDING_LESS;
-  style.PopupRounding = DEVGUI_ROUNDING_LESS;
-  style.ScrollbarRounding = DEVGUI_ROUNDING_LESS;
-  style.GrabRounding = DEVGUI_ROUNDING_LESS;
-  style.TabRounding = DEVGUI_ROUNDING_LESS;
+  style.WindowRounding = kDevguiRoundingMore;
+  style.ChildRounding = kDevguiRoundingMore;
+  style.FrameRounding = kDevguiRoundingLess;
+  style.PopupRounding = kDevguiRoundingLess;
+  style.ScrollbarRounding = kDevguiRoundingLess;
+  style.GrabRounding = kDevguiRoundingLess;
+  style.TabRounding = kDevguiRoundingLess;
   ImFont* ui_font = imgui_io.Fonts->AddFontFromFileTTF(
       (io::g_engine_directory + "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf").c_str(),
-      DEVGUI_FONT_SIZE, nullptr, imgui_io.Fonts->GetGlyphRangesDefault());
+      kDevguiFontSize, nullptr, imgui_io.Fonts->GetGlyphRangesDefault());
   ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
   ImGui_ImplOpenGL3_Init("#version 150");
-  debug::g_set_callback(AddConsoleMessage);
+  debug::GSetCallback(AddConsoleMessage);
   debug::Log("Initialized GUI");
 }
 
@@ -108,12 +108,12 @@ void dev::Update() {
     ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
     ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
     ImGuiID dock_main_id = dockspace_id;
-    ImGuiID dock_id_bottom = ImGui::DockBuilderSplitNode(
-        dock_main_id, ImGuiDir_Down, DOCK_BOTTOM_HEIGHT, nullptr, &dock_main_id);
-    ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, DOCK_LEFT_WIDTH,
+    ImGuiID dock_id_bottom = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down,
+                                                         kDockBottomHeight, nullptr, &dock_main_id);
+    ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, kDockLeftWidth,
                                                        nullptr, &dock_main_id);
     ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right,
-                                                        DOCK_RIGHT_WIDTH, nullptr, &dock_main_id);
+                                                        kDockRightWidth, nullptr, &dock_main_id);
     ImGui::DockBuilderDockWindow("Viewport", dock_main_id);
     ImGui::DockBuilderDockWindow("Properties", dock_id_right);
     ImGui::DockBuilderDockWindow("Debug", dock_id_right);
@@ -159,16 +159,16 @@ void dev::Quit() {
   debug::Log("Quit GUI");
 }
 
-std::vector<float> g_fps_history_;
+std::vector<float> g_fps_history;
 std::vector<std::map<std::string, std::chrono::milliseconds>> g_timings_history;
 
 void DrawTelemetry() {
   ImGui::Begin("Telemetry");
   ImGui::SeparatorText("FPS");
   float fps = ImGui::GetIO().Framerate;
-  g_fps_history_.push_back(fps);
-  if (g_fps_history_.size() > 100) {
-    g_fps_history_.erase(g_fps_history_.begin());
+  g_fps_history.push_back(fps);
+  if (g_fps_history.size() > 100) {
+    g_fps_history.erase(g_fps_history.begin());
   }
   if (ImGui::BeginTable("FPSTable", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
@@ -181,8 +181,8 @@ void DrawTelemetry() {
     ImGui::TableSetColumnIndex(1);
     ImGui::Text("%.1f", fps);
     ImGui::TableSetColumnIndex(2);
-    ImGui::PlotLines("##fps_plot", g_fps_history_.data(), g_fps_history_.size(), 0, nullptr, 0.0F,
-                     *std::ranges::max_element(g_fps_history_), ImVec2(0, 50));
+    ImGui::PlotLines("##fps_plot", g_fps_history.data(), g_fps_history.size(), 0, nullptr, 0.0F,
+                     *std::ranges::max_element(g_fps_history), ImVec2(0, 50));
     ImGui::EndTable();
   }
   ImGui::SeparatorText("Update Timings");
@@ -278,7 +278,7 @@ void DrawProperties() {
             if (ImGui::Button("...")) {
               ImGui::OpenPopup("Component Utilities");
             }
-            if (ImGui::BeginPopup("Component Utilities", NULL)) {
+            if (ImGui::BeginPopup("Component Utilities", 0)) {
               if (ImGui::Button("Remove Component")) {
                 g_current_object->RemoveComponent(component);
                 ImGui::CloseCurrentPopup();
@@ -286,7 +286,6 @@ void DrawProperties() {
               ImGui::EndPopup();
             }
           }
-          
         }
         ImGui::PopID();
         i++;
@@ -314,8 +313,8 @@ void DrawConsole() {
   if (ImGui::BeginTable(
           "ConsoleTable", 3,
           ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
-    ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, CONSOLE_TYPE_WIDTH);
-    ImGui::TableSetupColumn("Traceback", ImGuiTableColumnFlags_WidthFixed, CONSOLE_TRACEBACK_WIDTH);
+    ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, kConsoleTypeWidth);
+    ImGui::TableSetupColumn("Traceback", ImGuiTableColumnFlags_WidthFixed, kConsoleTracebackWidth);
     ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
     for (const auto& message : g_console_messages) {
@@ -385,7 +384,8 @@ void DrawLevel() {
   }
   ImGui::LabelText("Level Path", "%s", io::g_level->path_.c_str());
   ImGui::SeparatorText("Scene Objects");
-  if (ImGui::BeginTable("AddObjectTable", 1,
+  if (ImGui::BeginTable(
+          "AddObjectTable", 1,
           ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
     int object_index = 0;
     for (const auto& object : io::g_level->objects_) {
@@ -404,7 +404,7 @@ void DrawLevel() {
   }
   ImGui::End();
 }
-constexpr int BUFFER_SIZE = 128;
+constexpr int kBufferSize = 128;
 
 void DrawLocalization() {
   ImGui::Begin("Localization");
@@ -427,7 +427,7 @@ void DrawLocalization() {
       ImGui::TableNextRow();
       ImGui::PushID(index);
       ImGui::TableSetColumnIndex(0);
-      std::array<char, BUFFER_SIZE> key_buffer{};
+      std::array<char, kBufferSize> key_buffer{};
       strncpy(key_buffer.data(), key.c_str(), sizeof(key_buffer));
       key_buffer[sizeof(key_buffer) - 1] = '\0';
       if (ImGui::InputText("##Key", key_buffer.data(), sizeof(key_buffer))) {
@@ -437,7 +437,7 @@ void DrawLocalization() {
         }
       }
       ImGui::TableSetColumnIndex(1);
-      std::array<char, BUFFER_SIZE> value_buffer;
+      std::array<char, kBufferSize> value_buffer;
       strncpy(value_buffer.data(), value.c_str(), sizeof(value_buffer));
       value_buffer[sizeof(value_buffer) - 1] = '\0';
       if (ImGui::InputText("##Value", value_buffer.data(), sizeof(value_buffer))) {
@@ -489,11 +489,11 @@ void MaterialView(std::shared_ptr<Material>& material) {
           std::string material_path = std::string(material_path_c);
           material = io::LoadMaterial(material_path + "/diffuse.png",
                                       material_path + "/specular.png", material_path + "/vert.glsl",
-                                      material_path + "/frag.glsl", DEFAULT_SHININESS);
-          g_material_diffuse = material->diffuse_->path_;
-          g_material_specular = material->specular_->path_;
-          g_material_vertex = material->shader_->vertex_path_;
-          g_material_fragment = material->shader_->fragment_path_;
+                                      material_path + "/frag.glsl", kDefaultShininess);
+          g_material_diffuse = material->diffuse_->kPath;
+          g_material_specular = material->specular_->kPath;
+          g_material_vertex = material->shader_->kVertexPath;
+          g_material_fragment = material->shader_->kFragmentPath;
         }
       }
       ImGui::EndTabItem();
@@ -523,15 +523,15 @@ void MaterialView(std::shared_ptr<Material>& material) {
   if (material != nullptr) {
     ImGui::Text("Diffuse");
     if (material->diffuse_ != nullptr) {
-      ImGui::Image(material->diffuse_->id_, ImVec2(IMAGE_PREVIEW_SIZE));
-      ImGui::LabelText("Path", "%s", material->diffuse_->path_.c_str());
+      ImGui::Image(material->diffuse_->id_, ImVec2(kImagePreviewSize));
+      ImGui::LabelText("Path", "%s", material->diffuse_->kPath.c_str());
     } else {
       ImGui::TextColored({1, 0, 0, 1}, "Diffuse texture not loaded");
     }
     ImGui::Text("Specular");
     if (material->specular_ != nullptr) {
-      ImGui::Image(material->specular_->id_, ImVec2(IMAGE_PREVIEW_SIZE));
-      ImGui::LabelText("Path", "%s", material->specular_->path_.c_str());
+      ImGui::Image(material->specular_->id_, ImVec2(kImagePreviewSize));
+      ImGui::LabelText("Path", "%s", material->specular_->kPath.c_str());
     } else {
       ImGui::TextColored({1, 0, 0, 1}, "Specular texture not loaded");
     }
@@ -540,8 +540,8 @@ void MaterialView(std::shared_ptr<Material>& material) {
     if (material->shader_ == nullptr) {
       ImGui::TextColored({1, 0, 0, 1}, "Shader not loaded");
     } else {
-      ImGui::LabelText("Vertex Path", "%s", material->shader_->vertex_path_.c_str());
-      ImGui::LabelText("Fragment Path", "%s", material->shader_->fragment_path_.c_str());
+      ImGui::LabelText("Vertex Path", "%s", material->shader_->kVertexPath.c_str());
+      ImGui::LabelText("Fragment Path", "%s", material->shader_->kFragmentPath.c_str());
     }
   }
 }
@@ -592,8 +592,9 @@ void DrawMenuEdit() {
       ImGui::BeginDisabled(io::g_level == nullptr || g_current_object == nullptr);
       for (const auto& [name, func] : io::g_component_factory) {
         if (ImGui::MenuItem(std::format("{}", name).c_str())) {
-          if (io::g_level != nullptr && g_current_object != nullptr)
+          if (io::g_level != nullptr && g_current_object != nullptr) {
             g_current_object->AddComponent(func());
+          }
         }
       }
       ImGui::EndDisabled();
@@ -621,13 +622,16 @@ void DrawMenuEngine() {
   if (ImGui::BeginMenu("Engine")) {
     if (ImGui::BeginMenu("Render")) {
       if (ImGui::BeginMenu("Draw Mode")) {
-        if (ImGui::MenuItem("Fill", nullptr, render::GetRenderDrawMode() == RenderDrawMode::kFill)) {
+        if (ImGui::MenuItem("Fill", nullptr,
+                            render::GetRenderDrawMode() == RenderDrawMode::kFill)) {
           render::SetRenderDrawMode(RenderDrawMode::kFill);
         }
-        if (ImGui::MenuItem("Line", nullptr, render::GetRenderDrawMode() == RenderDrawMode::kLine)) {
+        if (ImGui::MenuItem("Line", nullptr,
+                            render::GetRenderDrawMode() == RenderDrawMode::kLine)) {
           render::SetRenderDrawMode(RenderDrawMode::kLine);
         }
-        if (ImGui::MenuItem("Point", nullptr, render::GetRenderDrawMode() == RenderDrawMode::kPoint)) {
+        if (ImGui::MenuItem("Point", nullptr,
+                            render::GetRenderDrawMode() == RenderDrawMode::kPoint)) {
           render::SetRenderDrawMode(RenderDrawMode::kPoint);
         }
         ImGui::EndMenu();

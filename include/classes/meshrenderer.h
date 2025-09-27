@@ -11,8 +11,8 @@ public:
   ATTR_HAS_MATERIAL;
   void Update() override;
   void Render() override;
-  void Load(pugi::xml_node&) override;
-  void Save(pugi::xml_node&) const override;
+  void Load(pugi::xml_node& /*unused*/) override;
+  void Save(pugi::xml_node& /*unused*/) const override;
   std::shared_ptr<Material> material_;
   [[nodiscard]] std::string GetTypeName() const override {
     return "MeshRenderer";

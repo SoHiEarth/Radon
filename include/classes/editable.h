@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-constexpr float FLOAT_STEP = 0.1F;
+constexpr float kFloatStep = 0.1F;
 
 class IEditable {
 public:
@@ -63,9 +63,9 @@ public:
     } else if constexpr (std::is_same_v<T, std::string>) {
       ImGui::InputText(i_label_, &i_value_);
     } else if constexpr (std::is_same_v<T, glm::vec2>) {
-      ImGui::DragFloat2(i_label_, glm::value_ptr(i_value_), FLOAT_STEP);
+      ImGui::DragFloat2(i_label_, glm::value_ptr(i_value_), kFloatStep);
     } else if constexpr (std::is_same_v<T, glm::vec3>) {
-      ImGui::DragFloat3(i_label_, glm::value_ptr(i_value_), FLOAT_STEP);
+      ImGui::DragFloat3(i_label_, glm::value_ptr(i_value_), kFloatStep);
     } else if constexpr (std::is_same_v<T, Material*>) {
       MaterialView(i_value_);
     }

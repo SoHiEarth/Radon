@@ -8,11 +8,11 @@
 namespace telemetry {
 void Init();
 void BeginFrame();
-void BeginTimer(const char*);
-void EndTimer(const char*);
-void LogTimer(const char*);
-void UploadTimings(const char*, std::map<std::string, std::chrono::milliseconds>);
-std::map<std::string, std::chrono::milliseconds> DownloadTimings(const char*);
+void BeginTimer(const char* /*name*/);
+void EndTimer(const char* /*name*/);
+void LogTimer(const char* /*name*/);
+void UploadTimings(const char* /*name*/, std::map<std::string, std::chrono::milliseconds> /*data*/);
+std::map<std::string, std::chrono::milliseconds> DownloadTimings(const char* /*name*/);
 std::map<std::string, std::chrono::milliseconds> GetTimings();
 std::map<std::string, std::chrono::milliseconds> GetLog();
 void Quit();

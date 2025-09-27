@@ -2,9 +2,9 @@
 #define PHYSICSOBJECT_H
 
 #include <classes/component.h>
+#include <engine/physics.h>
 #include <memory>
 #include <string>
-#include <engine/physics.h>
 
 class PhysicsObject : public Component {
 public:

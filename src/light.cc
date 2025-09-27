@@ -3,20 +3,20 @@
 #include <classes/material.h>
 #include <classes/object.h>
 #include <classes/shader.h>
+#include <classes/transform.h>
 #include <engine/io.h>
 #include <engine/render.h>
 #include <fmt/core.h>
 #include <glad/glad.h>
 #include <glm/fwd.hpp>
 #include <memory>
-#include <classes/transform.h>
 
 void DirectionalLight::Init() {
-  render::g_add_light(std::static_pointer_cast<DirectionalLight>(shared_from_this()));
+  render::GAddLight(std::static_pointer_cast<DirectionalLight>(shared_from_this()));
 }
 
 void DirectionalLight::Quit() {
-  render::g_remove_light(std::static_pointer_cast<DirectionalLight>(shared_from_this()));
+  render::GRemoveLight(std::static_pointer_cast<DirectionalLight>(shared_from_this()));
 }
 
 void DirectionalLight::Load(pugi::xml_node& node) {
@@ -43,11 +43,11 @@ void DirectionalLight::SetUniforms(const std::unique_ptr<Shader>& shader, const 
 }
 
 void PointLight::Init() {
-  render::g_add_light(std::static_pointer_cast<PointLight>(shared_from_this()));
+  render::GAddLight(std::static_pointer_cast<PointLight>(shared_from_this()));
 }
 
 void PointLight::Quit() {
-  render::g_remove_light(std::static_pointer_cast<PointLight>(shared_from_this()));
+  render::GRemoveLight(std::static_pointer_cast<PointLight>(shared_from_this()));
 }
 
 void PointLight::Load(pugi::xml_node& node) {
@@ -81,11 +81,11 @@ void PointLight::SetUniforms(const std::unique_ptr<Shader>& shader, const int kP
 }
 
 void SpotLight::Init() {
-  render::g_add_light(std::static_pointer_cast<SpotLight>(shared_from_this()));
+  render::GAddLight(std::static_pointer_cast<SpotLight>(shared_from_this()));
 }
 
 void SpotLight::Quit() {
-  render::g_remove_light(std::static_pointer_cast<SpotLight>(shared_from_this()));
+  render::GRemoveLight(std::static_pointer_cast<SpotLight>(shared_from_this()));
 }
 
 void SpotLight::Load(pugi::xml_node& node) {

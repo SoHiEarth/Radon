@@ -1,6 +1,6 @@
 #include <classes/material.h>
-#include <classes/object.h>
 #include <classes/meshrenderer.h>
+#include <classes/object.h>
 #include <engine/debug.h>
 #include <engine/io.h>
 #include <engine/physics.h>
@@ -17,8 +17,7 @@ void MeshRenderer::Update() {
 
 void MeshRenderer::Render() {
   if (auto parent = parent_.lock()) {
-    render::RenderTexture(material_, 
-                          static_cast<glm::vec3>(parent->transform_.position_),
+    render::RenderTexture(material_, static_cast<glm::vec3>(parent->transform_.position_),
                           static_cast<glm::vec2>(parent->transform_.scale_),
                           static_cast<glm::vec3>(parent->transform_.rotation_));
   }

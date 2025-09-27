@@ -1,19 +1,19 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
-#define ATTR_NO_MATERIAL                            \
-  virtual const bool HasMaterial() const {          \
-    return false;                                   \
-  }                                                 \
-  virtual std::shared_ptr<Material>& GetMaterial() { \
+#define ATTR_NO_MATERIAL                                      \
+  virtual const bool HasMaterial() const {                    \
+    return false;                                             \
+  }                                                           \
+  virtual std::shared_ptr<Material>& GetMaterial() {          \
     static std::shared_ptr<Material> null_material = nullptr; \
-    return null_material;                             \
+    return null_material;                                     \
   }
-#define ATTR_HAS_MATERIAL                            \
-  const bool HasMaterial() const override {          \
-    return true;                                     \
-  }                                                  \
+#define ATTR_HAS_MATERIAL                             \
+  const bool HasMaterial() const override {           \
+    return true;                                      \
+  }                                                   \
   std::shared_ptr<Material>& GetMaterial() override { \
-    return material_;                                \
+    return material_;                                 \
   }
 
 #include <classes/editable.h>
@@ -33,8 +33,8 @@ public:
   std::vector<IEditable*> reg_;
   bool has_initialized_ = false;
   bool has_quit_ = false;
-  virtual void Load(pugi::xml_node&) {};
-  virtual void Save(pugi::xml_node&) const {};
+  virtual void Load(pugi::xml_node& /*unused*/) {};
+  virtual void Save(pugi::xml_node& /*unused*/) const {};
   [[nodiscard]] virtual std::string GetTypeName() const = 0;
   virtual ~Component() = default;
 };

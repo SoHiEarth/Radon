@@ -1,7 +1,7 @@
-#include <classes/physicsobject.h>
-#include <engine/physics.h>
 #include <classes/object.h>
+#include <classes/physicsobject.h>
 #include <classes/transform.h>
+#include <engine/physics.h>
 
 void PhysicsObject::Init() {
   if (auto parent = parent_.lock()) {
@@ -10,7 +10,6 @@ void PhysicsObject::Init() {
     physics_body_ =
         physics::CreateBody(glm::vec2(position_->x, position_->y), static_cast<glm::vec2>(scale_));
   }
-  
 }
 
 void PhysicsObject::Update() {

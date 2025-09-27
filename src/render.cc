@@ -22,14 +22,14 @@
 #include <utility>
 #include <vector>
 
-constexpr ImVec4 TEXT_COLOR_RED = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
-constexpr float GUI_DRAG_STEP = 0.1F;
-constexpr ImVec2 IMAGE_SIZE = ImVec2(100, 100);
-constexpr float DEFAULT_CAMERA_FOV = 60.0F;
-constexpr float CAMERA_NEAR_PLANE = 0.1F;
-constexpr float CAMERA_FAR_PLANE = 100.0F;
-constexpr float DEFAULT_CAMERA_SPEED = 0.1;
-float g_camera_speed = DEFAULT_CAMERA_SPEED;
+constexpr ImVec4 kTextColorRed = ImVec4(1.0F, 0.0F, 0.0F, 1.0F);
+constexpr float kGuiDragStep = 0.1F;
+constexpr ImVec2 kImageSize = ImVec2(100, 100);
+constexpr float kDefaultCameraFov = 60.0F;
+constexpr float kCameraNearPlane = 0.1F;
+constexpr float kCameraFarPlane = 100.0F;
+constexpr float kDefaultCameraSpeed = 0.1;
+float g_camera_speed = kDefaultCameraSpeed;
 static inline void IfNoHUD(const std::function<void()>& fn) {
   if (!dev::g_hud_enabled) {
     fn();
@@ -38,7 +38,7 @@ static inline void IfNoHUD(const std::function<void()>& fn) {
 
 enum : std::uint16_t { kDefaultWindowWidth = 800, kDefaultWindowHeight = 600 };
 using ImGui::TextColored;
-float g_camera_fov = DEFAULT_CAMERA_FOV;
+float g_camera_fov = kDefaultCameraFov;
 std::vector<std::shared_ptr<DirectionalLight>> render::g_directional_lights;
 std::vector<std::shared_ptr<PointLight>> render::g_point_lights;
 std::vector<std::shared_ptr<SpotLight>> render::g_spot_lights;
@@ -209,10 +209,10 @@ void DrawRendererStatus() {
     ImGui::DragFloat("Camera Field of View", &g_camera_fov);
     ImGui::DragFloat("Camera Speed", &g_camera_speed, 0.01F, 0.01F, 10.0F);
     ImGui::SeparatorText("Screen Shader");
-    ImGui::InputFloat("Render Factor", &render::g_render_settings.render_factor_, GUI_DRAG_STEP);
+    ImGui::InputFloat("Render Factor", &render::g_render_settings.render_factor_, kGuiDragStep);
     ImGui::Text("Colorbuffer");
     for (unsigned int colorbuffer : g_framebuffer.colorbuffers_) {
-      ImGui::Image(colorbuffer, IMAGE_SIZE);
+      ImGui::Image(colorbuffer, kImageSize);
     }
     ImGui::End();
   }
@@ -228,8 +228,8 @@ static glm::mat4 GetTransform(const glm::vec3& pos, const glm::vec2& scale, cons
   return transform;
 }
 
-void render::RenderTexture(std::shared_ptr<Material> material, const glm::vec3& pos,
-                              const glm::vec2& size, const glm::vec3& rot) {
+void render::RenderTexture(const std::shared_ptr<Material>& material, const glm::vec3& pos,
+                           const glm::vec2& size, const glm::vec3& rot) {
   if (material == nullptr) {
     return;
   }
@@ -242,7 +242,7 @@ void render::RenderTexture(std::shared_ptr<Material> material, const glm::vec3& 
   glm::mat4 projection = glm::perspective(
       glm::radians(g_camera_fov),
       (static_cast<float>(g_framebuffer.width_) / static_cast<float>(g_framebuffer.height_)),
-      CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
+      kCameraNearPlane, kCameraFarPlane);
 
   material->Bind();
   material->shader_->SetMat4("model", model);
@@ -366,7 +366,7 @@ void render::SetRenderDrawMode(const RenderDrawMode& mode) {
   }
 }
 
-const RenderDrawMode render::GetRenderDrawMode() {
+RenderDrawMode render::GetRenderDrawMode() {
   GLint mode;
   glGetIntegerv(GL_POLYGON_MODE, &mode);
   switch (mode) {
@@ -400,19 +400,19 @@ void RecreateFramebuffer() {
   g_prev_render_factor = render::g_render_settings.render_factor_;
 }
 
-void render::g_add_light(std::shared_ptr<DirectionalLight> light) {
+void render::GAddLight(const std::shared_ptr<DirectionalLight>& light) {
   g_directional_lights.push_back(light);
 }
 
-void render::g_add_light(std::shared_ptr<PointLight> light) {
+void render::GAddLight(const std::shared_ptr<PointLight>& light) {
   g_point_lights.push_back(light);
 }
 
-void render::g_add_light(std::shared_ptr<SpotLight> light) {
+void render::GAddLight(const std::shared_ptr<SpotLight>& light) {
   g_spot_lights.push_back(light);
 }
 
-void render::g_remove_light(std::shared_ptr<DirectionalLight> light) {
+void render::GRemoveLight(const std::shared_ptr<DirectionalLight>& light) {
   for (int i = 0; i < g_directional_lights.size(); i++) {
     if (g_directional_lights.at(i) == light) {
       g_directional_lights.erase(g_directional_lights.begin() + i);
@@ -420,7 +420,7 @@ void render::g_remove_light(std::shared_ptr<DirectionalLight> light) {
   }
 }
 
-void render::g_remove_light(std::shared_ptr<PointLight> light) {
+void render::GRemoveLight(const std::shared_ptr<PointLight>& light) {
   for (int i = 0; i < g_point_lights.size(); i++) {
     if (g_point_lights.at(i) == light) {
       g_point_lights.erase(g_point_lights.begin() + i);
@@ -428,7 +428,7 @@ void render::g_remove_light(std::shared_ptr<PointLight> light) {
   }
 }
 
-void render::g_remove_light(std::shared_ptr<SpotLight> light) {
+void render::GRemoveLight(const std::shared_ptr<SpotLight>& light) {
   for (int i = 0; i < g_spot_lights.size(); i++) {
     if (g_spot_lights.at(i) == light) {
       g_spot_lights.erase(g_spot_lights.begin() + i);

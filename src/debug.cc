@@ -19,7 +19,7 @@ std::string GetTrace(const std::source_location& location) {
 }
 
 std::function<void(const char*, const char*, std::uint8_t)> g_debug_callback = nullptr;
-void debug::g_set_callback(
+void debug::GSetCallback(
     std::function<void(const char*, const char*, std::uint8_t)> func) noexcept {
   g_debug_callback = std::move(func);
   debug::Log("Set debug callback");

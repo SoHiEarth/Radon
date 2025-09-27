@@ -11,21 +11,21 @@
 #include <engine/telemetry.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <format>
-constexpr const char* TIMER_INIT_NAME = "Engine Init";
-constexpr const char* TIMER_IO_INIT_NAME = "I/O Init";
-constexpr const char* TIMER_RENDER_INIT_NAME = "Render Init";
-constexpr const char* TIMER_DEVGUI_INIT_NAME = "Dev GUI Init";
-constexpr const char* TIMER_INPUT_INIT_NAME = "Input Init";
-constexpr const char* TIMER_AUDIO_INIT_NAME = "Audio Init";
-constexpr const char* TIMER_PHYSICS_INIT_NAME = "Physics Init";
+constexpr const char* kTimerInitName = "Engine Init";
+constexpr const char* kTimerIoInitName = "I/O Init";
+constexpr const char* kTimerRenderInitName = "Render Init";
+constexpr const char* kTimerDevguiInitName = "Dev GUI Init";
+constexpr const char* kTimerInputInitName = "Input Init";
+constexpr const char* kTimerAudioInitName = "Audio Init";
+constexpr const char* kTimerPhysicsInitName = "Physics Init";
 
-constexpr const char* TIMER_INPUT_UPDATE_NAME = "Input Update";
-constexpr const char* TIMER_LEVEL_UPDATE_NAME = "Level Update";
-constexpr const char* TIMER_RENDER_UPDATE_NAME = "Render Update";
-constexpr const char* TIMER_PHYSICS_UPDATE_NAME = "Physics Update";
-constexpr const char* TIMER_LEVEL_RENDER_NAME = "Level Render";
-constexpr const char* TIMER_RENDER_RENDER_NAME = "Render Render";
-constexpr const char* TIMER_AUDIO_UPDATE_NAME = "Audio Update";
+constexpr const char* kTimerInputUpdateName = "Input Update";
+constexpr const char* kTimerLevelUpdateName = "Level Update";
+constexpr const char* kTimerRenderUpdateName = "Render Update";
+constexpr const char* kTimerPhysicsUpdateName = "Physics Update";
+constexpr const char* kTimerLevelRenderName = "Level Render";
+constexpr const char* kTimerRenderRenderName = "Render Render";
+constexpr const char* kTimerAudioUpdateName = "Audio Update";
 
 #define TIME(FUNC, NAME)       \
   telemetry::BeginTimer(NAME); \
@@ -36,15 +36,15 @@ constexpr const char* TIMER_AUDIO_UPDATE_NAME = "Audio Update";
 int main(int argc, char** argv) {
   try {
     telemetry::Init();
-    telemetry::BeginTimer(TIMER_INIT_NAME);
-    TIME(io::Init(), TIMER_IO_INIT_NAME);
-    TIME(render::Init(), TIMER_RENDER_INIT_NAME);
-    TIME(dev::Init(), TIMER_DEVGUI_INIT_NAME);
-    TIME(input::Init(), TIMER_INPUT_INIT_NAME);
-    TIME(audio::Init(), TIMER_AUDIO_INIT_NAME);
-    TIME(physics::Init(), TIMER_PHYSICS_INIT_NAME);
-    telemetry::EndTimer(TIMER_INIT_NAME);
-    telemetry::LogTimer(TIMER_INIT_NAME);
+    telemetry::BeginTimer(kTimerInitName);
+    TIME(io::Init(), kTimerIoInitName);
+    TIME(render::Init(), kTimerRenderInitName);
+    TIME(dev::Init(), kTimerDevguiInitName);
+    TIME(input::Init(), kTimerInputInitName);
+    TIME(audio::Init(), kTimerAudioInitName);
+    TIME(physics::Init(), kTimerPhysicsInitName);
+    telemetry::EndTimer(kTimerInitName);
+    telemetry::LogTimer(kTimerInitName);
     auto timings = telemetry::GetTimings();
     for (const auto& [name, duration] : timings) {
       debug::Log(std::format("Telemetry: {}: {}ms", name, duration.count()));
@@ -65,17 +65,17 @@ int main(int argc, char** argv) {
   try {
     while (glfwWindowShouldClose(render::g_window) == 0) {
       telemetry::BeginFrame();
-      TIME(input::Update(), TIMER_INPUT_UPDATE_NAME);
+      TIME(input::Update(), kTimerInputUpdateName);
       if (io::g_level != nullptr) {
-        TIME(io::g_level->Update(), TIMER_LEVEL_UPDATE_NAME);
+        TIME(io::g_level->Update(), kTimerLevelUpdateName);
       }
-      TIME(physics::Update(), TIMER_PHYSICS_UPDATE_NAME);
-      TIME(render::Update(), TIMER_RENDER_UPDATE_NAME);
+      TIME(physics::Update(), kTimerPhysicsUpdateName);
+      TIME(render::Update(), kTimerRenderUpdateName);
       if (io::g_level != nullptr) {
-        TIME(io::g_level->Render(), TIMER_LEVEL_RENDER_NAME);
+        TIME(io::g_level->Render(), kTimerLevelRenderName);
       }
-      TIME(render::Render(), TIMER_RENDER_RENDER_NAME);
-      TIME(audio::Update(), TIMER_AUDIO_UPDATE_NAME);
+      TIME(render::Render(), kTimerRenderRenderName);
+      TIME(audio::Update(), kTimerAudioUpdateName);
     }
   } catch (std::exception& e) {
     debug::Log(std::format("Runtime failure: {}", e.what()));

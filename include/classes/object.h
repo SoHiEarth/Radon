@@ -2,17 +2,17 @@
 #define OBJECT_H
 
 #include <classes/editable.h>
+#include <classes/transform.h>
 #include <memory>
 #include <pugixml.hpp>
 #include <string>
 #include <vector>
-#include <classes/transform.h>
 
 class Component;
 class Object : public std::enable_shared_from_this<Object> {
 public:
   Transform transform_{};
-  std::vector<IEditable*> reg_{};
+  std::vector<IEditable*> reg_;
   Editable<std::string> name_ = {"Object", "Name", reg_};
   bool has_initialized_ = false;
   bool has_quit_ = false;
@@ -37,8 +37,9 @@ public:
     return components_;
   }
   virtual ~Object() = default;
+
 private:
-  std::vector<std::shared_ptr<Component>> components_ = {};
+  std::vector<std::shared_ptr<Component>> components_;
 };
 
 #endif  // OBJECT_H

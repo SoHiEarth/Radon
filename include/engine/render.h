@@ -38,15 +38,11 @@ struct Framebuffer {
   int width_ = 0, height_ = 0;
   unsigned int framebuffer_ = 0;
   unsigned int renderbuffer_ = 0;
-  std::vector<unsigned int> colorbuffers_{};
-  std::vector<unsigned int> attachments_{};
+  std::vector<unsigned int> colorbuffers_;
+  std::vector<unsigned int> attachments_;
 };
 
-enum class RenderDrawMode : std::uint8_t {
-  kFill = 0,
-  kLine = 1,
-  kPoint = 2
-};
+enum class RenderDrawMode : std::uint8_t { kFill = 0, kLine = 1, kPoint = 2 };
 
 namespace render {
 extern std::vector<std::shared_ptr<DirectionalLight>> g_directional_lights;
@@ -62,19 +58,20 @@ void Init();
 void Update();
 void Render();
 void Quit();
-void RenderTexture(std::shared_ptr<Material>, const glm::vec3&, const glm::vec2&, const glm::vec3&);
-Framebuffer CreateFramebuffer(const FramebufferCreateInfo&);
-void DeleteFramebuffer(Framebuffer&);
+void RenderTexture(const std::shared_ptr<Material> /*material*/&, const glm::vec3& /*pos*/,
+                   const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
+Framebuffer CreateFramebuffer(const FramebufferCreateInfo& /*create_info*/);
+void DeleteFramebuffer(Framebuffer& /*framebuffer*/);
 
-void SetRenderDrawMode(const RenderDrawMode&);
-const RenderDrawMode GetRenderDrawMode();
+void SetRenderDrawMode(const RenderDrawMode& /*mode*/);
+RenderDrawMode GetRenderDrawMode();
 
-void g_add_light(std::shared_ptr<DirectionalLight>);
-void g_add_light(std::shared_ptr<PointLight>);
-void g_add_light(std::shared_ptr<SpotLight>);
-void g_remove_light(std::shared_ptr<DirectionalLight>);
-void g_remove_light(std::shared_ptr<PointLight>);
-void g_remove_light(std::shared_ptr<SpotLight>);
+void GAddLight(const std::shared_ptr<DirectionalLight> /*light*/&);
+void GAddLight(const std::shared_ptr<PointLight> /*light*/&);
+void GAddLight(const std::shared_ptr<SpotLight> /*light*/&);
+void GRemoveLight(const std::shared_ptr<DirectionalLight> /*light*/&);
+void GRemoveLight(const std::shared_ptr<PointLight> /*light*/&);
+void GRemoveLight(const std::shared_ptr<SpotLight> /*light*/&);
 }  // namespace render
 
 #endif  // RENDER_H
