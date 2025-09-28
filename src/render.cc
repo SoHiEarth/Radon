@@ -7,6 +7,8 @@
 #include <classes/light.h>
 #include <classes/material.h>
 #include <classes/shader.h>
+#include <classes/texture.h>
+#include <classes/mesh.h>
 #include <engine/debug.h>
 #include <engine/devgui.h>
 #include <engine/input.h>
@@ -39,13 +41,14 @@ static inline void IfNoHUD(const std::function<void()>& fn) {
 enum : std::uint16_t { kDefaultWindowWidth = 800, kDefaultWindowHeight = 600 };
 using ImGui::TextColored;
 float g_camera_fov = kDefaultCameraFov;
-std::vector<std::shared_ptr<DirectionalLight>> render::g_directional_lights;
-std::vector<std::shared_ptr<PointLight>> render::g_point_lights;
-std::vector<std::shared_ptr<SpotLight>> render::g_spot_lights;
+std::vector<DirectionalLight*> render::g_directional_lights;
+std::vector<PointLight*> render::g_point_lights;
+std::vector<SpotLight*> render::g_spot_lights;
 unsigned int g_vao, g_vbo;
 Framebuffer g_framebuffer;
 unsigned int g_screen_vao, g_screen_vbo;
-std::unique_ptr<Shader> g_screen_shader, g_screen_shader_blur;
+Shader* g_screen_shader = nullptr;
+Shader* g_screen_shader_blur = nullptr;
 float g_prev_render_factor = render::g_render_settings.render_factor_;
 RenderSettings render::g_render_settings{};
 GLFWwindow* render::g_window = nullptr;
@@ -228,7 +231,81 @@ static glm::mat4 GetTransform(const glm::vec3& pos, const glm::vec2& scale, cons
   return transform;
 }
 
-void render::RenderTexture(const std::shared_ptr<Material>& material, const glm::vec3& pos,
+void render::DrawMesh(const Mesh* mesh, const Material* material,
+                      const glm::vec3& pos, const glm::vec2& size, const glm::vec3& rot) {
+  if (mesh == nullptr) {
+    return;
+  }
+  if (material == nullptr) {
+    return;
+  }
+  glm::mat4 model = GetTransform(pos, size, rot);
+  glm::mat4 view = glm::translate(glm::mat4(1.0F), -render::g_camera.position_);
+  glm::mat4 projection = glm::perspective(
+      glm::radians(g_camera_fov),
+      (static_cast<float>(g_framebuffer.width_) / static_cast<float>(g_framebuffer.height_)),
+      kCameraNearPlane, kCameraFarPlane);
+  if (material->shader_ == nullptr) {
+    return;
+  }
+  material->shader_->Use();
+  material->shader_->SetMat4("model", model);
+  material->shader_->SetMat4("view", view);
+  material->shader_->SetMat4("projection", projection);
+  material->shader_->SetVec3("viewPos", render::g_camera.position_);
+  material->shader_->SetInt("NUM_DIRECTIONAL_LIGHTS",
+                            static_cast<int>(g_directional_lights.size()));
+  for (int i = 0; i < g_directional_lights.size(); i++) {
+    if (g_directional_lights[i] != nullptr) {
+      g_directional_lights[i]->SetUniforms(material->shader_, i);
+    }
+  }
+  material->shader_->SetInt("NUM_POINT_LIGHTS", static_cast<int>(g_point_lights.size()));
+  for (int i = 0; i < g_point_lights.size(); i++) {
+    if (g_point_lights[i] != nullptr) {
+      g_point_lights[i]->SetUniforms(material->shader_, i);
+    }
+  }
+  material->shader_->SetInt("NUM_SPOT_LIGHTS", static_cast<int>(g_spot_lights.size()));
+  for (int i = 0; i < g_spot_lights.size(); i++) {
+    if (g_spot_lights[i] != nullptr) {
+      g_spot_lights[i]->SetUniforms(material->shader_, i);
+    }
+  }
+
+  unsigned int diffuse_number = 1;
+  unsigned int specular_number = 1;
+  for (unsigned int i = 0; i < mesh->textures_.size(); i++) {
+    glActiveTexture(GL_TEXTURE0 + i);
+    std::string number;
+    std::string name = mesh->textures_[i]->name;
+    if (name == "texture_diffuse") {
+      number = std::to_string(diffuse_number++);
+    } else if (name == "texture_specular") {
+      number = std::to_string(specular_number++);
+    }
+    material->shader_->SetInt(("material." + name + number).c_str(), i);
+    glBindTexture(GL_TEXTURE_2D, mesh->textures_[i]->id_);
+  }
+
+  glBindVertexArray(mesh->VAO);
+  glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(mesh->indices_.size()), GL_UNSIGNED_INT,
+                 nullptr);
+  glBindVertexArray(0);
+}
+
+void render::DrawModel(const Model* model,
+                       const Material* material, const glm::vec3& pos,
+                       const glm::vec2& size, const glm::vec3& rot) {
+  if (model == nullptr) {
+    return;
+  }
+  for (const auto& mesh : model->meshes_) {
+    DrawMesh(mesh, material, pos, size, rot);
+  }
+}
+
+void render::RenderTexture(const Material*& material, const glm::vec3& pos,
                            const glm::vec2& size, const glm::vec3& rot) {
   if (material == nullptr) {
     return;
@@ -245,6 +322,13 @@ void render::RenderTexture(const std::shared_ptr<Material>& material, const glm:
       kCameraNearPlane, kCameraFarPlane);
 
   material->Bind();
+  material->shader_->SetFloat("material.shininess", material->shininess_);
+  material->shader_->SetInt("material.diffuse", 0);
+  material->shader_->SetInt("material.specular", 1);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, material->diffuse_->id_);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, material->specular_->id_);
   material->shader_->SetMat4("model", model);
   material->shader_->SetMat4("view", view);
   material->shader_->SetMat4("projection", projection);
@@ -400,19 +484,19 @@ void RecreateFramebuffer() {
   g_prev_render_factor = render::g_render_settings.render_factor_;
 }
 
-void render::GAddLight(const std::shared_ptr<DirectionalLight>& light) {
+void render::GAddLight(DirectionalLight* light) {
   g_directional_lights.push_back(light);
 }
 
-void render::GAddLight(const std::shared_ptr<PointLight>& light) {
+void render::GAddLight(PointLight* light) {
   g_point_lights.push_back(light);
 }
 
-void render::GAddLight(const std::shared_ptr<SpotLight>& light) {
+void render::GAddLight(SpotLight* light) {
   g_spot_lights.push_back(light);
 }
 
-void render::GRemoveLight(const std::shared_ptr<DirectionalLight>& light) {
+void render::GRemoveLight(const DirectionalLight* light) {
   for (int i = 0; i < g_directional_lights.size(); i++) {
     if (g_directional_lights.at(i) == light) {
       g_directional_lights.erase(g_directional_lights.begin() + i);
@@ -420,7 +504,7 @@ void render::GRemoveLight(const std::shared_ptr<DirectionalLight>& light) {
   }
 }
 
-void render::GRemoveLight(const std::shared_ptr<PointLight>& light) {
+void render::GRemoveLight(const PointLight* light) {
   for (int i = 0; i < g_point_lights.size(); i++) {
     if (g_point_lights.at(i) == light) {
       g_point_lights.erase(g_point_lights.begin() + i);
@@ -428,7 +512,7 @@ void render::GRemoveLight(const std::shared_ptr<PointLight>& light) {
   }
 }
 
-void render::GRemoveLight(const std::shared_ptr<SpotLight>& light) {
+void render::GRemoveLight(const SpotLight* light) {
   for (int i = 0; i < g_spot_lights.size(); i++) {
     if (g_spot_lights.at(i) == light) {
       g_spot_lights.erase(g_spot_lights.begin() + i);

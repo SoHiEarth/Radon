@@ -23,7 +23,7 @@ public:
     return "DirectionalLight";
   }
   void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
-  void SetUniforms(const std::unique_ptr<Shader>& /*shader*/, int /*kPos*/);
+  void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
 };
 
 class PointLight : public Light {
@@ -37,7 +37,7 @@ public:
     return "PointLight";
   }
   void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
-  void SetUniforms(const std::unique_ptr<Shader>& /*shader*/, int /*kPos*/);
+  void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
 };
 
 class SpotLight : public Light {
@@ -52,7 +52,7 @@ public:
     return "SpotLight";
   }
   void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
-  void SetUniforms(const std::unique_ptr<Shader>& /*shader*/, int /*kPos*/);
+  void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
 };
 
 #endif  // LIGHT_H

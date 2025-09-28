@@ -58,7 +58,7 @@ void Object::Quit() {
 void Object::Load(pugi::xml_node& node) {
   name_ = io::xml::LoadString(node, name_.i_label_);
   for (auto& component : components_) {
-    component->parent_ = shared_from_this();
+    component->parent_ = this;
     component->Load(node);
   }
 }
@@ -70,7 +70,7 @@ void Object::Save(pugi::xml_node& node) const {
   }
 }
 
-void Object::AddComponent(std::shared_ptr<Component> component) {
+void Object::AddComponent(Component* component) {
   if (component == nullptr) {
     return;
   }
@@ -81,7 +81,7 @@ void Object::AddComponent(std::shared_ptr<Component> component) {
           std::format("Object already has a component of type {}.", component->GetTypeName()));
     }
   }
-  component->parent_ = shared_from_this();
+  component->parent_ = this;
   components_.push_back(std::move(component));
   if (has_initialized_) {
     components_.back()->Init();
@@ -89,9 +89,9 @@ void Object::AddComponent(std::shared_ptr<Component> component) {
   }
 }
 
-void Object::RemoveComponent(std::shared_ptr<Component> component) {
+void Object::RemoveComponent(Component* component) {
   components_.erase(
       std::remove_if(components_.begin(), components_.end(),
-                     [&](const std::shared_ptr<Component>& c) { return c == component; }),
+                     [&](const Component* c) { return c == component; }),
       components_.end());
 }

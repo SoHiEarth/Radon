@@ -10,6 +10,7 @@
 #include <classes/physicsobject.h>
 #include <classes/shader.h>
 #include <classes/texture.h>
+#include <classes/mesh.h>
 #include <classes/transform.h>
 #include <engine/debug.h>
 #include <engine/io.h>
@@ -21,6 +22,9 @@
 #include <format>
 #include <fstream>
 #include <functional>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 #include <pugixml.hpp>
 #include <sstream>
 #include <unordered_map>
@@ -36,14 +40,14 @@ constexpr float kMaterialShininessDefaultValue = 32.0F;
 #define OBJECT_FACTORY_KEY(Object)                \
   {                                               \
     #Object, {                                    \
-      []() { return std::make_unique<Object>(); } \
+      []() { return new Object(); } \
     }                                             \
   }
 
 enum : std::uint16_t { kLogSize = 512 };
-std::unique_ptr<Level> io::g_level;
+Level* io::g_level = nullptr;
 std::string io::g_engine_directory;
-std::unordered_map<std::string_view, std::function<std::unique_ptr<Component>()>>
+std::unordered_map<std::string_view, std::function<Component*()>>
     io::g_component_factory = {
         OBJECT_FACTORY_KEY(Transform),     OBJECT_FACTORY_KEY(MeshRenderer),
         OBJECT_FACTORY_KEY(PhysicsObject), OBJECT_FACTORY_KEY(DirectionalLight),
@@ -87,7 +91,7 @@ void io::Init() {
 ///  Level IO functions ///
 ///////////////////////////
 
-std::unique_ptr<Level> io::xml::LoadLevel(std::string_view path) {
+Level* io::xml::LoadLevel(std::string_view path) {
   if (!CheckFile(path)) {
     debug::Throw(std::format("Requested file does not exist. {}", path));
   }
@@ -102,7 +106,7 @@ std::unique_ptr<Level> io::xml::LoadLevel(std::string_view path) {
     debug::Throw(std::format("Requested file {} is not a valid level file", path));
   }
 
-  auto level = std::make_unique<Level>();
+  auto level = new Level();
   level->path_ = path;
   for (pugi::xml_node object_node : root.children("object")) {
     level->objects_.push_back(io::xml::LoadObject(object_node));
@@ -113,12 +117,12 @@ std::unique_ptr<Level> io::xml::LoadLevel(std::string_view path) {
   return level;
 }
 
-void io::xml::SaveLevel(const Level& level, std::string_view path) {
+void io::xml::SaveLevel(const Level* level, std::string_view path) {
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child("level");
-  for (const auto& object : level.objects_) {
+  for (Object* object : level->objects_) {
     auto child = root.append_child("object");
-    io::xml::SaveObject(*object, child);
+    io::xml::SaveObject(object, child);
   }
   bool save_result = doc.save_file(path.data());
   if (!save_result) {
@@ -130,8 +134,8 @@ void io::xml::SaveLevel(const Level& level, std::string_view path) {
 ///  Object IO functions ///
 ////////////////////////////
 
-std::shared_ptr<Object> io::xml::LoadObject(pugi::xml_node& base_node) {
-  auto object = std::make_shared<Object>();
+Object* io::xml::LoadObject(pugi::xml_node& base_node) {
+  auto object = new Object();
 
   // Transform is required, so read it first
   auto transform_node = base_node.child("transform");
@@ -144,7 +148,12 @@ std::shared_ptr<Object> io::xml::LoadObject(pugi::xml_node& base_node) {
   for (auto& component_node : base_node.children("componentheader")) {
     std::string component_type = component_node.attribute("type").as_string();
     if (g_component_factory.contains(component_type)) {
-      object->AddComponent(g_component_factory[component_type]());
+      Component* component = g_component_factory[component_type]();
+      if (component != nullptr) {
+        object->AddComponent(component);
+      } else {
+        debug::Warning(std::format("Failed to create component of type {}, skipping", component_type));
+      }
     } else {
       debug::Warning(
           std::format("Component type {} not found in factory, skipping", component_type));
@@ -155,18 +164,18 @@ std::shared_ptr<Object> io::xml::LoadObject(pugi::xml_node& base_node) {
   return object;
 }
 
-void io::xml::SaveObject(const Object& object, pugi::xml_node& base_node) {
+void io::xml::SaveObject(Object*& object, pugi::xml_node& base_node) {
   // Write transform
   auto transform_node = base_node.append_child("transform");
-  object.transform_.Save(transform_node);
+  object->transform_.Save(transform_node);
 
   // First, write the component headers
-  for (const auto& component : object.GetAllComponents()) {
+  for (const auto& component : object->GetAllComponents()) {
     pugi::xml_node component_node = base_node.append_child("componentheader");
     component_node.append_attribute("type").set_value(component->GetTypeName().c_str());
   }
 
-  object.Save(base_node);
+  object->Save(base_node);
 }
 
 ///////////////////////////
@@ -176,7 +185,7 @@ void io::xml::SaveObject(const Object& object, pugi::xml_node& base_node) {
 std::string ReadFile(std::string_view path);
 unsigned int CompileShader(std::string_view code, int type);
 
-std::unique_ptr<Shader> io::LoadShader(std::string_view vertex_path,
+Shader* io::LoadShader(std::string_view vertex_path,
                                        std::string_view fragment_path) {
   if (!CheckFile(vertex_path) || !CheckFile(fragment_path)) {
     debug::Throw(
@@ -206,7 +215,7 @@ std::unique_ptr<Shader> io::LoadShader(std::string_view vertex_path,
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);
-  auto shader = std::make_unique<Shader>(vertex_path, fragment_path);
+  auto shader = new Shader(vertex_path, fragment_path);
   shader->id_ = program;
   return shader;
 }
@@ -215,8 +224,8 @@ std::unique_ptr<Shader> io::LoadShader(std::string_view vertex_path,
 /// Texture IO functions ///
 ////////////////////////////
 
-std::unique_ptr<Texture> io::LoadTexture(std::string_view path) {
-  auto texture = std::make_unique<Texture>(path);
+Texture* io::LoadTexture(std::string_view path) {
+  auto texture = new Texture(path);
   glGenTextures(1, &texture->id_);
   stbi_set_flip_vertically_on_load(1);
   unsigned char* data =
@@ -252,25 +261,29 @@ std::unique_ptr<Texture> io::LoadTexture(std::string_view path) {
 /// Material IO functions ///
 /////////////////////////////
 
-std::shared_ptr<Material> io::LoadMaterial(std::string_view diffuse, std::string_view specular,
+Material* io::LoadMaterial(std::string_view diffuse, std::string_view specular,
                                            std::string_view vertex, std::string_view fragment,
                                            float shininess) {
-  auto material = std::make_shared<Material>();
+  auto material = new Material();
   material->shininess_ = shininess;
   try {
     material->diffuse_ = io::LoadTexture(diffuse);
     material->specular_ = io::LoadTexture(specular);
-    material->shader_ = io::LoadShader(vertex, fragment);
   } catch (std::runtime_error& e) {
     debug::Warning(std::format("Material load failed. {}", e.what()));
   }
-  material->shader_->Use();
-  material->shader_->SetInt("material.diffuse", 0);
-  material->shader_->SetInt("material.specular", 1);
+  try {
+    material->shader_ = io::LoadShader(vertex, fragment);
+    material->shader_->Use();
+    material->shader_->SetInt("material.diffuse", 0);
+    material->shader_->SetInt("material.specular", 1);
+  } catch (std::runtime_error& e) {
+    debug::Warning(std::format("Material load failed. {}", e.what()));
+  }
   return material;
 }
 
-std::shared_ptr<Material> io::xml::LoadMaterial(pugi::xml_node& node) {
+Material* io::xml::LoadMaterial(pugi::xml_node& node) {
   pugi::xml_node material_node = node.child(kMaterialKeyName);
   if (!material_node) {
     return nullptr;
@@ -283,21 +296,134 @@ std::shared_ptr<Material> io::xml::LoadMaterial(pugi::xml_node& node) {
       material_node.attribute(kMaterialShininessKeyName).as_float(kMaterialShininessDefaultValue));
 }
 
-void io::xml::SaveMaterial(const Material& material, pugi::xml_node& base_node) {
-  if (!material.IsValid()) {
-    debug::Log("Material is invalid (missing texture or shader), skipping save");
-    return;
-  }
-
+void io::xml::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
   pugi::xml_node node = base_node.child(kMaterialKeyName);
   if (!node) {
     node = base_node.append_child(kMaterialKeyName);
   }
-  node.append_attribute(kMaterialDiffuseKeyName).set_value(material.diffuse_->kPath);
-  node.append_attribute(kMaterialSpecularKeyName).set_value(material.specular_->kPath);
-  node.append_attribute(kMaterialVertexKeyName).set_value(material.shader_->kVertexPath);
-  node.append_attribute(kMaterialFragmentKeyName).set_value(material.shader_->kFragmentPath);
-  node.append_attribute(kMaterialShininessKeyName).set_value(material.shininess_);
+  if (material->diffuse_)
+    node.append_attribute(kMaterialDiffuseKeyName).set_value(material->diffuse_->kPath);
+  if (material->specular_)
+    node.append_attribute(kMaterialSpecularKeyName).set_value(material->specular_->kPath);
+  if (material->shader_) {
+    node.append_attribute(kMaterialVertexKeyName).set_value(material->shader_->kVertexPath);
+    node.append_attribute(kMaterialFragmentKeyName).set_value(material->shader_->kFragmentPath);
+  }
+  node.append_attribute(kMaterialShininessKeyName).set_value(material->shininess_);
+}
+
+//////////////////////////
+/// Model IO functions ///
+//////////////////////////
+
+std::vector<Texture*> LoadMaterialTextures(Model* model, aiMaterial* mat, aiTextureType type, std::string_view type_name) {
+  std::vector<Texture*> textures;
+  for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
+    aiString str;
+    mat->GetTexture(type, i, &str);
+    bool skip = false;
+    for (auto& texture : model->loaded_textures_) {
+      if (texture->kPath == std::string(str.C_Str())) {
+        textures.push_back(texture);
+        skip = true;
+        break;
+      }
+    }
+    if (!skip) {
+      std::string texture_path = model->kPath + "/" + std::string(str.C_Str());
+      Texture* texture = io::LoadTexture(texture_path);
+      if (texture != nullptr) {
+        texture->name = std::string(type_name);
+        textures.push_back(texture);
+        model->loaded_textures_.push_back(texture);
+      }
+    }
+  }
+  return textures;
+}
+
+Mesh* ProcessMesh(Model* model, aiMesh* mesh, const aiScene* scene) {
+  std::vector<Vertex> vertices;
+  std::vector<unsigned int> indices;
+  std::vector<Texture*> textures;
+
+  for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
+    Vertex vertex;
+    glm::vec3 vector;
+    vector.x = mesh->mVertices[i].x;
+    vector.y = mesh->mVertices[i].y;
+    vector.z = mesh->mVertices[i].z;
+    vertex.position_ = vector;
+    if (mesh->HasNormals()) {
+      vector.x = mesh->mNormals[i].x;
+      vector.y = mesh->mNormals[i].y;
+      vector.z = mesh->mNormals[i].z;
+      vertex.normal_ = vector;
+    }
+    if (mesh->mTextureCoords[0]) {
+      glm::vec2 vec;
+      vec.x = mesh->mTextureCoords[0][i].x;
+      vec.y = mesh->mTextureCoords[0][i].y;
+      vertex.tex_coords_ = vec;
+      vector.x = mesh->mTangents[i].x;
+      vector.y = mesh->mTangents[i].y;
+      vector.z = mesh->mTangents[i].z;
+      vertex.tangent_ = vector;
+      vector.x = mesh->mBitangents[i].x;
+      vector.y = mesh->mBitangents[i].y;
+      vector.z = mesh->mBitangents[i].z;
+      vertex.bitangent_ = vector;
+    } else {
+      vertex.tex_coords_ = glm::vec2(0.0F, 0.0F);
+    }
+    vertices.push_back(vertex);
+  }
+  for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
+    aiFace face = mesh->mFaces[i];
+    for (unsigned int j = 0; j < face.mNumIndices; j++) {
+      indices.push_back(face.mIndices[j]);
+    }
+  }
+  aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+  std::vector<Texture*> diffuse_textures = LoadMaterialTextures(model, material, aiTextureType_DIFFUSE, "texture_diffuse");
+  textures.insert(textures.end(), diffuse_textures.begin(), diffuse_textures.end());
+  std::vector<Texture*> specular_textures = LoadMaterialTextures(model, material, aiTextureType_SPECULAR, "texture_specular");
+  textures.insert(textures.end(), specular_textures.begin(), specular_textures.end());
+  return new Mesh(vertices, indices, textures);
+}
+
+void ProcessNode(Model* model, aiNode* node, const aiScene* scene, int depth = 0) {
+  if (depth > 1000) {  // safeguard
+    debug::Warning("Max recursion depth hit in ProcessNode. Potential cyclic scene graph.");
+    return;
+  } else {
+    debug::Log(std::format("Processing node: {} at depth {}", node->mName.C_Str(), depth));
+  }
+  for (unsigned int i = 0; i < node->mNumMeshes; i++) {
+    aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+    model->meshes_.push_back(ProcessMesh(model, mesh, scene));
+  }
+  for (unsigned int i = 0; i < node->mNumChildren; i++) {
+    ProcessNode(model, node->mChildren[i], scene, depth + 1);
+  }
+}
+
+Model* io::LoadModel(std::string_view path) {
+  if (!CheckFile(path)) {
+    debug::Throw(std::format("Requested model file does not exist. {}", path));
+  }
+  // Model path should be the directory of the model
+  auto model = new Model(std::filesystem::path(path).parent_path().string());
+  debug::Log(std::format("Loading model at path: {}", model->kPath));
+  Assimp::Importer importer;
+  const aiScene* scene =
+      importer.ReadFile(path.data(), aiProcess_Triangulate | aiProcess_GenSmoothNormals |
+                                  aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+  if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+    debug::Throw(std::format("Failed to load model. {}, {}", path, importer.GetErrorString()));
+  }
+  ProcessNode(model, scene->mRootNode, scene);
+  return model;
 }
 
 ///////////////////////////////

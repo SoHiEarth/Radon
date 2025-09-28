@@ -8,8 +8,9 @@ class Texture;
 class Shader;
 
 struct Material {
-  std::unique_ptr<Texture> diffuse_, specular_;
-  std::unique_ptr<Shader> shader_;
+  Texture* diffuse_ = nullptr;
+  Texture* specular_ = nullptr;
+  Shader* shader_ = nullptr;
   float shininess_ = 0;
   [[nodiscard]] bool IsValid() const;
   void Bind() const;

@@ -9,7 +9,7 @@
 #include <vector>
 
 class Component;
-class Object : public std::enable_shared_from_this<Object> {
+class Object {
 public:
   Transform transform_{};
   std::vector<IEditable*> reg_;
@@ -22,9 +22,9 @@ public:
   void Quit();
   void Load(pugi::xml_node&);
   void Save(pugi::xml_node&) const;
-  void AddComponent(std::shared_ptr<Component>);
+  void AddComponent(Component*);
   template <typename T>
-  std::weak_ptr<T> GetComponent() {
+  T*& GetComponent() {
     for (auto& component : components_) {
       if (auto casted = std::dynamic_pointer_cast<T>(component)) {
         return casted;
@@ -32,14 +32,14 @@ public:
     }
     return {};
   }
-  void RemoveComponent(std::shared_ptr<Component> component);
-  const std::vector<std::shared_ptr<Component>>& GetAllComponents() const {
+  void RemoveComponent(Component*);
+  const std::vector<Component*>& GetAllComponents() const {
     return components_;
   }
   virtual ~Object() = default;
 
 private:
-  std::vector<std::shared_ptr<Component>> components_;
+  std::vector<Component*> components_;
 };
 
 #endif  // OBJECT_H

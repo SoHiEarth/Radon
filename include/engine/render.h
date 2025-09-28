@@ -3,11 +3,12 @@
 
 #include <cstdint>
 #include <glm/glm.hpp>
-#include <memory>
 #include <vector>
 
 class GLFWwindow;
 class Camera;
+class Mesh;
+class Model;
 class Material;
 class DirectionalLight;
 class PointLight;
@@ -45,9 +46,9 @@ struct Framebuffer {
 enum class RenderDrawMode : std::uint8_t { kFill = 0, kLine = 1, kPoint = 2 };
 
 namespace render {
-extern std::vector<std::shared_ptr<DirectionalLight>> g_directional_lights;
-extern std::vector<std::shared_ptr<PointLight>> g_point_lights;
-extern std::vector<std::shared_ptr<SpotLight>> g_spot_lights;
+extern std::vector<DirectionalLight*> g_directional_lights;
+extern std::vector<PointLight*> g_point_lights;
+extern std::vector<SpotLight*> g_spot_lights;
 extern RenderSettings g_render_settings;
 extern GLFWwindow* g_window;
 extern int g_width;
@@ -58,20 +59,24 @@ void Init();
 void Update();
 void Render();
 void Quit();
-void RenderTexture(const std::shared_ptr<Material> /*material*/&, const glm::vec3& /*pos*/,
-                   const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
+void DrawMesh(const Mesh* /*mesh*/, const Material* /*material*/,
+              const glm::vec3& /*pos*/, const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
+void DrawModel(const Model* /*model*/, const Material* /*material*/,
+              const glm::vec3& /*pos*/, const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
+void RenderTexture(const Material*& /*material*/,
+              const glm::vec3& /*pos*/, const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
 Framebuffer CreateFramebuffer(const FramebufferCreateInfo& /*create_info*/);
 void DeleteFramebuffer(Framebuffer& /*framebuffer*/);
 
 void SetRenderDrawMode(const RenderDrawMode& /*mode*/);
 RenderDrawMode GetRenderDrawMode();
 
-void GAddLight(const std::shared_ptr<DirectionalLight> /*light*/&);
-void GAddLight(const std::shared_ptr<PointLight> /*light*/&);
-void GAddLight(const std::shared_ptr<SpotLight> /*light*/&);
-void GRemoveLight(const std::shared_ptr<DirectionalLight> /*light*/&);
-void GRemoveLight(const std::shared_ptr<PointLight> /*light*/&);
-void GRemoveLight(const std::shared_ptr<SpotLight> /*light*/&);
+void GAddLight(DirectionalLight* /*light*/);
+void GAddLight(PointLight* /*light*/);
+void GAddLight(SpotLight* /*light*/);
+void GRemoveLight(const DirectionalLight* /*light*/);
+void GRemoveLight(const PointLight* /*light*/);
+void GRemoveLight(const SpotLight* /*light*/);
 }  // namespace render
 
 #endif  // RENDER_H

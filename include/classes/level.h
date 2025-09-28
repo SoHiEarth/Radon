@@ -12,10 +12,10 @@ public:
   void Update();
   void Render();
   void Quit();
-  void AddObject(const std::shared_ptr<Object> /*object*/&, std::string_view /*name*/ = "Object");
-  void RemoveObject(const std::shared_ptr<Object> /*object*/&);
+  void AddObject(Object*, std::string_view /*name*/ = "Object");
+  void RemoveObject(const Object*);
   std::string path_;
-  std::vector<std::shared_ptr<Object>> objects_;
+  std::vector<Object*> objects_;
 };
 
 #endif  // LEVEL_H

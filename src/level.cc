@@ -46,7 +46,7 @@ void Level::Quit() {
   }
 }
 
-void Level::AddObject(const std::shared_ptr<Object>& object, std::string_view name) {
+void Level::AddObject(Object* object, std::string_view name) {
   if (object == nullptr) {
     return;
   }
@@ -61,7 +61,7 @@ void Level::AddObject(const std::shared_ptr<Object>& object, std::string_view na
   objects_.push_back(object);
 }
 
-void Level::RemoveObject(const std::shared_ptr<Object>& object) {
+void Level::RemoveObject(const Object* object) {
   if (object == nullptr) {
     return;
   }

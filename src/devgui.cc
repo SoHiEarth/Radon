@@ -21,7 +21,9 @@
 #include <imgui_stdlib.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <algorithm>
+#include <filesystem>
 #include <array>
+#include <classes/mesh.h>
 #include <format>
 
 constexpr ImVec2 kImagePreviewSize = ImVec2(100.0F, 100.0F);
@@ -35,12 +37,13 @@ constexpr float kDockBottomHeight = 0.4F;
 constexpr float kConsoleTypeWidth = 50.0F;
 constexpr float kConsoleTracebackWidth = 200.0F;
 bool dev::g_hud_enabled = false, g_disable_hud_after_frame = false;
-std::shared_ptr<Object> g_current_object;
+Object* g_current_object = nullptr;
 std::string g_material_diffuse, g_material_specular, g_material_vertex, g_material_fragment;
 int g_material_shininess = kDefaultShininess;
 std::vector<ConsoleMessage> g_console_messages;
 
-void MaterialView(std::shared_ptr<Material>& material);
+void MeshView(Model*& model);
+void MaterialView(Material*& material);
 void DrawProperties();
 void DrawDebug();
 void DrawLevel();
@@ -272,6 +275,9 @@ void DrawProperties() {
                 field->RenderInterface();
               }
             }
+            if (component->HasMesh()) {
+              MeshView(component->GetMesh());
+            }
             if (component->HasMaterial()) {
               MaterialView(component->GetMaterial());
             }
@@ -355,7 +361,7 @@ void DevNewLevel() {
   const char* file =
       tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1, filter_patterns, "Level Files");
   if (file != nullptr) {
-    io::g_level = std::make_unique<Level>();
+    io::g_level = new Level();
     io::g_level->path_ = file;
   }
 }
@@ -479,9 +485,47 @@ void DrawLocalization() {
   ImGui::End();
 }
 
-void MaterialView(std::shared_ptr<Material>& material) {
+void MeshView(Model*& model) {
+  ImGui::SeparatorText("Mesh");
+  if (ImGui::BeginTabBar("ModelLoadType")) {
+    if (ImGui::BeginTabItem("File")) {
+      if (ImGui::Button("Load")) {
+        const char* filter_patterns[] = {"*.obj", "*.fbx", "*.gltf", "*.glb"};
+        const char* file = tinyfd_openFileDialog("Select Mesh File", "", 4, filter_patterns, "Mesh Files", 0);
+        if (file != nullptr) {
+          model = io::LoadModel(file);
+        }
+      }
+      ImGui::SameLine();
+      ImGui::EndTabItem();
+    }
+    ImGui::EndTabBar();
+  }
+  if (ImGui::Button("Clear Mesh")) {
+    model = nullptr;
+  }
+  if (model == nullptr) {
+    ImGui::TextColored({1, 0, 0, 1}, "No mesh loaded");
+    return;
+  }
+  if (model != nullptr) {
+    ImGui::Text("Mesh Preview");
+    for (const auto& mesh : model->meshes_) {
+      if (mesh->textures_.size() > 0) {
+        ImGui::Image(mesh->textures_[0]->id_, ImVec2(kImagePreviewSize));
+        break;
+      }
+      ImGui::Text("Vertex Count: %zu", mesh->vertices_.size());
+      ImGui::Text("Index Count: %zu", mesh->indices_.size());
+    }
+    ImGui::Text("Meshes: %zu", model->meshes_.size());
+    ImGui::Text("Path: %s", model->kPath.c_str());
+  }
+}
+
+void MaterialView(Material*& material) {
   ImGui::SeparatorText("Material");
-  if (ImGui::BeginTabBar("LoadType")) {
+  if (ImGui::BeginTabBar("MaterialLoadType")) {
     if (ImGui::BeginTabItem("Directory")) {
       if (ImGui::Button("Load")) {
         char* material_path_c = tinyfd_selectFolderDialog("Select Material Directory", "");
@@ -490,8 +534,10 @@ void MaterialView(std::shared_ptr<Material>& material) {
           material = io::LoadMaterial(material_path + "/diffuse.png",
                                       material_path + "/specular.png", material_path + "/vert.glsl",
                                       material_path + "/frag.glsl", kDefaultShininess);
-          g_material_diffuse = material->diffuse_->kPath;
-          g_material_specular = material->specular_->kPath;
+          if (material->diffuse_)
+            g_material_diffuse = material->diffuse_->kPath;
+          if (material->specular_)
+            g_material_specular = material->specular_->kPath;
           g_material_vertex = material->shader_->kVertexPath;
           g_material_fragment = material->shader_->kFragmentPath;
         }
@@ -513,8 +559,8 @@ void MaterialView(std::shared_ptr<Material>& material) {
     }
     ImGui::EndTabBar();
   }
-  if (ImGui::Button("Clear")) {
-    material.reset();
+  if (ImGui::Button("Clear Material")) {
+    material = nullptr;
   }
   if (material == nullptr) {
     ImGui::TextColored({1, 0, 0, 1}, "No material loaded");
@@ -557,7 +603,7 @@ void DrawMenuFile() {
     ImGui::BeginDisabled(io::g_level == nullptr);
     if (ImGui::MenuItem("Save")) {
       if (io::g_level != nullptr) {
-        io::xml::SaveLevel(*io::g_level, io::g_level->path_);
+        io::xml::SaveLevel(io::g_level, io::g_level->path_);
       }
     }
     if (ImGui::MenuItem("Save As")) {
@@ -566,7 +612,7 @@ void DrawMenuFile() {
         const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1,
                                                  filter_patterns, "Level Files");
         if (file != nullptr) {
-          io::xml::SaveLevel(*io::g_level, file);
+          io::xml::SaveLevel(io::g_level, file);
           io::g_level->path_ = file;
         }
       }
@@ -585,7 +631,7 @@ void DrawMenuEdit() {
       ImGui::BeginDisabled(io::g_level == nullptr);
       if (ImGui::MenuItem("Empty Object")) {
         if (io::g_level != nullptr) {
-          io::g_level->AddObject(std::make_shared<Object>(), "Object");
+          io::g_level->AddObject(new Object(), "Object");
         }
       }
       ImGui::EndDisabled();

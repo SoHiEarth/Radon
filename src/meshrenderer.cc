@@ -16,16 +16,15 @@ void MeshRenderer::Update() {
 }
 
 void MeshRenderer::Render() {
-  if (auto parent = parent_.lock()) {
-    render::RenderTexture(material_, static_cast<glm::vec3>(parent->transform_.position_),
-                          static_cast<glm::vec2>(parent->transform_.scale_),
-                          static_cast<glm::vec3>(parent->transform_.rotation_));
-  }
+    render::DrawModel(mesh_, material_,
+                          static_cast<glm::vec3>(parent_->transform_.position_),
+                          static_cast<glm::vec2>(parent_->transform_.scale_),
+                          static_cast<glm::vec3>(parent_->transform_.rotation_));
 }
 
 void MeshRenderer::Load(pugi::xml_node& node) {
   material_ = io::xml::LoadMaterial(node);
 }
 void MeshRenderer::Save(pugi::xml_node& node) const {
-  io::xml::SaveMaterial(*material_, node);
+  io::xml::SaveMaterial(material_, node);
 }
