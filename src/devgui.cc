@@ -14,6 +14,7 @@
 #include <engine/physics.h>
 #include <engine/render.h>
 #include <engine/telemetry.h>
+#define IMGUI_ENABLE_FREETYPE
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -64,6 +65,7 @@ void dev::Init() {
   ImGuiIO& imgui_io = ImGui::GetIO();
   imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   imgui_io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  imgui_io.ConfigFlags |= ImGuiConfigFlags_IsSRGB;
   ImGuiStyle& style = ImGui::GetStyle();
   style.WindowRounding = kDevguiRoundingMore;
   style.ChildRounding = kDevguiRoundingMore;
@@ -72,6 +74,7 @@ void dev::Init() {
   style.ScrollbarRounding = kDevguiRoundingLess;
   style.GrabRounding = kDevguiRoundingLess;
   style.TabRounding = kDevguiRoundingLess;
+
   ImFont* ui_font = imgui_io.Fonts->AddFontFromFileTTF(
       (io::g_engine_directory + "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf").c_str(),
       kDevguiFontSize, nullptr, imgui_io.Fonts->GetGlyphRangesDefault());

@@ -8,6 +8,7 @@
 #include <classes/modelrenderer.h>
 #include <classes/object.h>
 #include <classes/physicsobject.h>
+#include <classes/audiosource.h>
 #include <classes/shader.h>
 #include <classes/texture.h>
 #include <classes/transform.h>
@@ -46,6 +47,7 @@ std::map<std::string, Texture*> io::g_loaded_textures{};
 std::unordered_map<std::string_view, std::function<Component*()>>
     io::g_component_factory = {
         OBJECT_FACTORY_KEY(Transform),     OBJECT_FACTORY_KEY(ModelRenderer),
+        OBJECT_FACTORY_KEY(AudioSource),
         OBJECT_FACTORY_KEY(PhysicsObject), OBJECT_FACTORY_KEY(DirectionalLight),
         OBJECT_FACTORY_KEY(PointLight),    OBJECT_FACTORY_KEY(SpotLight)};
 std::string ValidateName(std::string input);
