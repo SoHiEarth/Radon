@@ -36,8 +36,9 @@ class Model {
  public:
   std::vector<Texture*> loaded_textures_;
   std::vector<Mesh*> meshes_;
-  const std::string kPath;
-  Model(std::string_view path) : kPath(path) {}
+  const std::string kPath, kDirectory;
+  Model(std::string_view path, std::string_view directory)
+    : kPath(path), kDirectory(directory) {}
 };
 
 #endif  // MESH_H

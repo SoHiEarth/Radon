@@ -3,7 +3,7 @@
 #include <classes/level.h>
 #include <classes/light.h>
 #include <classes/material.h>
-#include <classes/meshrenderer.h>
+#include <classes/modelrenderer.h>
 #include <classes/object.h>
 #include <classes/shader.h>
 #include <classes/texture.h>
@@ -42,11 +42,12 @@ std::string g_material_diffuse, g_material_specular, g_material_vertex, g_materi
 int g_material_shininess = kDefaultShininess;
 std::vector<ConsoleMessage> g_console_messages;
 
-void MeshView(Model*& model);
+void ModelView(Model*& model);
 void MaterialView(Material*& material);
 void DrawProperties();
 void DrawDebug();
 void DrawLevel();
+void DrawIO();
 void DrawLocalization();
 void DrawConsole();
 void DrawTelemetry();
@@ -123,6 +124,7 @@ void dev::Update() {
     ImGui::DockBuilderDockWindow("Level", dock_id_left);
     ImGui::DockBuilderDockWindow("Localization", dock_main_id);
     ImGui::DockBuilderDockWindow("Renderer", dock_id_right);
+    ImGui::DockBuilderDockWindow("IO", dock_id_bottom);
     ImGui::DockBuilderDockWindow("Console", dock_id_bottom);
     ImGui::DockBuilderDockWindow("Telemetry", dock_id_bottom);
     ImGui::DockBuilderFinish(dockspace_id);
@@ -132,6 +134,7 @@ void dev::Update() {
   DrawLevel();
   DrawLocalization();
   DrawConsole();
+  DrawIO();
   DrawTelemetry();
   DrawMenuBar();
 }
@@ -275,8 +278,8 @@ void DrawProperties() {
                 field->RenderInterface();
               }
             }
-            if (component->HasMesh()) {
-              MeshView(component->GetMesh());
+            if (component->HasModel()) {
+              ModelView(component->GetModel());
             }
             if (component->HasMaterial()) {
               MaterialView(component->GetMaterial());
@@ -356,7 +359,7 @@ void DrawConsole() {
   ImGui::End();
 }
 
-void DevNewLevel() {
+static void DevNewLevel() {
   const char* filter_patterns[] = {"*.xml"};
   const char* file =
       tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1, filter_patterns, "Level Files");
@@ -366,7 +369,7 @@ void DevNewLevel() {
   }
 }
 
-void DevOpenLevel() {
+static void DevOpenLevel() {
   const char* filter_patterns[] = {"*.xml"};
   const char* file =
       tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
@@ -410,8 +413,17 @@ void DrawLevel() {
   }
   ImGui::End();
 }
-constexpr int kBufferSize = 128;
 
+void DrawIO() {
+  ImGui::Begin("IO");
+  for (const auto& [key, value] : io::g_loaded_textures) {
+    ImGui::Text("Texture Key: %s", key.c_str());
+    ImGui::Image(value->id_, kImagePreviewSize);
+  }
+  ImGui::End();
+}
+
+constexpr int kBufferSize = 128;
 void DrawLocalization() {
   ImGui::Begin("Localization");
   ImGui::InputText("Language", &localization::g_language);
@@ -443,7 +455,7 @@ void DrawLocalization() {
         }
       }
       ImGui::TableSetColumnIndex(1);
-      std::array<char, kBufferSize> value_buffer;
+      std::array<char, kBufferSize> value_buffer{};
       strncpy(value_buffer.data(), value.c_str(), sizeof(value_buffer));
       value_buffer[sizeof(value_buffer) - 1] = '\0';
       if (ImGui::InputText("##Value", value_buffer.data(), sizeof(value_buffer))) {
@@ -485,7 +497,7 @@ void DrawLocalization() {
   ImGui::End();
 }
 
-void MeshView(Model*& model) {
+void ModelView(Model*& model) {
   ImGui::SeparatorText("Mesh");
   if (ImGui::BeginTabBar("ModelLoadType")) {
     if (ImGui::BeginTabItem("File")) {

@@ -59,9 +59,9 @@ void Init();
 void Update();
 void Render();
 void Quit();
-void DrawMesh(const Mesh* /*mesh*/, const Material* /*material*/,
+void DrawMesh(const Mesh* /*mesh*/, const Shader* /*shader*/,
               const glm::vec3& /*pos*/, const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
-void DrawModel(const Model* /*model*/, const Material* /*material*/,
+void DrawModel(const Model* /*model*/, const Shader* /*shader*/,
               const glm::vec3& /*pos*/, const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
 void RenderTexture(const Material*& /*material*/,
               const glm::vec3& /*pos*/, const glm::vec2& /*size*/, const glm::vec3& /*rot*/);

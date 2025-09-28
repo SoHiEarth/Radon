@@ -5,12 +5,11 @@
 #include <GLFW/glfw3.h>
 #include <classes/level.h>
 #include <classes/light.h>
-#include <classes/meshrenderer.h>
+#include <classes/modelrenderer.h>
 #include <classes/object.h>
 #include <classes/physicsobject.h>
 #include <classes/shader.h>
 #include <classes/texture.h>
-#include <classes/mesh.h>
 #include <classes/transform.h>
 #include <engine/debug.h>
 #include <engine/io.h>
@@ -22,14 +21,10 @@
 #include <format>
 #include <fstream>
 #include <functional>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 #include <pugixml.hpp>
 #include <sstream>
 #include <unordered_map>
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+
 constexpr const char* kMaterialKeyName = "Material";
 constexpr const char* kMaterialDiffuseKeyName = "diffuse";
 constexpr const char* kMaterialSpecularKeyName = "specular";
@@ -47,13 +42,14 @@ constexpr float kMaterialShininessDefaultValue = 32.0F;
 enum : std::uint16_t { kLogSize = 512 };
 Level* io::g_level = nullptr;
 std::string io::g_engine_directory;
+std::map<std::string, Texture*> io::g_loaded_textures{};
 std::unordered_map<std::string_view, std::function<Component*()>>
     io::g_component_factory = {
-        OBJECT_FACTORY_KEY(Transform),     OBJECT_FACTORY_KEY(MeshRenderer),
+        OBJECT_FACTORY_KEY(Transform),     OBJECT_FACTORY_KEY(ModelRenderer),
         OBJECT_FACTORY_KEY(PhysicsObject), OBJECT_FACTORY_KEY(DirectionalLight),
         OBJECT_FACTORY_KEY(PointLight),    OBJECT_FACTORY_KEY(SpotLight)};
 std::string ValidateName(std::string input);
-static bool CheckFile(std::string_view path) {
+bool io::CheckFile(std::string_view path) {
   return std::filesystem::exists(path);
 }
 
@@ -220,43 +216,6 @@ Shader* io::LoadShader(std::string_view vertex_path,
   return shader;
 }
 
-////////////////////////////
-/// Texture IO functions ///
-////////////////////////////
-
-Texture* io::LoadTexture(std::string_view path) {
-  auto texture = new Texture(path);
-  glGenTextures(1, &texture->id_);
-  stbi_set_flip_vertically_on_load(1);
-  unsigned char* data =
-      stbi_load(path.data(), &texture->width_, &texture->height_, &texture->channels_, 0);
-  if (data == nullptr) {
-    debug::Throw(std::format("Failed to load texture. Details: {}", path));
-  }
-  GLenum format = GL_RGB;
-  switch (texture->channels_) {
-    case 1:
-      format = GL_RED;
-      break;
-    case 3:
-      format = GL_RGB;
-      break;
-    case 4:
-      format = GL_RGBA;
-      break;
-  }
-  glBindTexture(GL_TEXTURE_2D, texture->id_);
-  glTexImage2D(GL_TEXTURE_2D, 0, format, texture->width_, texture->height_, 0, format,
-               GL_UNSIGNED_BYTE, data);
-  glGenerateMipmap(GL_TEXTURE_2D);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  stbi_image_free(data);
-  return texture;
-}
-
 /////////////////////////////
 /// Material IO functions ///
 /////////////////////////////
@@ -310,120 +269,6 @@ void io::xml::SaveMaterial(const Material* material, pugi::xml_node& base_node) 
     node.append_attribute(kMaterialFragmentKeyName).set_value(material->shader_->kFragmentPath);
   }
   node.append_attribute(kMaterialShininessKeyName).set_value(material->shininess_);
-}
-
-//////////////////////////
-/// Model IO functions ///
-//////////////////////////
-
-std::vector<Texture*> LoadMaterialTextures(Model* model, aiMaterial* mat, aiTextureType type, std::string_view type_name) {
-  std::vector<Texture*> textures;
-  for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
-    aiString str;
-    mat->GetTexture(type, i, &str);
-    bool skip = false;
-    for (auto& texture : model->loaded_textures_) {
-      if (texture->kPath == std::string(str.C_Str())) {
-        textures.push_back(texture);
-        skip = true;
-        break;
-      }
-    }
-    if (!skip) {
-      std::string texture_path = model->kPath + "/" + std::string(str.C_Str());
-      Texture* texture = io::LoadTexture(texture_path);
-      if (texture != nullptr) {
-        texture->name = std::string(type_name);
-        textures.push_back(texture);
-        model->loaded_textures_.push_back(texture);
-      }
-    }
-  }
-  return textures;
-}
-
-Mesh* ProcessMesh(Model* model, aiMesh* mesh, const aiScene* scene) {
-  std::vector<Vertex> vertices;
-  std::vector<unsigned int> indices;
-  std::vector<Texture*> textures;
-
-  for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
-    Vertex vertex;
-    glm::vec3 vector;
-    vector.x = mesh->mVertices[i].x;
-    vector.y = mesh->mVertices[i].y;
-    vector.z = mesh->mVertices[i].z;
-    vertex.position_ = vector;
-    if (mesh->HasNormals()) {
-      vector.x = mesh->mNormals[i].x;
-      vector.y = mesh->mNormals[i].y;
-      vector.z = mesh->mNormals[i].z;
-      vertex.normal_ = vector;
-    }
-    if (mesh->mTextureCoords[0]) {
-      glm::vec2 vec;
-      vec.x = mesh->mTextureCoords[0][i].x;
-      vec.y = mesh->mTextureCoords[0][i].y;
-      vertex.tex_coords_ = vec;
-      vector.x = mesh->mTangents[i].x;
-      vector.y = mesh->mTangents[i].y;
-      vector.z = mesh->mTangents[i].z;
-      vertex.tangent_ = vector;
-      vector.x = mesh->mBitangents[i].x;
-      vector.y = mesh->mBitangents[i].y;
-      vector.z = mesh->mBitangents[i].z;
-      vertex.bitangent_ = vector;
-    } else {
-      vertex.tex_coords_ = glm::vec2(0.0F, 0.0F);
-    }
-    vertices.push_back(vertex);
-  }
-  for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
-    aiFace face = mesh->mFaces[i];
-    for (unsigned int j = 0; j < face.mNumIndices; j++) {
-      indices.push_back(face.mIndices[j]);
-    }
-  }
-  aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-  std::vector<Texture*> diffuse_textures = LoadMaterialTextures(model, material, aiTextureType_DIFFUSE, "texture_diffuse");
-  textures.insert(textures.end(), diffuse_textures.begin(), diffuse_textures.end());
-  std::vector<Texture*> specular_textures = LoadMaterialTextures(model, material, aiTextureType_SPECULAR, "texture_specular");
-  textures.insert(textures.end(), specular_textures.begin(), specular_textures.end());
-  return new Mesh(vertices, indices, textures);
-}
-
-void ProcessNode(Model* model, aiNode* node, const aiScene* scene, int depth = 0) {
-  if (depth > 1000) {  // safeguard
-    debug::Warning("Max recursion depth hit in ProcessNode. Potential cyclic scene graph.");
-    return;
-  } else {
-    debug::Log(std::format("Processing node: {} at depth {}", node->mName.C_Str(), depth));
-  }
-  for (unsigned int i = 0; i < node->mNumMeshes; i++) {
-    aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-    model->meshes_.push_back(ProcessMesh(model, mesh, scene));
-  }
-  for (unsigned int i = 0; i < node->mNumChildren; i++) {
-    ProcessNode(model, node->mChildren[i], scene, depth + 1);
-  }
-}
-
-Model* io::LoadModel(std::string_view path) {
-  if (!CheckFile(path)) {
-    debug::Throw(std::format("Requested model file does not exist. {}", path));
-  }
-  // Model path should be the directory of the model
-  auto model = new Model(std::filesystem::path(path).parent_path().string());
-  debug::Log(std::format("Loading model at path: {}", model->kPath));
-  Assimp::Importer importer;
-  const aiScene* scene =
-      importer.ReadFile(path.data(), aiProcess_Triangulate | aiProcess_GenSmoothNormals |
-                                  aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
-  if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-    debug::Throw(std::format("Failed to load model. {}, {}", path, importer.GetErrorString()));
-  }
-  ProcessNode(model, scene->mRootNode, scene);
-  return model;
 }
 
 ///////////////////////////////

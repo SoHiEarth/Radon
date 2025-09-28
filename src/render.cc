@@ -231,12 +231,12 @@ static glm::mat4 GetTransform(const glm::vec3& pos, const glm::vec2& scale, cons
   return transform;
 }
 
-void render::DrawMesh(const Mesh* mesh, const Material* material,
+void render::DrawMesh(const Mesh* mesh, const Shader* shader,
                       const glm::vec3& pos, const glm::vec2& size, const glm::vec3& rot) {
   if (mesh == nullptr) {
     return;
   }
-  if (material == nullptr) {
+  if (shader == nullptr) {
     return;
   }
   glm::mat4 model = GetTransform(pos, size, rot);
@@ -245,31 +245,31 @@ void render::DrawMesh(const Mesh* mesh, const Material* material,
       glm::radians(g_camera_fov),
       (static_cast<float>(g_framebuffer.width_) / static_cast<float>(g_framebuffer.height_)),
       kCameraNearPlane, kCameraFarPlane);
-  if (material->shader_ == nullptr) {
+  if (shader == nullptr) {
     return;
   }
-  material->shader_->Use();
-  material->shader_->SetMat4("model", model);
-  material->shader_->SetMat4("view", view);
-  material->shader_->SetMat4("projection", projection);
-  material->shader_->SetVec3("viewPos", render::g_camera.position_);
-  material->shader_->SetInt("NUM_DIRECTIONAL_LIGHTS",
+  shader->Use();
+  shader->SetMat4("model", model);
+  shader->SetMat4("view", view);
+  shader->SetMat4("projection", projection);
+  shader->SetVec3("viewPos", render::g_camera.position_);
+  shader->SetInt("NUM_DIRECTIONAL_LIGHTS",
                             static_cast<int>(g_directional_lights.size()));
   for (int i = 0; i < g_directional_lights.size(); i++) {
     if (g_directional_lights[i] != nullptr) {
-      g_directional_lights[i]->SetUniforms(material->shader_, i);
+      g_directional_lights[i]->SetUniforms(shader, i);
     }
   }
-  material->shader_->SetInt("NUM_POINT_LIGHTS", static_cast<int>(g_point_lights.size()));
+  shader->SetInt("NUM_POINT_LIGHTS", static_cast<int>(g_point_lights.size()));
   for (int i = 0; i < g_point_lights.size(); i++) {
     if (g_point_lights[i] != nullptr) {
-      g_point_lights[i]->SetUniforms(material->shader_, i);
+      g_point_lights[i]->SetUniforms(shader, i);
     }
   }
-  material->shader_->SetInt("NUM_SPOT_LIGHTS", static_cast<int>(g_spot_lights.size()));
+  shader->SetInt("NUM_SPOT_LIGHTS", static_cast<int>(g_spot_lights.size()));
   for (int i = 0; i < g_spot_lights.size(); i++) {
     if (g_spot_lights[i] != nullptr) {
-      g_spot_lights[i]->SetUniforms(material->shader_, i);
+      g_spot_lights[i]->SetUniforms(shader, i);
     }
   }
 
@@ -284,7 +284,7 @@ void render::DrawMesh(const Mesh* mesh, const Material* material,
     } else if (name == "texture_specular") {
       number = std::to_string(specular_number++);
     }
-    material->shader_->SetInt(("material." + name + number).c_str(), i);
+    shader->SetInt(("material." + name + number).c_str(), i);
     glBindTexture(GL_TEXTURE_2D, mesh->textures_[i]->id_);
   }
 
@@ -295,13 +295,13 @@ void render::DrawMesh(const Mesh* mesh, const Material* material,
 }
 
 void render::DrawModel(const Model* model,
-                       const Material* material, const glm::vec3& pos,
+                       const Shader* shader, const glm::vec3& pos,
                        const glm::vec2& size, const glm::vec3& rot) {
   if (model == nullptr) {
     return;
   }
   for (const auto& mesh : model->meshes_) {
-    DrawMesh(mesh, material, pos, size, rot);
+    DrawMesh(mesh, shader, pos, size, rot);
   }
 }
 
