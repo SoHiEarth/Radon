@@ -37,7 +37,7 @@ constexpr float kDockRightWidth = 0.3F;
 constexpr float kDockBottomHeight = 0.4F;
 constexpr float kConsoleTypeWidth = 50.0F;
 constexpr float kConsoleTracebackWidth = 200.0F;
-bool dev::g_hud_enabled = false, g_disable_hud_after_frame = false;
+bool g_disable_hud_after_frame = false;
 Object* g_current_object = nullptr;
 std::string g_material_diffuse, g_material_specular, g_material_vertex, g_material_fragment;
 int g_material_shininess = kDefaultShininess;
@@ -59,7 +59,7 @@ void DrawMenuEngine();
 void DrawMenuHelp();
 void DrawMenuBar();
 
-void dev::Init() {
+void IGui::Init() {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO& imgui_io = ImGui::GetIO();
@@ -76,20 +76,19 @@ void dev::Init() {
   style.TabRounding = kDevguiRoundingLess;
 
   ImFont* ui_font = imgui_io.Fonts->AddFontFromFileTTF(
-      (io::g_engine_directory + "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf").c_str(),
+      (IIO::Get<IIO>().GetEngineDirectory() + "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf").c_str(),
       kDevguiFontSize, nullptr, imgui_io.Fonts->GetGlyphRangesDefault());
-  ImGui_ImplGlfw_InitForOpenGL(render::g_window, true);
+  ImGui_ImplGlfw_InitForOpenGL(IRenderer::Get<IRenderer>().GetWindow(), true);
   ImGui_ImplOpenGL3_Init("#version 150");
-  debug::GSetCallback(AddConsoleMessage);
-  debug::Log("Initialized GUI");
+  IDebug::Get<IDebug>().SetCallback(IGui::AddConsoleMessage);
 }
 
-void dev::Update() {
-  if (!dev::g_hud_enabled) {
-    glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+void IGui::Update() {
+  if (!IGui::Get<IGui>().GetHud()) {
+    glfwSetInputMode(IRenderer::Get<IRenderer>().GetWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     return;
   }
-  glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  glfwSetInputMode(IRenderer::Get<IRenderer>().GetWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -126,7 +125,7 @@ void dev::Update() {
     ImGui::DockBuilderDockWindow("Debug", dock_id_right);
     ImGui::DockBuilderDockWindow("Level", dock_id_left);
     ImGui::DockBuilderDockWindow("Localization", dock_main_id);
-    ImGui::DockBuilderDockWindow("Renderer", dock_id_right);
+    ImGui::DockBuilderDockWindow("IRenderer", dock_id_right);
     ImGui::DockBuilderDockWindow("IO", dock_id_bottom);
     ImGui::DockBuilderDockWindow("Console", dock_id_bottom);
     ImGui::DockBuilderDockWindow("Telemetry", dock_id_bottom);
@@ -142,30 +141,29 @@ void dev::Update() {
   DrawMenuBar();
 }
 
-void dev::AddConsoleMessage(const char* traceback, const char* message, std::uint8_t type) {
+void IGui::AddConsoleMessage(const char* traceback, const char* message, std::uint8_t type) {
   ConsoleMessage console_message{
       .traceback_ = traceback, .message_ = message, .type_ = ConsoleMessageType(type)};
   g_console_messages.push_back(console_message);
 }
 
-void dev::Render() {
-  if (!dev::g_hud_enabled) {
+void IGui::Render() {
+  if (!IGui::Get<IGui>().GetHud()) {
     return;
   }
   ImGui::Render();
   ImGui::EndFrame();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
   if (g_disable_hud_after_frame) {
-    dev::g_hud_enabled = false;
+    IGui::Get<IGui>().SetHud(false);
     g_disable_hud_after_frame = false;
   }
 }
 
-void dev::Quit() {
+void IGui::Quit() {
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
-  debug::Log("Quit GUI");
 }
 
 std::vector<float> g_fps_history;
@@ -200,7 +198,7 @@ void DrawTelemetry() {
     ImGui::TableSetupColumn("Time (ms)", ImGuiTableColumnFlags_WidthFixed, 100.0F);
     ImGui::TableSetupColumn("Graph", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
-    auto timings = telemetry::GetTimings();
+    auto timings = ITelemetry::Get<ITelemetry>().GetTimings();
     g_timings_history.push_back(timings);
     if (g_timings_history.size() > 100) {
       g_timings_history.erase(g_timings_history.begin());
@@ -237,8 +235,8 @@ void DrawTelemetry() {
     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
     ImGui::TableSetupColumn("Time (ms)", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
-    auto logged_timings = telemetry::DownloadTimings(ENGINE_INIT_NAME);
-    for (const auto& [name, time] : logged_timings) {
+    for (const auto& [name, time] :
+         ITelemetry::Get<ITelemetry>().DownloadTimings(ENGINE_INIT_NAME)) {
       ImGui::PushID(&name);
       ImGui::TableNextRow();
       ImGui::TableSetColumnIndex(0);
@@ -254,9 +252,9 @@ void DrawTelemetry() {
 
 void DrawProperties() {
   ImGui::Begin("Properties");
-  if (g_current_object != nullptr && io::g_level != nullptr) {
+  if (g_current_object != nullptr && IIO::Get<IIO>().GetLevel() != nullptr) {
     if (ImGui::Button("Remove")) {
-      io::g_level->RemoveObject(g_current_object);
+      IIO::Get<IIO>().GetLevel()->RemoveObject(g_current_object);
       g_current_object = nullptr;
     } else {
       for (const auto& field : g_current_object->reg_) {
@@ -312,9 +310,9 @@ void DrawProperties() {
 
 void DrawDebug() {
   ImGui::Begin("Debug");
-  ImGui::Checkbox("Trace Source File", &debug::g_debug_settings.trace_source_file_);
-  ImGui::Checkbox("Trace Function Name", &debug::g_debug_settings.trace_function_name_);
-  ImGui::Checkbox("Trace Line Number", &debug::g_debug_settings.trace_line_number_);
+  ImGui::Checkbox("Trace Source File", &IDebug::Get<IDebug>().Settings().trace_source_file_);
+  ImGui::Checkbox("Trace Function Name", &IDebug::Get<IDebug>().Settings().trace_function_name_);
+  ImGui::Checkbox("Trace Line Number", &IDebug::Get<IDebug>().Settings().trace_line_number_);
   ImGui::End();
 }
 
@@ -367,8 +365,8 @@ static void DevNewLevel() {
   const char* file =
       tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1, filter_patterns, "Level Files");
   if (file != nullptr) {
-    io::g_level = new Level();
-    io::g_level->path_ = file;
+    IIO::Get<IIO>().SetLevel(new Level());
+    IIO::Get<IIO>().GetLevel()->path_ = file;
   }
 }
 
@@ -377,14 +375,14 @@ static void DevOpenLevel() {
   const char* file =
       tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
   if (file != nullptr) {
-    io::g_level = io::xml::LoadLevel(file);
+    IIO::Get<IIO>().GetLevel() = IIO::Get<IIO>().LoadLevel(file);
     g_current_object = nullptr;
   }
 }
 
 void DrawLevel() {
   ImGui::Begin("Level");
-  if (io::g_level == nullptr) {
+  if (IIO::Get<IIO>().GetLevel() == nullptr) {
     if (ImGui::Button("New Level")) {
       DevNewLevel();
     }
@@ -394,13 +392,13 @@ void DrawLevel() {
     ImGui::End();
     return;
   }
-  ImGui::LabelText("Level Path", "%s", io::g_level->path_.c_str());
+  ImGui::LabelText("Level Path", "%s", IIO::Get<IIO>().GetLevel()->path_.c_str());
   ImGui::SeparatorText("Scene Objects");
   if (ImGui::BeginTable(
           "AddObjectTable", 1,
           ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
     int object_index = 0;
-    for (const auto& object : io::g_level->objects_) {
+    for (const auto& object : IIO::Get<IIO>().GetLevel()->objects_) {
       if (object != nullptr) {
         ImGui::TableNextRow();
         ImGui::PushID(object_index);
@@ -419,7 +417,7 @@ void DrawLevel() {
 
 void DrawIO() {
   ImGui::Begin("IO");
-  for (const auto& [key, value] : io::g_loaded_textures) {
+  for (const auto& [key, value] : IIO::Get<IIO>().GetLoadedTextures()) {
     ImGui::Text("Texture Key: %s", key.c_str());
     ImGui::Image(value->id_, kImagePreviewSize);
   }
@@ -429,10 +427,10 @@ void DrawIO() {
 constexpr int kBufferSize = 128;
 void DrawLocalization() {
   ImGui::Begin("Localization");
-  ImGui::InputText("Language", &localization::g_language);
+  ImGui::InputText("Language", &ILocalization::Get<ILocalization>().GetLanguage());
   ImGui::SameLine();
   if (ImGui::Button("Add")) {
-    localization::g_dictionary.insert({"", ""});
+    ILocalization::Get<ILocalization>().GetDictionary().insert({"", ""});
   }
   std::vector<std::pair<std::string, std::string>> renamed_entries;
   std::vector<std::string> keys_to_delete;
@@ -444,7 +442,7 @@ void DrawLocalization() {
     ImGui::TableSetupColumn("Actions");
     ImGui::TableHeadersRow();
     int index = 0;
-    for (auto& [key, value] : localization::g_dictionary) {
+    for (auto& [key, value] : ILocalization::Get<ILocalization>().GetDictionary()) {
       ImGui::TableNextRow();
       ImGui::PushID(index);
       ImGui::TableSetColumnIndex(0);
@@ -462,7 +460,7 @@ void DrawLocalization() {
       strncpy(value_buffer.data(), value.c_str(), sizeof(value_buffer));
       value_buffer[sizeof(value_buffer) - 1] = '\0';
       if (ImGui::InputText("##Value", value_buffer.data(), sizeof(value_buffer))) {
-        localization::g_dictionary[key] = value_buffer.data();
+        ILocalization::Get<ILocalization>().GetDictionary()[key] = value_buffer.data();
       }
       ImGui::TableSetColumnIndex(2);
       if (ImGui::Button("Remove")) {
@@ -472,10 +470,10 @@ void DrawLocalization() {
       index++;
     }
     for (const auto& key : keys_to_delete) {
-      localization::g_dictionary.erase(key);
+      ILocalization::Get<ILocalization>().GetDictionary().erase(key);
     }
     for (const auto& [new_key, value] : renamed_entries) {
-      localization::g_dictionary[new_key] = value;
+      ILocalization::Get<ILocalization>().GetDictionary()[new_key] = value;
     }
     ImGui::EndTable();
   }
@@ -484,17 +482,17 @@ void DrawLocalization() {
     const char* file = tinyfd_openFileDialog("Open Localization Data", "", 1, filter_patterns,
                                              "Localization Files", 0);
     if (file != nullptr) {
-      localization::Load(file);
+      ILocalization::Get<ILocalization>().Load(file);
     }
   }
   ImGui::SameLine();
   if (ImGui::Button("Save")) {
     const char* filter_patterns[] = {"*.xml"};
     const char* file = tinyfd_saveFileDialog("Save Localization Data",
-                                             std::string(localization::g_language + ".xml").c_str(),
+        std::string(ILocalization::Get<ILocalization>().GetLanguage() + ".xml").c_str(),
                                              1, filter_patterns, "Localization Files");
     if (file != nullptr) {
-      localization::Save(file);
+      ILocalization::Get<ILocalization>().Save(file);
     }
   }
   ImGui::End();
@@ -508,7 +506,7 @@ void ModelView(Model*& model) {
         const char* filter_patterns[] = {"*.obj", "*.fbx", "*.gltf", "*.glb"};
         const char* file = tinyfd_openFileDialog("Select Mesh File", "", 4, filter_patterns, "Mesh Files", 0);
         if (file != nullptr) {
-          model = io::LoadModel(file);
+          model = IIO::Get<IIO>().LoadModel(file);
         }
       }
       ImGui::SameLine();
@@ -546,7 +544,8 @@ void MaterialView(Material*& material) {
         char* material_path_c = tinyfd_selectFolderDialog("Select Material Directory", "");
         if (material_path_c != nullptr) {
           std::string material_path = std::string(material_path_c);
-          material = io::LoadMaterial(material_path + "/diffuse.png",
+          material = IIO::Get<IIO>().LoadMaterial(
+              material_path + "/diffuse.png",
                                       material_path + "/specular.png", material_path + "/vert.glsl",
                                       material_path + "/frag.glsl", kDefaultShininess);
           if (material->diffuse_)
@@ -567,7 +566,7 @@ void MaterialView(Material*& material) {
       ImGui::InputText("Material Fragment", &g_material_fragment);
       ImGui::DragInt("Material Shininess", &g_material_shininess);
       if (ImGui::Button("Load")) {
-        material = io::LoadMaterial(g_material_diffuse, g_material_specular, g_material_vertex,
+        material = IIO::Get<IIO>().LoadMaterial(g_material_diffuse, g_material_specular, g_material_vertex,
                                     g_material_fragment, g_material_shininess);
       }
       ImGui::EndTabItem();
@@ -615,26 +614,26 @@ void DrawMenuFile() {
     if (ImGui::MenuItem("Open")) {
       DevOpenLevel();
     }
-    ImGui::BeginDisabled(io::g_level == nullptr);
+    ImGui::BeginDisabled(IIO::Get<IIO>().GetLevel() == nullptr);
     if (ImGui::MenuItem("Save")) {
-      if (io::g_level != nullptr) {
-        io::xml::SaveLevel(io::g_level, io::g_level->path_);
+      if (IIO::Get<IIO>().GetLevel() != nullptr) {
+        IIO::Get<IIO>().SaveLevel(IIO::Get<IIO>().GetLevel(), IIO::Get<IIO>().GetLevel()->path_);
       }
     }
     if (ImGui::MenuItem("Save As")) {
-      if (io::g_level != nullptr) {
+      if (IIO::Get<IIO>().GetLevel() != nullptr) {
         const char* filter_patterns[] = {"*.xml"};
         const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1,
                                                  filter_patterns, "Level Files");
         if (file != nullptr) {
-          io::xml::SaveLevel(io::g_level, file);
-          io::g_level->path_ = file;
+          IIO::Get<IIO>().SaveLevel(IIO::Get<IIO>().GetLevel(), file);
+          IIO::Get<IIO>().GetLevel()->path_ = file;
         }
       }
     }
     ImGui::EndDisabled();
     if (ImGui::MenuItem("Exit")) {
-      glfwSetWindowShouldClose(render::g_window, GLFW_TRUE);
+      glfwSetWindowShouldClose(IRenderer::Get<IRenderer>().GetWindow(), GLFW_TRUE);
     }
     ImGui::EndMenu();
   }
@@ -643,17 +642,17 @@ void DrawMenuFile() {
 void DrawMenuEdit() {
   if (ImGui::BeginMenu("Edit")) {
     if (ImGui::BeginMenu("Add")) {
-      ImGui::BeginDisabled(io::g_level == nullptr);
+      ImGui::BeginDisabled(IIO::Get<IIO>().GetLevel() == nullptr);
       if (ImGui::MenuItem("Empty Object")) {
-        if (io::g_level != nullptr) {
-          io::g_level->AddObject(new Object(), "Object");
+        if (IIO::Get<IIO>().GetLevel() != nullptr) {
+          IIO::Get<IIO>().GetLevel()->AddObject(new Object(), "Object");
         }
       }
       ImGui::EndDisabled();
-      ImGui::BeginDisabled(io::g_level == nullptr || g_current_object == nullptr);
-      for (const auto& [name, func] : io::g_component_factory) {
+      ImGui::BeginDisabled(IIO::Get<IIO>().GetLevel() == nullptr || g_current_object == nullptr);
+      for (const auto& [name, func] : IIO::Get<IIO>().GetComponentFactory()) {
         if (ImGui::MenuItem(std::format("{}", name).c_str())) {
-          if (io::g_level != nullptr && g_current_object != nullptr) {
+          if (IIO::Get<IIO>().GetLevel() != nullptr && g_current_object != nullptr) {
             g_current_object->AddComponent(func());
           }
         }
@@ -661,9 +660,9 @@ void DrawMenuEdit() {
       ImGui::EndDisabled();
       ImGui::EndMenu();
     }
-    ImGui::BeginDisabled((g_current_object == nullptr) || (io::g_level == nullptr));
+    ImGui::BeginDisabled((g_current_object == nullptr) || (IIO::Get<IIO>().GetLevel() == nullptr));
     if (ImGui::MenuItem("Remove Selected")) {
-      io::g_level->RemoveObject(g_current_object);
+      IIO::Get<IIO>().GetLevel()->RemoveObject(g_current_object);
     }
     ImGui::EndDisabled();
     ImGui::EndMenu();
@@ -684,16 +683,16 @@ void DrawMenuEngine() {
     if (ImGui::BeginMenu("Render")) {
       if (ImGui::BeginMenu("Draw Mode")) {
         if (ImGui::MenuItem("Fill", nullptr,
-                            render::GetRenderDrawMode() == RenderDrawMode::kFill)) {
-          render::SetRenderDrawMode(RenderDrawMode::kFill);
+                IRenderer::Get<IRenderer>().GetRenderDrawMode() == RenderDrawMode::kFill)) {
+          IRenderer::Get<IRenderer>().SetRenderDrawMode(RenderDrawMode::kFill);
         }
         if (ImGui::MenuItem("Line", nullptr,
-                            render::GetRenderDrawMode() == RenderDrawMode::kLine)) {
-          render::SetRenderDrawMode(RenderDrawMode::kLine);
+                IRenderer::Get<IRenderer>().GetRenderDrawMode() == RenderDrawMode::kLine)) {
+          IRenderer::Get<IRenderer>().SetRenderDrawMode(RenderDrawMode::kLine);
         }
         if (ImGui::MenuItem("Point", nullptr,
-                            render::GetRenderDrawMode() == RenderDrawMode::kPoint)) {
-          render::SetRenderDrawMode(RenderDrawMode::kPoint);
+                IRenderer::Get<IRenderer>().GetRenderDrawMode() == RenderDrawMode::kPoint)) {
+          IRenderer::Get<IRenderer>().SetRenderDrawMode(RenderDrawMode::kPoint);
         }
         ImGui::EndMenu();
       }

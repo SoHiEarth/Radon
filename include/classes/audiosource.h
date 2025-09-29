@@ -16,7 +16,7 @@ public:
     return "AudioSource";
   }
 private:
-  SoundHandle handle;
+  SoundHandle handle{};
 };
 
 #endif  // AUDIOSOURCE_H

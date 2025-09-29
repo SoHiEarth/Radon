@@ -1,6 +1,5 @@
-#ifndef INPUT_H
-#define INPUT_H
-
+#pragma once
+#include <engine/interface.h>
 #include <cstdint>
 #include <functional>
 
@@ -12,12 +11,14 @@ enum class ButtonState : std::uint8_t {
 
 using Trigger = std::pair<int, ButtonState>;
 
-namespace input {
-void Init();
-void Update();
-void Quit();
-void AddHook(const Trigger& /*key*/, const std::function<void()>& /*hook*/);
-void RemoveHook(const Trigger& /*key*/);
-}  // namespace input
-
-#endif  // INPUT_H
+class IInput : public Interface {
+public:
+  const char* name() override {
+    return "Input";
+  }
+  void Init() override;
+  void Update();
+  void Quit() override;
+  void AddHook(const Trigger& /*key*/, const std::function<void()>& /*hook*/);
+  void RemoveHook(const Trigger& /*key*/);
+};

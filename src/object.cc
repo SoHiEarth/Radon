@@ -10,12 +10,12 @@ void Object::Init() {
     return;
   }
   auto timer_code = std::format("Object Init {}", name_.i_value_);
-  telemetry::BeginTimer(timer_code.c_str());
+  ITelemetry::Get<ITelemetry>().BeginTimer(timer_code.c_str());
   for (const auto& component : components_) {
     component->Init();
   }
   has_initialized_ = true;
-  telemetry::EndTimer(timer_code.c_str());
+  ITelemetry::Get<ITelemetry>().EndTimer(timer_code.c_str());
 }
 
 void Object::Update() {
@@ -23,11 +23,11 @@ void Object::Update() {
     Init();
   }
   auto timer_code = std::format("Object Update {}", name_.i_value_);
-  telemetry::BeginTimer(timer_code.c_str());
+  ITelemetry::Get<ITelemetry>().BeginTimer(timer_code.c_str());
   for (const auto& component : components_) {
     component->Update();
   }
-  telemetry::EndTimer(timer_code.c_str());
+  ITelemetry::Get<ITelemetry>().EndTimer(timer_code.c_str());
 }
 
 void Object::Render() {
@@ -35,11 +35,11 @@ void Object::Render() {
     Init();
   }
   auto timer_code = std::format("Object Render {}", name_.i_value_);
-  telemetry::BeginTimer(timer_code.c_str());
+  ITelemetry::Get<ITelemetry>().BeginTimer(timer_code.c_str());
   for (const auto& component : components_) {
     component->Render();
   }
-  telemetry::EndTimer(timer_code.c_str());
+  ITelemetry::Get<ITelemetry>().EndTimer(timer_code.c_str());
 }
 
 void Object::Quit() {
@@ -47,16 +47,16 @@ void Object::Quit() {
     return;
   }
   auto timer_code = std::format("Object Quit {}", name_.i_value_);
-  telemetry::BeginTimer(timer_code.c_str());
+  ITelemetry::Get<ITelemetry>().BeginTimer(timer_code.c_str());
   for (const auto& component : components_) {
     component->Quit();
   }
   has_quit_ = true;
-  telemetry::EndTimer(timer_code.c_str());
+  ITelemetry::Get<ITelemetry>().EndTimer(timer_code.c_str());
 }
 
 void Object::Load(pugi::xml_node& node) {
-  name_ = io::xml::LoadString(node, name_.i_label_);
+  name_ = IIO::Get<IIO>().LoadString(node, name_.i_label_);
   for (auto& component : components_) {
     component->parent_ = this;
     component->Load(node);
@@ -64,7 +64,7 @@ void Object::Load(pugi::xml_node& node) {
 }
 
 void Object::Save(pugi::xml_node& node) const {
-  io::xml::SaveString(name_.i_value_, node, name_.i_label_);
+  IIO::Get<IIO>().SaveString(name_.i_value_, node, name_.i_label_);
   for (const auto& component : components_) {
     component->Save(node);
   }
@@ -77,7 +77,7 @@ void Object::AddComponent(Component* component) {
   for (const auto& existing_component : components_) {
     if (existing_component != nullptr &&
         existing_component->GetTypeName() == component->GetTypeName()) {
-      debug::Throw(
+      IDebug::Throw(
           std::format("Object already has a component of type {}.", component->GetTypeName()));
     }
   }

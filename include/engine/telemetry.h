@@ -1,21 +1,24 @@
-#ifndef TELEMETRY_H
-#define TELEMETRY_H
-
+#pragma once
+#include <engine/interface.h>
 #include <chrono>
 #include <map>
-#define ENGINE_INIT_NAME "Engine Init"
+constexpr auto ENGINE_INIT_NAME = "Engine Init";
 
-namespace telemetry {
-void Init();
-void BeginFrame();
-void BeginTimer(const char* /*name*/);
-void EndTimer(const char* /*name*/);
-void LogTimer(const char* /*name*/);
-void UploadTimings(const char* /*name*/, std::map<std::string, std::chrono::milliseconds> /*data*/);
-std::map<std::string, std::chrono::milliseconds> DownloadTimings(const char* /*name*/);
-std::map<std::string, std::chrono::milliseconds> GetTimings();
-std::map<std::string, std::chrono::milliseconds> GetLog();
-void Quit();
-}  // namespace telemetry
+class ITelemetry : public Interface {
+  using timing = std::map<std::string, std::chrono::milliseconds>;
+public:
+  const char* name() override {
+    return "Telemetry";
+  }
+  void Init() override;
+  void Quit() override;
 
-#endif  // TELEMETRY_H
+  void BeginFrame();
+  void BeginTimer(const char* /*name*/);
+  void EndTimer(const char* /*name*/);
+  void LogTimer(const char* /*name*/);
+  void UploadTimings(const char* /*name*/, timing& /*data*/);
+  timing& DownloadTimings(const char* /*name*/);
+  timing& GetTimings();
+  timing& GetLog();
+};

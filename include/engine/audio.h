@@ -1,23 +1,26 @@
 #ifndef AUDIO_H
 #define AUDIO_H
-
+#include <engine/interface.h>
 using SoundHandle = unsigned int;
 
-namespace audio {
-void Init();
-void Update();
-void Quit();
+class IAudio : public Interface {
+public:
+  const char* name() override {
+    return "Audio";
+  }
 
-SoundHandle Load(const char* /*filepath*/);
-void Unload(SoundHandle /*sound*/);
+  void Init() override;
+  void Update();
+  void Quit() override;
 
-// Schedules the sound to be played on the next update, until stopped with audio::Stop
-void Play(SoundHandle /*sound*/);
-// Stops the sound if it is scheduled to play.
-void Stop(SoundHandle /*sound*/);
-// Sets the time position of the sound in seconds.
-void SetHeader(SoundHandle /*sound*/, float /*position*/);
-
-};  // namespace audio
+  SoundHandle Load(const char* /*filepath*/);
+  void Unload(SoundHandle /*sound*/);
+  // Schedules the sound to be played on the next update, until stopped with audio::Stop
+  void PlaySound(SoundHandle /*sound*/);
+  // Stops the sound if it is scheduled to play.
+  void StopSound(SoundHandle /*sound*/);
+  // Sets the time position of the sound in seconds.
+  void SetHeader(SoundHandle /*sound*/, float /*position*/);
+};
 
 #endif  // AUDIO_H

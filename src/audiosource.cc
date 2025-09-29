@@ -5,9 +5,9 @@ std::string prev_path;
 
 void AudioSource::Init() {
   try {
-    handle = audio::Load(path->c_str());
+    handle = IAudio::Get<IAudio>().Load(path->c_str());
   } catch (std::runtime_error& e) {
-    debug::Warning(std::format("Failed to load audio at path {}. {}", *path, e.what()));
+    IDebug::Warning(std::format("Failed to load audio at path {}. {}", *path, e.what()));
   }
   prev_path = *path;
 }
@@ -15,18 +15,18 @@ void AudioSource::Init() {
 void AudioSource::Update() {
   if (*path != prev_path) {
     try {
-      audio::Unload(handle);
-      handle = audio::Load(path->c_str());
+      IAudio::Get<IAudio>().Unload(handle);
+      handle = IAudio::Get<IAudio>().Load(path->c_str());
     } catch (std::runtime_error& e) {
-      debug::Warning(std::format("Failed to load audio at path {}. {}", *path, e.what()));
+      IDebug::Warning(std::format("Failed to load audio at path {}. {}", *path, e.what()));
     }
     prev_path = *path;
   }
-  audio::Play(handle);
+  IAudio::Get<IAudio>().PlaySound(handle);
 }
 
 void AudioSource::Quit() {
-  audio::Unload(handle);
+  IAudio::Get<IAudio>().Unload(handle);
 }
 
 void AudioSource::Load(pugi::xml_node& node) {

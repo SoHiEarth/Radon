@@ -8,8 +8,6 @@
 #include <map>
 #include <vector>
 
-namespace audio {
-
 ALCdevice* g_device = nullptr;
 ALCcontext* g_context = nullptr;
 
@@ -26,25 +24,25 @@ SoundHandle g_next = 1;
 void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsizei& frequency) {
   std::ifstream file(filename, std::ios::binary);
   if (!file) {
-    debug::Throw(std::format("Failed to open WAV file: {}", filename));
+    IDebug::Throw(std::format("Failed to open WAV file: {}", filename));
   }
   char chunk_id[4];
   file.read(chunk_id, 4);
   if (std::strncmp(chunk_id, "RIFF", 4) != 0) {
-    debug::Throw(std::format("Invalid WAV file (missing RIFF): {}", filename));
+    IDebug::Throw(std::format("Invalid WAV file (missing RIFF): {}", filename));
   }
   file.ignore(4);  // Skip chunk size
 
   char format_id[4];
   file.read(format_id, 4);
   if (std::strncmp(format_id, "WAVE", 4) != 0) {
-    debug::Throw(std::format("Invalid WAV file (missing WAVE): {}", filename));
+    IDebug::Throw(std::format("Invalid WAV file (missing WAVE): {}", filename));
   }
 
   char subchunk_1_id[4];
   file.read(subchunk_1_id, 4);
   if (std::strncmp(subchunk_1_id, "fmt ", 4) != 0) {
-    debug::Throw(std::format("Invalid WAV file (missing fmt ): {}", filename));
+    IDebug::Throw(std::format("Invalid WAV file (missing fmt ): {}", filename));
   }
 
   uint32_t subchunk_1_size = 0;
@@ -64,7 +62,7 @@ void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsi
   file.read(reinterpret_cast<char*>(&bits_per_sample), 2);
 
   if (audio_format != 1) {
-    debug::Throw(std::format("Unsupported WAV audio_format (only PCM supported): {}", filename));
+    IDebug::Throw(std::format("Unsupported WAV audio_format (only PCM supported): {}", filename));
   }
   if (subchunk_1_size > 16) {
     file.ignore(subchunk_1_size - 16);
@@ -81,7 +79,7 @@ void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsi
   }
 
   if (subchunk_2_size == 0) {
-    debug::Throw(std::format("Invalid WAV file (missing data chunk): {}", filename));
+    IDebug::Throw(std::format("Invalid WAV file (missing data chunk): {}", filename));
   }
 
   data.resize(subchunk_2_size);
@@ -92,17 +90,17 @@ void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsi
   } else if (bits_per_sample == 16) {
     format = (channels == 1) ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
   } else {
-    debug::Throw(
+    IDebug::Throw(
         std::format("Unsupported WAV bit depth: {} in file {}", bits_per_sample, filename));
   }
 
   frequency = sample_rate;
 }
 
-void Init() {
+void IAudio::Init() {
   g_device = alcOpenDevice(nullptr);
   if (g_device == nullptr) {
-    debug::Throw("Failed to open OpenAL device.");
+    IDebug::Throw("Failed to open OpenAL device.");
   }
   g_context = alcCreateContext(g_device, nullptr);
   if ((g_context == nullptr) || (alcMakeContextCurrent(g_context) == 0)) {
@@ -110,12 +108,11 @@ void Init() {
       alcDestroyContext(g_context);
     }
     alcCloseDevice(g_device);
-    debug::Throw("Failed to set OpenAL context.");
+    IDebug::Throw("Failed to set OpenAL context.");
   }
-  debug::Log("Initialized audio");
 }
 
-void Update() {
+void IAudio::Update() {
   for (auto& [handle, sound] : g_sounds) {
     ALint state;
     alGetSourcei(sound.source_, AL_SOURCE_STATE, &state);
@@ -126,7 +123,7 @@ void Update() {
   }
 }
 
-void Quit() {
+void IAudio::Quit() {
   for (auto& [handle, sound] : g_sounds) {
     alDeleteSources(1, &sound.source_);
     alDeleteBuffers(1, &sound.buffer_);
@@ -142,10 +139,9 @@ void Quit() {
     alcCloseDevice(g_device);
     g_device = nullptr;
   }
-  debug::Log("Quit audio");
 }
 
-SoundHandle Load(const char* filepath) {
+SoundHandle IAudio::Load(const char* filepath) {
   std::vector<char> data;
   ALenum format;
   ALsizei frequency;
@@ -165,7 +161,7 @@ SoundHandle Load(const char* filepath) {
   return handle;
 }
 
-void Unload(SoundHandle sound) {
+void IAudio::Unload(SoundHandle sound) {
   auto it = g_sounds.find(sound);
   if (it != g_sounds.end()) {
     alDeleteSources(1, &it->second.source_);
@@ -174,14 +170,14 @@ void Unload(SoundHandle sound) {
   }
 }
 
-void Play(SoundHandle sound) {
+void IAudio::PlaySound(SoundHandle sound) {
   auto it = g_sounds.find(sound);
   if (it != g_sounds.end()) {
     it->second.is_playing_ = true;
   }
 }
 
-void Stop(SoundHandle sound) {
+void IAudio::StopSound(SoundHandle sound) {
   auto it = g_sounds.find(sound);
   if (it != g_sounds.end()) {
     it->second.is_playing_ = false;
@@ -189,11 +185,9 @@ void Stop(SoundHandle sound) {
   }
 }
 
-void SetHeader(SoundHandle sound, float position) {
+void IAudio::SetHeader(SoundHandle sound, float position) {
   auto it = g_sounds.find(sound);
   if (it != g_sounds.end()) {
     alSourcef(it->second.source_, AL_SEC_OFFSET, position);
   }
 }
-
-}  // namespace audio

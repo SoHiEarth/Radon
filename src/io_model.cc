@@ -8,6 +8,7 @@
 //////////////////////////
 /// Model IO functions ///
 //////////////////////////
+std::map<std::string, Model*> g_loaded_models;
 
 std::vector<Texture*> LoadMaterialTextures(Model* model, aiMaterial* mat, aiTextureType type,
                                            std::string_view type_name) {
@@ -25,7 +26,7 @@ std::vector<Texture*> LoadMaterialTextures(Model* model, aiMaterial* mat, aiText
     }
     if (!skip) {
       std::string texture_path = model->kDirectory + "/" + std::string(str.C_Str());
-      Texture* texture = io::LoadTexture(texture_path);
+      Texture* texture = IIO::Get<IIO>().LoadTexture(texture_path);
       if (texture != nullptr) {
         texture->name = std::string(type_name);
         textures.push_back(texture);
@@ -90,10 +91,8 @@ Mesh* ProcessMesh(Model* model, aiMesh* mesh, const aiScene* scene) {
 
 void ProcessNode(Model* model, aiNode* node, const aiScene* scene, int depth = 0) {
   if (depth > 1000) {  // safeguard
-    debug::Warning("Max recursion depth hit in ProcessNode. Potential cyclic scene graph.");
+    IDebug::Warning("Max recursion depth hit in ProcessNode. Potential cyclic scene graph.");
     return;
-  } else {
-    debug::Log(std::format("Processing node: {} at depth {}", node->mName.C_Str(), depth));
   }
   for (unsigned int i = 0; i < node->mNumMeshes; i++) {
     aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
@@ -104,30 +103,33 @@ void ProcessNode(Model* model, aiNode* node, const aiScene* scene, int depth = 0
   }
 }
 
-Model* io::LoadModel(std::string_view path) {
+Model* IIO::LoadModel(std::string_view path) {
   if (!CheckFile(path)) {
-    debug::Throw(std::format("Requested model file does not exist. {}", path));
+    IDebug::Throw(std::format("Requested model file does not exist. {}", path));
+  }
+  if (g_loaded_models.find(std::string(path)) != g_loaded_models.end()) {
+    return g_loaded_models[std::string(path)];
   }
   // Model path should be the directory of the model
   auto model = new Model(path, std::filesystem::path(path).parent_path().string());
-  debug::Log(std::format("Loading model at path: {}", model->kPath));
   Assimp::Importer importer;
   const aiScene* scene =
       importer.ReadFile(path.data(), aiProcess_Triangulate | aiProcess_GenSmoothNormals |
                                          aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
   if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-    debug::Throw(std::format("Failed to load model. {}, {}", path, importer.GetErrorString()));
+    IDebug::Throw(std::format("Failed to load model. {}, {}", path, importer.GetErrorString()));
   }
   ProcessNode(model, scene->mRootNode, scene);
+  g_loaded_models[std::string(path)] = model;
   return model;
 }
 
-Model* io::xml::LoadModel(pugi::xml_node& base_node) {
+Model* IIO::LoadModel(pugi::xml_node& base_node) {
   std::string path = base_node.child("model").attribute("path").as_string();
-  return io::LoadModel(path);
+  return IIO::LoadModel(path);
 }
 
-void io::xml::SaveModel(const Model* model, pugi::xml_node& base_node) {
+void IIO::SaveModel(const Model* model, pugi::xml_node& base_node) {
   pugi::xml_node model_node = base_node.append_child("model");
   model_node.append_attribute("path") = model->kPath.c_str();
 }

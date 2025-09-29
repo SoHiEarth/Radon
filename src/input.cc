@@ -14,35 +14,34 @@ static const std::map<ButtonState, const char*> kButtonStateMap = {
 std::map<Trigger, std::function<void()>> g_event_hooks;
 std::map<int, bool> g_prev_frame_key_states;
 
-void input::AddHook(const Trigger& key, const std::function<void()>& hook) {
+void IInput::AddHook(const Trigger& key, const std::function<void()>& hook) {
   if (glfwGetCurrentContext() == nullptr) {
-    debug::Throw("No GLFW context to add input hook");
+    IDebug::Throw("No GLFW context to add input hook");
   } else {
     g_event_hooks[key] = hook;
-    debug::Log(std::format("Added input hook for key: {}\tWith state {}", key.first,
+    IDebug::Log(std::format("Added input hook for key: {}\tWith state {}", key.first,
                            kButtonStateMap.at(key.second)));
   }
 }
 
-void input::RemoveHook(const Trigger& key) {
+void IInput::RemoveHook(const Trigger& key) {
   if (glfwGetCurrentContext() == nullptr) {
     throw std::runtime_error("No GLFW context to remove input hook");
     return;
   }
   g_event_hooks.erase(key);
-  debug::Log(std::format("Removed input hook for key: {}\tWith state {}", key.first,
+  IDebug::Log(std::format("Removed input hook for key: {}\tWith state {}", key.first,
                          kButtonStateMap.at(key.second)));
 }
 
-void input::Init() {
+void IInput::Init() {
   if (glfwGetCurrentContext() == nullptr) {
     throw std::runtime_error("No GLFW context to initialize input");
   }
   glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-  debug::Log("Initialized input");
 }
 
-void input::Update() {
+void IInput::Update() {
   glfwPollEvents();
   for (const auto& [key, hook] : g_event_hooks) {
     bool is_pressed = (glfwGetKey(glfwGetCurrentContext(), key.first) == GLFW_PRESS);
@@ -58,11 +57,10 @@ void input::Update() {
   }
 }
 
-void input::Quit() {
-  if (render::g_window == nullptr) {
-    debug::Throw("No GLFW context to quit input");
+void IInput::Quit() {
+  if (IRenderer::Get<IRenderer>().GetWindow() == nullptr) {
+    IDebug::Throw("No GLFW context to quit input");
   } else {
-    glfwSetInputMode(render::g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetInputMode(IRenderer::Get<IRenderer>().GetWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   }
-  debug::Log("Quit input");
 }

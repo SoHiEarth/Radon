@@ -33,27 +33,20 @@ constexpr float kCameraFarPlane = 100.0F;
 constexpr float kDefaultCameraSpeed = 0.1;
 float g_camera_speed = kDefaultCameraSpeed;
 static inline void IfNoHUD(const std::function<void()>& fn) {
-  if (!dev::g_hud_enabled) {
+  if (!IGui::Get<IGui>().GetHud()) {
     fn();
   }
 }
 
-enum : std::uint16_t { kDefaultWindowWidth = 800, kDefaultWindowHeight = 600 };
+
 using ImGui::TextColored;
 float g_camera_fov = kDefaultCameraFov;
-std::vector<DirectionalLight*> render::g_directional_lights;
-std::vector<PointLight*> render::g_point_lights;
-std::vector<SpotLight*> render::g_spot_lights;
 unsigned int g_vao, g_vbo;
 Framebuffer g_framebuffer;
 unsigned int g_screen_vao, g_screen_vbo;
 Shader* g_screen_shader = nullptr;
 Shader* g_screen_shader_blur = nullptr;
-float g_prev_render_factor = render::g_render_settings.render_factor_;
-RenderSettings render::g_render_settings{};
-GLFWwindow* render::g_window = nullptr;
-int render::g_width = kDefaultWindowWidth, render::g_height = kDefaultWindowHeight;
-Camera render::g_camera;
+float g_prev_render_factor = IRenderer::Get<IRenderer>().GetSettings().render_factor_;
 ImVec2 g_last_viewport_size = ImVec2(0.0F, 0.0F);
 
 const std::array<float, 32> kGVertices = {-0.5F, 0.5F,  0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 1.0F,
@@ -69,7 +62,7 @@ void DrawRendererStatus();
 void RecreateFramebuffer();
 void FBSizeCallback(GLFWwindow* window, int width, int height);
 
-void render::Init() {
+void IRenderer::Init() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -78,18 +71,17 @@ void render::Init() {
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-  render::g_window =
-      glfwCreateWindow(render::g_width, render::g_height, "Radon Engine", nullptr, nullptr);
-  if (render::g_window == nullptr) {
+  window = glfwCreateWindow(width, height, "Radon Engine", nullptr, nullptr);
+  if (window == nullptr) {
     const char* error_desc;
     glfwGetError(&error_desc);
-    debug::Throw(std::format("Failed to create GLFW window. {}", error_desc));
+    IDebug::Throw(std::format("Failed to create GLFW window. {}", error_desc));
   }
-  glfwMakeContextCurrent(render::g_window);
-  glfwSetFramebufferSizeCallback(render::g_window, FBSizeCallback);
+  glfwMakeContextCurrent(window);
+  glfwSetFramebufferSizeCallback(window, FBSizeCallback);
   glfwSwapInterval(1);
   if (0 == gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    debug::Throw("Failed to initialize GLAD");
+    IDebug::Throw("Failed to initialize GLAD");
     glfwTerminate();
     return;
   }
@@ -97,7 +89,7 @@ void render::Init() {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_MULTISAMPLE);
-  glViewport(0, 0, render::g_width, render::g_height);
+  glViewport(0, 0, width, height);
   glGenVertexArrays(1, &g_vao);
   glGenBuffers(1, &g_vbo);
   glBindVertexArray(g_vao);
@@ -122,33 +114,39 @@ void render::Init() {
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<void*>(3 * sizeof(float)));
   RecreateFramebuffer();
-  g_screen_shader = io::LoadShader(io::g_engine_directory + "/screen_shader/vert.glsl",
-                                   io::g_engine_directory + "/screen_shader/frag.glsl");
+  g_screen_shader =
+      IIO::Get<IIO>().LoadShader(IIO::Get<IIO>().GetEngineDirectory() + "/screen_shader/vert.glsl",
+                            IIO::Get<IIO>().GetEngineDirectory() + "/screen_shader/frag.glsl");
   g_screen_shader->Use();
   g_screen_shader->SetInt("scene", 0);
 
-  input::AddHook({GLFW_KEY_W, ButtonState::kHold},
-                 []() { IfNoHUD([]() { render::g_camera.position_.z -= g_camera_speed; }); });
-  input::AddHook({GLFW_KEY_S, ButtonState::kHold},
-                 []() { IfNoHUD([]() { render::g_camera.position_.z += g_camera_speed; }); });
-  input::AddHook({GLFW_KEY_A, ButtonState::kHold},
-                 []() { IfNoHUD([]() { render::g_camera.position_.x -= g_camera_speed; }); });
-  input::AddHook({GLFW_KEY_D, ButtonState::kHold},
-                 []() { IfNoHUD([]() { render::g_camera.position_.x += g_camera_speed; }); });
-  input::AddHook({GLFW_KEY_E, ButtonState::kHold},
-                 []() { IfNoHUD([]() { render::g_camera.position_.y += g_camera_speed; }); });
-  input::AddHook({GLFW_KEY_Q, ButtonState::kHold},
-                 []() { IfNoHUD([]() { render::g_camera.position_.y -= g_camera_speed; }); });
-  debug::Log("Initialized render");
+  IInput::Get<IInput>().AddHook({GLFW_KEY_W, ButtonState::kHold}, []() {
+    IfNoHUD([]() { IRenderer::Get<IRenderer>().camera.position_.z -= g_camera_speed; });
+  });
+  IInput::Get<IInput>().AddHook({GLFW_KEY_S, ButtonState::kHold}, []() {
+    IfNoHUD([]() { IRenderer::Get<IRenderer>().camera.position_.z += g_camera_speed; });
+  });
+  IInput::Get<IInput>().AddHook({GLFW_KEY_A, ButtonState::kHold}, []() {
+    IfNoHUD([]() { IRenderer::Get<IRenderer>().camera.position_.x -= g_camera_speed; });
+  });
+  IInput::Get<IInput>().AddHook({GLFW_KEY_D, ButtonState::kHold}, []() {
+    IfNoHUD([]() { IRenderer::Get<IRenderer>().camera.position_.x += g_camera_speed; });
+  });
+  IInput::Get<IInput>().AddHook({GLFW_KEY_E, ButtonState::kHold}, []() {
+    IfNoHUD([]() { IRenderer::Get<IRenderer>().camera.position_.y += g_camera_speed; });
+  });
+  IInput::Get<IInput>().AddHook({GLFW_KEY_Q, ButtonState::kHold}, []() {
+    IfNoHUD([]() { IRenderer::Get<IRenderer>().camera.position_.y -= g_camera_speed; });
+  });
 }
 
-void render::Update() {
-  if (render::g_window == nullptr) {
+void IRenderer::Update() {
+  if (window == nullptr) {
     return;
   }
-  render::g_width = std::max(1, render::g_width);
-  render::g_height = std::max(1, render::g_height);
-  if (g_render_settings.render_factor_ != g_prev_render_factor) {
+  width = std::max(1, width);
+  height = std::max(1, height);
+  if (settings.render_factor_ != g_prev_render_factor) {
     RecreateFramebuffer();
   }
   glViewport(0, 0, g_framebuffer.width_, g_framebuffer.height_);
@@ -157,13 +155,13 @@ void render::Update() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void render::Render() {
-  glViewport(0, 0, render::g_width, render::g_height);
+void IRenderer::Render() {
+  glViewport(0, 0, width, height);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  dev::Update();
+  IGui::Get<IGui>().Update();
   DrawRendererStatus();
-  if (dev::g_hud_enabled) {
+  if (IGui::Get<IGui>().GetHud()) {
     ImGui::Begin("Viewport");
     auto image_size = ImGui::GetContentRegionAvail();
 #ifdef __linux__
@@ -180,21 +178,20 @@ void render::Render() {
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindVertexArray(0);
   }
-  dev::Render();
-  glfwSwapBuffers(render::g_window);
+  IGui::Get<IGui>().Render();
+  glfwSwapBuffers(window);
 }
 
-void render::Quit() {
+void IRenderer::Quit() {
   glDeleteVertexArrays(1, &g_vao);
   glDeleteBuffers(1, &g_vbo);
   DeleteFramebuffer(g_framebuffer);
 
-  if (render::g_window != nullptr) {
-    glfwDestroyWindow(render::g_window);
-    render::g_window = nullptr;
+  if (window != nullptr) {
+    glfwDestroyWindow(window);
+    window = nullptr;
   }
   glfwTerminate();
-  debug::Log("Quit render");
 }
 
 /////////////////////////////
@@ -202,17 +199,21 @@ void render::Quit() {
 /////////////////////////////
 
 void DrawRendererStatus() {
-  if (dev::g_hud_enabled) {
-    ImGui::Begin("Renderer");
+  if (IGui::Get<IGui>().GetHud()) {
+    ImGui::Begin("IRenderer");
     ImGui::Text("Directional light count: %d",
-                static_cast<int>(render::g_directional_lights.size()));
-    ImGui::Text("Point light count: %d", static_cast<int>(render::g_point_lights.size()));
-    ImGui::Text("Spot light count: %d", static_cast<int>(render::g_spot_lights.size()));
-    ImGui::DragFloat3("Camera Position", glm::value_ptr(render::g_camera.position_));
+                static_cast<int>(IRenderer::Get<IRenderer>().GetDirectionalLights().size()));
+    ImGui::Text("Point light count: %d",
+                static_cast<int>(IRenderer::Get<IRenderer>().GetPointLights().size()));
+    ImGui::Text("Spot light count: %d",
+                static_cast<int>(IRenderer::Get<IRenderer>().GetSpotLights().size()));
+    ImGui::DragFloat3("Camera Position",
+                      glm::value_ptr(IRenderer::Get<IRenderer>().GetCamera().position_));
     ImGui::DragFloat("Camera Field of View", &g_camera_fov);
     ImGui::DragFloat("Camera Speed", &g_camera_speed, 0.01F, 0.01F, 10.0F);
     ImGui::SeparatorText("Screen Shader");
-    ImGui::InputFloat("Render Factor", &render::g_render_settings.render_factor_, kGuiDragStep);
+    ImGui::InputFloat("Render Factor", &IRenderer::Get<IRenderer>().GetSettings().render_factor_,
+                      kGuiDragStep);
     ImGui::Text("Colorbuffer");
     for (unsigned int colorbuffer : g_framebuffer.colorbuffers_) {
       ImGui::Image(colorbuffer, kImageSize);
@@ -231,7 +232,7 @@ static glm::mat4 GetTransform(const glm::vec3& pos, const glm::vec2& scale, cons
   return transform;
 }
 
-void render::DrawMesh(const Mesh* mesh, const Shader* shader,
+void IRenderer::DrawMesh(const Mesh* mesh, const Shader* shader,
                       const glm::vec3& pos, const glm::vec2& size, const glm::vec3& rot) {
   if (mesh == nullptr) {
     return;
@@ -240,7 +241,7 @@ void render::DrawMesh(const Mesh* mesh, const Shader* shader,
     return;
   }
   glm::mat4 model = GetTransform(pos, size, rot);
-  glm::mat4 view = glm::translate(glm::mat4(1.0F), -render::g_camera.position_);
+  glm::mat4 view = glm::translate(glm::mat4(1.0F), -IRenderer::Get<IRenderer>().camera.position_);
   glm::mat4 projection = glm::perspective(
       glm::radians(g_camera_fov),
       (static_cast<float>(g_framebuffer.width_) / static_cast<float>(g_framebuffer.height_)),
@@ -252,24 +253,24 @@ void render::DrawMesh(const Mesh* mesh, const Shader* shader,
   shader->SetMat4("model", model);
   shader->SetMat4("view", view);
   shader->SetMat4("projection", projection);
-  shader->SetVec3("viewPos", render::g_camera.position_);
+  shader->SetVec3("viewPos", IRenderer::Get<IRenderer>().camera.position_);
   shader->SetInt("NUM_DIRECTIONAL_LIGHTS",
-                            static_cast<int>(g_directional_lights.size()));
-  for (int i = 0; i < g_directional_lights.size(); i++) {
-    if (g_directional_lights[i] != nullptr) {
-      g_directional_lights[i]->SetUniforms(shader, i);
+                 static_cast<int>(IRenderer::GetDirectionalLights().size()));
+  for (int i = 0; i < IRenderer::GetDirectionalLights().size(); i++) {
+    if (IRenderer::GetDirectionalLights()[i] != nullptr) {
+      IRenderer::GetDirectionalLights()[i]->SetUniforms(shader, i);
     }
   }
-  shader->SetInt("NUM_POINT_LIGHTS", static_cast<int>(g_point_lights.size()));
-  for (int i = 0; i < g_point_lights.size(); i++) {
-    if (g_point_lights[i] != nullptr) {
-      g_point_lights[i]->SetUniforms(shader, i);
+  shader->SetInt("NUM_POINT_LIGHTS", static_cast<int>(IRenderer::GetPointLights().size()));
+  for (int i = 0; i < IRenderer::GetPointLights().size(); i++) {
+    if (IRenderer::GetPointLights()[i] != nullptr) {
+      IRenderer::GetPointLights()[i]->SetUniforms(shader, i);
     }
   }
-  shader->SetInt("NUM_SPOT_LIGHTS", static_cast<int>(g_spot_lights.size()));
-  for (int i = 0; i < g_spot_lights.size(); i++) {
-    if (g_spot_lights[i] != nullptr) {
-      g_spot_lights[i]->SetUniforms(shader, i);
+  shader->SetInt("NUM_SPOT_LIGHTS", static_cast<int>(IRenderer::GetSpotLights().size()));
+  for (int i = 0; i < IRenderer::GetSpotLights().size(); i++) {
+    if (IRenderer::GetSpotLights()[i] != nullptr) {
+      IRenderer::GetSpotLights()[i]->SetUniforms(shader, i);
     }
   }
 
@@ -294,9 +295,8 @@ void render::DrawMesh(const Mesh* mesh, const Shader* shader,
   glBindVertexArray(0);
 }
 
-void render::DrawModel(const Model* model,
-                       const Shader* shader, const glm::vec3& pos,
-                       const glm::vec2& size, const glm::vec3& rot) {
+void IRenderer::DrawModel(const Model* model, const Shader* shader,
+  const glm::vec3& pos, const glm::vec2& size, const glm::vec3& rot) {
   if (model == nullptr) {
     return;
   }
@@ -305,69 +305,14 @@ void render::DrawModel(const Model* model,
   }
 }
 
-void render::RenderTexture(const Material*& material, const glm::vec3& pos,
-                           const glm::vec2& size, const glm::vec3& rot) {
-  if (material == nullptr) {
-    return;
-  }
-  if (!material->IsValid()) {
-    return;
-  }
-
-  glm::mat4 model = GetTransform(pos, size, rot);
-  glm::mat4 view = glm::translate(glm::mat4(1.0F), -render::g_camera.position_);
-  glm::mat4 projection = glm::perspective(
-      glm::radians(g_camera_fov),
-      (static_cast<float>(g_framebuffer.width_) / static_cast<float>(g_framebuffer.height_)),
-      kCameraNearPlane, kCameraFarPlane);
-
-  material->Bind();
-  material->shader_->SetFloat("material.shininess", material->shininess_);
-  material->shader_->SetInt("material.diffuse", 0);
-  material->shader_->SetInt("material.specular", 1);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, material->diffuse_->id_);
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, material->specular_->id_);
-  material->shader_->SetMat4("model", model);
-  material->shader_->SetMat4("view", view);
-  material->shader_->SetMat4("projection", projection);
-  material->shader_->SetVec3("viewPos", render::g_camera.position_);
-  material->shader_->SetInt("NUM_DIRECTIONAL_LIGHTS",
-                            static_cast<int>(g_directional_lights.size()));
-  for (int i = 0; i < g_directional_lights.size(); i++) {
-    if (g_directional_lights[i] != nullptr) {
-      g_directional_lights[i]->SetUniforms(material->shader_, i);
-    }
-  }
-
-  material->shader_->SetInt("NUM_POINT_LIGHTS", static_cast<int>(g_point_lights.size()));
-  for (int i = 0; i < g_point_lights.size(); i++) {
-    if (g_point_lights[i] != nullptr) {
-      g_point_lights[i]->SetUniforms(material->shader_, i);
-    }
-  }
-
-  material->shader_->SetInt("NUM_SPOT_LIGHTS", static_cast<int>(g_spot_lights.size()));
-  for (int i = 0; i < g_spot_lights.size(); i++) {
-    if (g_spot_lights[i] != nullptr) {
-      g_spot_lights[i]->SetUniforms(material->shader_, i);
-    }
-  }
-
-  glBindVertexArray(g_vao);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-  glBindVertexArray(0);
-}
-
 void FBSizeCallback(GLFWwindow* window, int width, int height) {
-  render::g_width = width;
-  render::g_height = height;
+  IRenderer::Get<IRenderer>().GetWidth() = width;
+  IRenderer::Get<IRenderer>().GetHeight() = height;
   RecreateFramebuffer();
-  glViewport(0, 0, render::g_width, render::g_height);
+  glViewport(0, 0, IRenderer::Get<IRenderer>().GetWidth(), IRenderer::Get<IRenderer>().GetHeight());
 }
 
-Framebuffer render::CreateFramebuffer(const FramebufferCreateInfo& create_info) {
+Framebuffer IRenderer::CreateFramebuffer(const FramebufferCreateInfo& create_info) {
   Framebuffer framebuffer;
   framebuffer.width_ = create_info.width_;
   framebuffer.height_ = create_info.height_;
@@ -407,13 +352,13 @@ Framebuffer render::CreateFramebuffer(const FramebufferCreateInfo& create_info) 
     glDrawBuffers(framebuffer.attachments_.size(), framebuffer.attachments_.data());
   }
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    debug::Throw("Failed to create framebuffer!");
+    IDebug::Throw("Failed to create framebuffer!");
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   return framebuffer;
 }
 
-void render::DeleteFramebuffer(Framebuffer& framebuffer) {
+void IRenderer::DeleteFramebuffer(Framebuffer& framebuffer) {
   if (!framebuffer.attachments_.empty()) {
     framebuffer.attachments_.clear();
   }
@@ -433,7 +378,7 @@ void render::DeleteFramebuffer(Framebuffer& framebuffer) {
   }
 }
 
-void render::SetRenderDrawMode(const RenderDrawMode& mode) {
+void IRenderer::SetRenderDrawMode(const RenderDrawMode& mode) {
   switch (mode) {
     case RenderDrawMode::kFill:
       glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -450,7 +395,7 @@ void render::SetRenderDrawMode(const RenderDrawMode& mode) {
   }
 }
 
-RenderDrawMode render::GetRenderDrawMode() {
+RenderDrawMode IRenderer::GetRenderDrawMode() {
   GLint mode;
   glGetIntegerv(GL_POLYGON_MODE, &mode);
   switch (mode) {
@@ -466,9 +411,11 @@ RenderDrawMode render::GetRenderDrawMode() {
 }
 
 void RecreateFramebuffer() {
-  render::DeleteFramebuffer(g_framebuffer);
-  int framebuffer_width = std::max(1, render::g_width) / render::g_render_settings.render_factor_;
-  int framebuffer_height = std::max(1, render::g_height) / render::g_render_settings.render_factor_;
+  IRenderer::Get<IRenderer>().DeleteFramebuffer(g_framebuffer);
+  int framebuffer_width =
+      std::max(1, IRenderer::Get<IRenderer>().GetWidth()) / IRenderer::Get<IRenderer>().GetSettings().render_factor_;
+  int framebuffer_height =
+      std::max(1, IRenderer::Get<IRenderer>().GetHeight()) / IRenderer::Get<IRenderer>().GetSettings().render_factor_;
   FramebufferCreateInfo create_info;
   create_info.num_colorbuffers_ = 2;
   create_info.level_ = 0;
@@ -480,42 +427,42 @@ void RecreateFramebuffer() {
   create_info.type_ = GL_FLOAT;
   create_info.same_colorbuffer_attachment_ = false;
   create_info.create_renderbuffer_ = true;
-  g_framebuffer = render::CreateFramebuffer(create_info);
-  g_prev_render_factor = render::g_render_settings.render_factor_;
+  g_framebuffer = IRenderer::Get<IRenderer>().CreateFramebuffer(create_info);
+  g_prev_render_factor = IRenderer::Get<IRenderer>().GetSettings().render_factor_;
 }
 
-void render::GAddLight(DirectionalLight* light) {
-  g_directional_lights.push_back(light);
+void IRenderer::GAddLight(DirectionalLight* light) {
+  directional_lights.push_back(light);
 }
 
-void render::GAddLight(PointLight* light) {
-  g_point_lights.push_back(light);
+void IRenderer::GAddLight(PointLight* light) {
+  point_lights.push_back(light);
 }
 
-void render::GAddLight(SpotLight* light) {
-  g_spot_lights.push_back(light);
+void IRenderer::GAddLight(SpotLight* light) {
+  spot_lights.push_back(light);
 }
 
-void render::GRemoveLight(const DirectionalLight* light) {
-  for (int i = 0; i < g_directional_lights.size(); i++) {
-    if (g_directional_lights.at(i) == light) {
-      g_directional_lights.erase(g_directional_lights.begin() + i);
+void IRenderer::GRemoveLight(const DirectionalLight* light) {
+  for (int i = 0; i < directional_lights.size(); i++) {
+    if (directional_lights.at(i) == light) {
+      directional_lights.erase(directional_lights.begin() + i);
     }
   }
 }
 
-void render::GRemoveLight(const PointLight* light) {
-  for (int i = 0; i < g_point_lights.size(); i++) {
-    if (g_point_lights.at(i) == light) {
-      g_point_lights.erase(g_point_lights.begin() + i);
+void IRenderer::GRemoveLight(const PointLight* light) {
+  for (int i = 0; i < point_lights.size(); i++) {
+    if (point_lights.at(i) == light) {
+      point_lights.erase(point_lights.begin() + i);
     }
   }
 }
 
-void render::GRemoveLight(const SpotLight* light) {
-  for (int i = 0; i < g_spot_lights.size(); i++) {
-    if (g_spot_lights.at(i) == light) {
-      g_spot_lights.erase(g_spot_lights.begin() + i);
+void IRenderer::GRemoveLight(const SpotLight* light) {
+  for (int i = 0; i < spot_lights.size(); i++) {
+    if (spot_lights.at(i) == light) {
+      spot_lights.erase(spot_lights.begin() + i);
     }
   }
 }

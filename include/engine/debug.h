@@ -1,5 +1,6 @@
 #ifndef DEBUG_H
 #define DEBUG_H
+#include <engine/interface.h>
 #include <cstdint>
 #include <functional>
 #include <source_location>
@@ -12,20 +13,23 @@ struct DebugSettings {
   bool trace_line_number_ = false;
 };
 
-namespace debug {
-extern DebugSettings g_debug_settings;
-void GSetCallback(std::function<void(const char*, const char*, std::uint8_t)> /*func*/) noexcept;
-void Log(const char* /*msg*/,
-         const std::source_location& /*location*/ = std::source_location::current()) noexcept;
-void Log(std::string_view /*msg*/,
-         const std::source_location& /*location*/ = std::source_location::current()) noexcept;
-void Warning(const char* /*msg*/,
-             const std::source_location& /*location*/ = std::source_location::current()) noexcept;
-void Warning(std::string_view /*msg*/,
-             const std::source_location& /*location*/ = std::source_location::current()) noexcept;
-void Throw(const char* /*msg*/,
-           const std::source_location& /*location*/ = std::source_location::current());
-void Throw(std::string_view /*msg*/,
-           const std::source_location& /*location*/ = std::source_location::current());
-}  // namespace debug
+class IDebug : public Interface {
+  DebugSettings g_debug_settings;
+  using location = std::source_location;
+public:
+  const char* name() override {
+    return "Debug";
+  }
+  DebugSettings& Settings() {
+    return g_debug_settings;
+  }
+  void SetCallback(std::function<void(const char*, const char*, std::uint8_t)> /*func*/) noexcept;
+  static void Log(const char* /*msg*/, const location& /*loc*/ = location::current()) noexcept;
+  static void Log(std::string_view /*msg*/, const location& /*loc*/ = location::current()) noexcept;
+  static void Warning(const char* /*msg*/, const location& /*loc*/ = location::current()) noexcept;
+  static void Warning(std::string_view /*msg*/, const location& /*loc*/ = location::current()) noexcept;
+  static void Throw(const char* /*msg*/, const location& /*loc*/ = location::current());
+  static void Throw(std::string_view /*msg*/, const location& /*loc*/ = location::current());
+};
+
 #endif  // DEBUG_H

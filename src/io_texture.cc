@@ -12,7 +12,7 @@
 /// Texture IO functions ///
 ////////////////////////////
 
-Texture* io::LoadTexture(std::string_view path) {
+Texture* IIO::LoadTexture(std::string_view path) {
   for (const auto& [key, value] : g_loaded_textures) {
     if (key == path) {
       return value;
@@ -25,7 +25,7 @@ Texture* io::LoadTexture(std::string_view path) {
   unsigned char* data =
       stbi_load(path.data(), &texture->width_, &texture->height_, &texture->channels_, 0);
   if (data == nullptr) {
-    debug::Throw(std::format("Failed to load texture. Details: {}", path));
+    IDebug::Throw(std::format("Failed to load texture. Details: {}", path));
   }
   GLenum format = GL_RGB;
   switch (texture->channels_) {

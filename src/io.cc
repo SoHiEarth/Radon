@@ -41,21 +41,17 @@ constexpr float kMaterialShininessDefaultValue = 32.0F;
   }
 
 enum : std::uint16_t { kLogSize = 512 };
-Level* io::g_level = nullptr;
-std::string io::g_engine_directory;
-std::map<std::string, Texture*> io::g_loaded_textures{};
-std::unordered_map<std::string_view, std::function<Component*()>>
-    io::g_component_factory = {
+std::unordered_map<std::string_view, std::function<Component*()>> IIO::g_component_factory = {
         OBJECT_FACTORY_KEY(Transform),     OBJECT_FACTORY_KEY(ModelRenderer),
         OBJECT_FACTORY_KEY(AudioSource),
         OBJECT_FACTORY_KEY(PhysicsObject), OBJECT_FACTORY_KEY(DirectionalLight),
         OBJECT_FACTORY_KEY(PointLight),    OBJECT_FACTORY_KEY(SpotLight)};
 std::string ValidateName(std::string input);
-bool io::CheckFile(std::string_view path) {
+bool IIO::CheckFile(std::string_view path) {
   return std::filesystem::exists(path);
 }
 
-void io::Init() {
+void IIO::Init() {
   if (!CheckFile("engine_assets")) {
     tinyfd_messageBox("Engine Directory Not Found",
                       "Please select the engine directory to continue.", "ok", "info", 1);
@@ -77,54 +73,53 @@ void io::Init() {
         }
       }
     } else {
-      debug::Throw("Engine directory selection cancelled, application cannot continue.");
+      IDebug::Throw("Engine directory selection cancelled, application cannot continue.");
     }
   } else {
-    io::g_engine_directory = "engine_assets";
+    IIO::g_engine_directory = "engine_assets";
   }
-  debug::Log("Initialized io");
 }
 
 ///////////////////////////
 ///  Level IO functions ///
 ///////////////////////////
 
-Level* io::xml::LoadLevel(std::string_view path) {
+Level* IIO::LoadLevel(std::string_view path) {
   if (!CheckFile(path)) {
-    debug::Throw(std::format("Requested file does not exist. {}", path));
+    IDebug::Throw(std::format("Requested file does not exist. {}", path));
   }
   pugi::xml_document doc;
   pugi::xml_parse_result result = doc.load_file(path.data());
   if (!result) {
-    debug::Throw(std::format("Failed to load level file. {}, {}", path, result.description()));
+    IDebug::Throw(std::format("Failed to load level file. {}, {}", path, result.description()));
   }
 
   pugi::xml_node root = doc.child("level");
   if (!root) {
-    debug::Throw(std::format("Requested file {} is not a valid level file", path));
+    IDebug::Throw(std::format("Requested file {} is not a valid level file", path));
   }
 
   auto level = new Level();
   level->path_ = path;
   for (pugi::xml_node object_node : root.children("object")) {
-    level->objects_.push_back(io::xml::LoadObject(object_node));
+    level->objects_.push_back(IIO::LoadObject(object_node));
   }
   glfwSetWindowTitle(glfwGetCurrentContext(), std::format("Radon Engine - {}", path).c_str());
-  debug::Log(std::format("Successfully loaded {}", path));
+  IDebug::Log(std::format("Successfully loaded {}", path));
   level->Init();
   return level;
 }
 
-void io::xml::SaveLevel(const Level* level, std::string_view path) {
+void IIO::SaveLevel(const Level* level, std::string_view path) {
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child("level");
   for (Object* object : level->objects_) {
     auto child = root.append_child("object");
-    io::xml::SaveObject(object, child);
+    IIO::Get<IIO>().SaveObject(object, child);
   }
   bool save_result = doc.save_file(path.data());
   if (!save_result) {
-    debug::Throw(std::format("Failed to save level file. {}", path));
+    IDebug::Throw(std::format("Failed to save level file. {}", path));
   }
 }
 
@@ -132,7 +127,7 @@ void io::xml::SaveLevel(const Level* level, std::string_view path) {
 ///  Object IO functions ///
 ////////////////////////////
 
-Object* io::xml::LoadObject(pugi::xml_node& base_node) {
+Object* IIO::LoadObject(pugi::xml_node& base_node) {
   auto object = new Object();
 
   // Transform is required, so read it first
@@ -140,7 +135,7 @@ Object* io::xml::LoadObject(pugi::xml_node& base_node) {
   if (transform_node != nullptr) {
     object->transform_.Load(transform_node);
   } else {
-    debug::Warning("Object is missing required Transform component, reverting to default values.");
+    IDebug::Warning("Object is missing required Transform component, reverting to default values.");
   }
 
   for (auto& component_node : base_node.children("componentheader")) {
@@ -150,10 +145,11 @@ Object* io::xml::LoadObject(pugi::xml_node& base_node) {
       if (component != nullptr) {
         object->AddComponent(component);
       } else {
-        debug::Warning(std::format("Failed to create component of type {}, skipping", component_type));
+        IDebug::Warning(
+            std::format("Failed to create component of type {}, skipping", component_type));
       }
     } else {
-      debug::Warning(
+      IDebug::Warning(
           std::format("Component type {} not found in factory, skipping", component_type));
     }
   }
@@ -162,7 +158,7 @@ Object* io::xml::LoadObject(pugi::xml_node& base_node) {
   return object;
 }
 
-void io::xml::SaveObject(Object*& object, pugi::xml_node& base_node) {
+void IIO::SaveObject(Object*& object, pugi::xml_node& base_node) {
   // Write transform
   auto transform_node = base_node.append_child("transform");
   object->transform_.Save(transform_node);
@@ -183,10 +179,10 @@ void io::xml::SaveObject(Object*& object, pugi::xml_node& base_node) {
 std::string ReadFile(std::string_view path);
 unsigned int CompileShader(std::string_view code, int type);
 
-Shader* io::LoadShader(std::string_view vertex_path,
+Shader* IIO::LoadShader(std::string_view vertex_path,
                                        std::string_view fragment_path) {
   if (!CheckFile(vertex_path) || !CheckFile(fragment_path)) {
-    debug::Throw(
+    IDebug::Throw(
         std::format("Requested shader file does not exist. {}, {}", vertex_path, fragment_path));
   }
 
@@ -196,7 +192,7 @@ Shader* io::LoadShader(std::string_view vertex_path,
     vertex = CompileShader(ReadFile(vertex_path), GL_VERTEX_SHADER);
     fragment = CompileShader(ReadFile(fragment_path), GL_FRAGMENT_SHADER);
   } catch (std::runtime_error& e) {
-    debug::Throw(std::format("Failed to load shader. {}", e.what()));
+    IDebug::Throw(std::format("Failed to load shader. {}", e.what()));
     return nullptr;
   }
   unsigned int program = glCreateProgram();
@@ -208,7 +204,7 @@ Shader* io::LoadShader(std::string_view vertex_path,
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if (success == 0) {
     glGetProgramInfoLog(program, kLogSize, nullptr, log.data());
-    debug::Throw(std::format("Shader program link failed. {}", log.data()));
+    IDebug::Throw(std::format("Shader program link failed. {}", log.data()));
     return nullptr;
   }
   glDeleteShader(vertex);
@@ -222,34 +218,34 @@ Shader* io::LoadShader(std::string_view vertex_path,
 /// Material IO functions ///
 /////////////////////////////
 
-Material* io::LoadMaterial(std::string_view diffuse, std::string_view specular,
+Material* IIO::LoadMaterial(std::string_view diffuse, std::string_view specular,
                                            std::string_view vertex, std::string_view fragment,
                                            float shininess) {
   auto material = new Material();
   material->shininess_ = shininess;
   try {
-    material->diffuse_ = io::LoadTexture(diffuse);
-    material->specular_ = io::LoadTexture(specular);
+    material->diffuse_ = IIO::LoadTexture(diffuse);
+    material->specular_ = IIO::LoadTexture(specular);
   } catch (std::runtime_error& e) {
-    debug::Warning(std::format("Material load failed. {}", e.what()));
+    IDebug::Warning(std::format("Material load failed. {}", e.what()));
   }
   try {
-    material->shader_ = io::LoadShader(vertex, fragment);
+    material->shader_ = IIO::LoadShader(vertex, fragment);
     material->shader_->Use();
     material->shader_->SetInt("material.diffuse", 0);
     material->shader_->SetInt("material.specular", 1);
   } catch (std::runtime_error& e) {
-    debug::Warning(std::format("Material load failed. {}", e.what()));
+    IDebug::Warning(std::format("Material load failed. {}", e.what()));
   }
   return material;
 }
 
-Material* io::xml::LoadMaterial(pugi::xml_node& node) {
+Material* IIO::LoadMaterial(pugi::xml_node& node) {
   pugi::xml_node material_node = node.child(kMaterialKeyName);
   if (!material_node) {
     return nullptr;
   }
-  return io::LoadMaterial(
+  return IIO::LoadMaterial(
       material_node.attribute(kMaterialDiffuseKeyName).as_string(),
       material_node.attribute(kMaterialSpecularKeyName).as_string(),
       material_node.attribute(kMaterialVertexKeyName).as_string(),
@@ -257,7 +253,7 @@ Material* io::xml::LoadMaterial(pugi::xml_node& node) {
       material_node.attribute(kMaterialShininessKeyName).as_float(kMaterialShininessDefaultValue));
 }
 
-void io::xml::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
+void IIO::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
   pugi::xml_node node = base_node.child(kMaterialKeyName);
   if (!node) {
     node = base_node.append_child(kMaterialKeyName);
@@ -277,7 +273,7 @@ void io::xml::SaveMaterial(const Material* material, pugi::xml_node& base_node) 
 /// Serialized IO functions ///
 ///////////////////////////////
 
-glm::vec3 io::xml::LoadVec3(pugi::xml_node& base_node, std::string_view name) {
+glm::vec3 IIO::LoadVec3(pugi::xml_node& base_node, std::string_view name) {
   pugi::xml_node node = base_node.child(ValidateName(name.data()));
   glm::vec3 value{};
   value.x = node.attribute("x").as_float(0.0F);
@@ -286,7 +282,7 @@ glm::vec3 io::xml::LoadVec3(pugi::xml_node& base_node, std::string_view name) {
   return value;
 }
 
-glm::vec2 io::xml::LoadVec2(pugi::xml_node& base_node, std::string_view name) {
+glm::vec2 IIO::LoadVec2(pugi::xml_node& base_node, std::string_view name) {
   pugi::xml_node node = base_node.child(ValidateName(name.data()));
   glm::vec2 value{};
   value.x = node.attribute("x").as_float(0.0F);
@@ -294,17 +290,17 @@ glm::vec2 io::xml::LoadVec2(pugi::xml_node& base_node, std::string_view name) {
   return value;
 }
 
-std::string io::xml::LoadString(pugi::xml_node& base_node, std::string_view name) {
+std::string IIO::LoadString(pugi::xml_node& base_node, std::string_view name) {
   pugi::xml_node node = base_node.child(ValidateName(name.data()));
   return node.attribute("value").as_string("");
 }
 
-int io::xml::LoadInt(pugi::xml_node& base_node, std::string_view name) {
+int IIO::LoadInt(pugi::xml_node& base_node, std::string_view name) {
   pugi::xml_node node = base_node.child(ValidateName(name.data()));
   return node.attribute("value").as_int(0);
 }
 
-float io::xml::LoadFloat(pugi::xml_node& base_node, std::string_view name) {
+float IIO::LoadFloat(pugi::xml_node& base_node, std::string_view name) {
   pugi::xml_node node = base_node.child(ValidateName(name.data()));
   return node.attribute("value").as_float(0.0F);
 }
@@ -318,30 +314,30 @@ inline pugi::xml_node GetOrCreateNode(pugi::xml_node& base_node, std::string_vie
   return node;
 }
 
-void io::xml::SaveVec3(const glm::vec3& value, pugi::xml_node& base_node, std::string_view name) {
+void IIO::SaveVec3(const glm::vec3& value, pugi::xml_node& base_node, std::string_view name) {
   auto node = GetOrCreateNode(base_node, name);
   node.append_attribute("x").set_value(value.x);
   node.append_attribute("y").set_value(value.y);
   node.append_attribute("z").set_value(value.z);
 }
 
-void io::xml::SaveVec2(const glm::vec2& value, pugi::xml_node& base_node, std::string_view name) {
+void IIO::SaveVec2(const glm::vec2& value, pugi::xml_node& base_node, std::string_view name) {
   auto node = GetOrCreateNode(base_node, name);
   node.append_attribute("x").set_value(value.x);
   node.append_attribute("y").set_value(value.y);
 }
 
-void io::xml::SaveString(std::string_view value, pugi::xml_node& base_node, std::string_view name) {
+void IIO::SaveString(std::string_view value, pugi::xml_node& base_node, std::string_view name) {
   auto node = GetOrCreateNode(base_node, name);
   node.append_attribute("value").set_value(value.data());
 }
 
-void io::xml::SaveInt(const int* value, pugi::xml_node& base_node, std::string_view name) {
+void IIO::SaveInt(const int* value, pugi::xml_node& base_node, std::string_view name) {
   auto node = GetOrCreateNode(base_node, name);
   node.append_attribute("value").set_value(*value);
 }
 
-void io::xml::SaveFloat(const float* value, pugi::xml_node& base_node, std::string_view name) {
+void IIO::SaveFloat(const float* value, pugi::xml_node& base_node, std::string_view name) {
   auto node = GetOrCreateNode(base_node, name);
   node.append_attribute("value").set_value(*value);
 }
@@ -357,7 +353,7 @@ std::string ValidateName(std::string input) {
 
 std::string ReadFile(std::string_view path) {
   if (!std::filesystem::exists(path)) {
-    debug::Throw(std::format("Requested file does not exist. {}", path));
+    IDebug::Throw(std::format("Requested file does not exist. {}", path));
   }
   std::ifstream file;
   file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -368,14 +364,14 @@ std::string ReadFile(std::string_view path) {
     file.close();
     return stream.str();
   } catch (std::ifstream::failure e) {
-    debug::Throw(std::format("File IO failure. {}, {}", path, e.what()));
+    IDebug::Throw(std::format("File IO failure. {}, {}", path, e.what()));
   }
   return "";
 }
 
 [[nodiscard("Shader Discarded")]] unsigned int CompileShader(std::string_view code, int type) {
   if (code.empty()) {
-    debug::Throw("Got empty code.");
+    IDebug::Throw("Got empty code.");
   }
   const char* code_data = code.data();
   unsigned int shader;
@@ -387,7 +383,7 @@ std::string ReadFile(std::string_view path) {
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (success == 0) {
     glGetShaderInfoLog(shader, kLogSize, nullptr, log.data());
-    debug::Throw(std::format("Shader compilation failed. {}", log.data()));
+    IDebug::Throw(std::format("Shader compilation failed. {}", log.data()));
   }
   return shader;
 }
