@@ -1,12 +1,6 @@
-#ifndef MATERIAL_H
-#define MATERIAL_H
-
-#include <memory>
-#include <string>
-
+#pragma once
 class Texture;
 class Shader;
-
 struct Material {
   Texture* diffuse_ = nullptr;
   Texture* specular_ = nullptr;
@@ -15,5 +9,3 @@ struct Material {
   [[nodiscard]] bool IsValid() const;
   void Bind() const;
 };
-
-#endif  // MATERIAL_H

@@ -46,9 +46,14 @@ struct Framebuffer {
   std::vector<unsigned int> attachments_;
 };
 
-enum class RenderDrawMode : std::uint8_t { kFill = 0, kLine = 1, kPoint = 2 };
+enum class RenderDrawMode : std::uint8_t {
+  kFill = 0,
+  kLine = 1,
+  kPoint = 2
+};
 
 class IRenderer : public Interface {
+private:
   std::vector<DirectionalLight*> directional_lights;
   std::vector<PointLight*> point_lights;
   std::vector<SpotLight*> spot_lights;
@@ -58,15 +63,16 @@ class IRenderer : public Interface {
   int height = kDefaultWindowHeight;
   Camera camera{};
 
-public:
+protected:
   const char* name() override {
     return "Renderer";
   }
+  void i_Init() override;
+  void i_Update();
+  void i_Render();
+  void i_Quit() override;
 
-  void Init() override;
-  void Update();
-  void Render();
-  void Quit() override;
+public:
   void DrawMesh(const Mesh* /*mesh*/, const Shader* /*shader*/,
     const glm::vec3& /*pos*/, const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
 

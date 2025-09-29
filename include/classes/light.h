@@ -1,6 +1,4 @@
-#ifndef LIGHT_H
-#define LIGHT_H
-
+#pragma once
 #include <classes/component.h>
 #include <glm/glm.hpp>
 #include <memory>
@@ -19,10 +17,10 @@ public:
   void Init() override;
   void Quit() override;
   void Load(pugi::xml_node& /*node*/ /*unused*/) override;
-  [[nodiscard]] std::string GetTypeName() const override {
+  void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
+  [[nodiscard]] const char* GetTypeName() const override {
     return "DirectionalLight";
   }
-  void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
   void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
 };
 
@@ -33,10 +31,10 @@ public:
   void Init() override;
   void Quit() override;
   void Load(pugi::xml_node& /*node*/ /*unused*/) override;
-  [[nodiscard]] std::string GetTypeName() const override {
+  void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
+  [[nodiscard]] const char* GetTypeName() const override {
     return "PointLight";
   }
-  void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
   void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
 };
 
@@ -48,11 +46,9 @@ public:
   void Init() override;
   void Quit() override;
   void Load(pugi::xml_node& /*node*/ /*unused*/) override;
-  [[nodiscard]] std::string GetTypeName() const override {
+  void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
+  [[nodiscard]] const char* GetTypeName() const override {
     return "SpotLight";
   }
-  void Save(pugi::xml_node& /*node*/ /*unused*/) const override;
   void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
 };
-
-#endif  // LIGHT_H

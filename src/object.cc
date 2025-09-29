@@ -56,7 +56,7 @@ void Object::Quit() {
 }
 
 void Object::Load(pugi::xml_node& node) {
-  name_ = IIO::Get<IIO>().LoadString(node, name_.i_label_);
+  name_ = IIO::Get<IIO>().LoadString(node, name_.i_label_).c_str();
   for (auto& component : components_) {
     component->parent_ = this;
     component->Load(node);

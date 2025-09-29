@@ -62,7 +62,7 @@ void DrawRendererStatus();
 void RecreateFramebuffer();
 void FBSizeCallback(GLFWwindow* window, int width, int height);
 
-void IRenderer::Init() {
+void IRenderer::i_Init() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -140,7 +140,7 @@ void IRenderer::Init() {
   });
 }
 
-void IRenderer::Update() {
+void IRenderer::i_Update() {
   if (window == nullptr) {
     return;
   }
@@ -155,7 +155,7 @@ void IRenderer::Update() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void IRenderer::Render() {
+void IRenderer::i_Render() {
   glViewport(0, 0, width, height);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -182,11 +182,10 @@ void IRenderer::Render() {
   glfwSwapBuffers(window);
 }
 
-void IRenderer::Quit() {
+void IRenderer::i_Quit() {
   glDeleteVertexArrays(1, &g_vao);
   glDeleteBuffers(1, &g_vbo);
   DeleteFramebuffer(g_framebuffer);
-
   if (window != nullptr) {
     glfwDestroyWindow(window);
     window = nullptr;

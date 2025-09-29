@@ -9,13 +9,13 @@ const int kVelocityIterations = 6;
 const int kPositionIterations = 2;
 b2WorldId g_world;
 
-void IPhysics::Init() {
+void IPhysics::i_Init() {
   b2WorldDef world_def = b2DefaultWorldDef();
   world_def.gravity = b2Vec2(0.0F, -1.0F);
   g_world = b2CreateWorld(&world_def);
 }
 
-void IPhysics::Update() {
+void IPhysics::i_Update() {
   b2World_Step(g_world, kTimeStep, kVelocityIterations);
 }
 
@@ -41,6 +41,6 @@ void IPhysics::SetBodyPosition(b2BodyId body_id, glm::vec2 position) {
   b2Body_SetTransform(body_id, b2Vec2(position.x, position.y), b2Body_GetRotation(body_id));
 }
 
-void IPhysics::Quit() {
+void IPhysics::i_Quit() {
   b2DestroyWorld(g_world);
 }

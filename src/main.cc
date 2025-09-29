@@ -13,7 +13,7 @@
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <format>
 constexpr const char* kTimerInitName = "Engine Init";
-constexpr const char* kTimerIoInitName = "I/O Init";
+constexpr const char* kTimerIoInitName = "IO Init";
 constexpr const char* kTimerRenderInitName = "Render Init";
 constexpr const char* kTimerDevguiInitName = "Dev GUI Init";
 constexpr const char* kTimerInputInitName = "Input Init";
@@ -48,11 +48,8 @@ int main(int argc, char** argv) {
     TIME(IPhysics::Get<IPhysics>().Start(), kTimerPhysicsInitName);
     ITelemetry::Get<ITelemetry>().EndTimer(kTimerInitName);
     ITelemetry::Get<ITelemetry>().LogTimer(kTimerInitName);
-    auto& timings = ITelemetry::Get<ITelemetry>().GetTimings();
-    for (const auto& [name, duration] : timings) {
-      IDebug::Log(std::format("Telemetry: {}: {}ms", name, duration.count()));
-    }
-    ITelemetry::Get<ITelemetry>().UploadTimings(ENGINE_INIT_NAME, timings);
+    ITelemetry::Get<ITelemetry>().UploadTimings(ENGINE_INIT_NAME,
+      ITelemetry::Get<ITelemetry>().GetTimings());
 
   } catch (std::exception& e) {
     IDebug::Log(std::format("Initialization failure: {}", e.what()));
@@ -91,12 +88,14 @@ int main(int argc, char** argv) {
   }
 
   try {
-    IGui::Get<IGui>().Stop();
+    IPhysics::Get<IPhysics>().Stop();
     ILocalization::Get<ILocalization>().Stop();
     IAudio::Get<IAudio>().Stop();
-    IPhysics::Get<IPhysics>().Stop();
     IInput::Get<IInput>().Stop();
+    IGui::Get<IGui>().Stop();
     IRenderer::Get<IRenderer>().Stop();
+    IIO::Get<IIO>().Stop();
+    ITelemetry::Get<ITelemetry>().Stop();
   } catch (std::exception& e) {
     IDebug::Log(std::format("Quit failure: {}", e.what()));
     tinyfd_messageBox("Quit Failure", e.what(), "ok", "error", 1);

@@ -9,26 +9,28 @@ enum ConsoleMessageType : std::uint8_t {
 };
 
 struct ConsoleMessage {
-  std::string traceback_;
-  std::string message_;
+  const char* traceback_;
+  const char* message_;
   ConsoleMessageType type_;
 };
 
 class IGui : public Interface {
+private:
   bool hud_enabled = false;
-public:
+protected:
   const char* name() override {
     return "Gui";
   }
+  void i_Init() override;
+  void i_Update() override;
+  void i_Render() override;
+  void i_Quit() override;
+public:
   void SetHud(bool enabled) {
     hud_enabled = enabled;
   }
   bool GetHud() const {
     return hud_enabled;
   }
-  void Init() override;
-  void Update();
   static void AddConsoleMessage(const char* traceback, const char* message, std::uint8_t type);
-  void Render();
-  void Quit() override;
 };

@@ -51,7 +51,7 @@ public:
   bool has_quit_ = false;
   virtual void Load(pugi::xml_node& /*unused*/) {};
   virtual void Save(pugi::xml_node& /*unused*/) const {};
-  [[nodiscard]] virtual std::string GetTypeName() const = 0;
+  [[nodiscard]] virtual const char* GetTypeName() const = 0;
   virtual ~Component() = default;
 };
 

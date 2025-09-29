@@ -1,6 +1,4 @@
-#ifndef MESH_H
-#define MESH_H
-
+#pragma once
 #include <vector>
 #include <glm/glm.hpp>
 
@@ -9,8 +7,6 @@ class Vertex {
   glm::vec3 position_;
   glm::vec3 normal_;
   glm::vec2 tex_coords_;
-  glm::vec3 tangent_;
-  glm::vec3 bitangent_;
 };
 
 class Texture;
@@ -36,9 +32,9 @@ class Model {
  public:
   std::vector<Texture*> loaded_textures_;
   std::vector<Mesh*> meshes_;
-  const std::string kPath, kDirectory;
-  Model(std::string_view path, std::string_view directory)
-    : kPath(path), kDirectory(directory) {}
+  const char* kPath, *kDirectory;
+  Model(const char* path, const char* directory) {
+    kPath = strcpy(new char[strlen(path) + 1], path);
+    kDirectory = strcpy(new char[strlen(directory) + 1], directory);
+  }
 };
-
-#endif  // MESH_H

@@ -1,28 +1,28 @@
 #include <classes/shader.h>
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
-#define GET_LOCATION() glGetUniformLocation(id_, name.data())
+#define GET_LOCATION() glGetUniformLocation(id_, name)
 
 void Shader::Use() const {
   glUseProgram(id_);
 }
 
-void Shader::SetInt(std::string_view name, int value) const {
+void Shader::SetInt(const char* name, int value) const {
   glUniform1i(GET_LOCATION(), value);
 }
 
-void Shader::SetFloat(std::string_view name, float value) const {
+void Shader::SetFloat(const char* name, float value) const {
   glUniform1f(GET_LOCATION(), value);
 }
 
-void Shader::SetVec2(std::string_view name, const glm::vec2& value) const {
+void Shader::SetVec2(const char* name, const glm::vec2& value) const {
   glUniform2fv(GET_LOCATION(), 1, glm::value_ptr(value));
 }
 
-void Shader::SetVec3(std::string_view name, const glm::vec3& value) const {
+void Shader::SetVec3(const char* name, const glm::vec3& value) const {
   glUniform3fv(GET_LOCATION(), 1, glm::value_ptr(value));
 }
 
-void Shader::SetMat4(std::string_view name, const glm::mat4& value) const {
+void Shader::SetMat4(const char* name, const glm::mat4& value) const {
   glUniformMatrix4fv(GET_LOCATION(), 1, GL_FALSE, glm::value_ptr(value));
 }

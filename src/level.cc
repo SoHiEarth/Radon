@@ -46,15 +46,14 @@ void Level::Quit() {
   }
 }
 
-void Level::AddObject(Object* object, std::string_view name) {
+void Level::AddObject(Object* object, const char* name) {
   if (object == nullptr) {
     return;
   }
   if (name != "Object") {
-    object->name_ = std::string(name);
+    object->name_ = strcpy(new char[strlen(name) + 1], name);
   }
   if (!object->has_initialized_) {
-    IDebug::Log(std::format("Initializing object: {}", *object->name_));
     object->Init();
     object->has_initialized_ = true;
   }

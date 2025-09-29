@@ -1,13 +1,17 @@
 #include <engine/debug.h>
 #include <engine/telemetry.h>
-
 #include <utility>
 
-std::map<std::string, std::chrono::high_resolution_clock::time_point> g_start_points;
-std::map<std::string, std::chrono::milliseconds> g_durations;
-std::map<std::string, std::chrono::milliseconds> g_duration_log;
+std::map<const char*, std::chrono::high_resolution_clock::time_point> g_start_points{};
+std::map<const char*, std::chrono::milliseconds> g_durations{};
+std::map<const char*, std::chrono::milliseconds> g_duration_log{};
 
-void ITelemetry::Init() {
+void ITelemetry::i_Init() {
+}
+
+void ITelemetry::i_Quit() {
+  g_durations.clear();
+  g_start_points.clear();
 }
 
 void ITelemetry::BeginFrame() {
@@ -43,29 +47,22 @@ void ITelemetry::LogTimer(const char* name) {
   }
 }
 
-std::map<std::string, std::map<std::string, std::chrono::milliseconds>> g_uploaded_timings;
-void ITelemetry::UploadTimings(const char* name, timing& data) {
+
+void ITelemetry::UploadTimings(const char* name, Timing& data) {
   g_uploaded_timings[name] = std::move(data);
 }
 
-std::map<std::string, std::chrono::milliseconds>& ITelemetry::DownloadTimings(const char* name) {
+std::map<const char*, std::chrono::milliseconds>& ITelemetry::DownloadTimings(const char* name) {
   if (g_uploaded_timings.contains(name)) {
     return g_uploaded_timings[name];
   }
-  IDebug::Warning(std::format("No uploaded timings found with name '{}'!", name));
-  static std::map<std::string, std::chrono::milliseconds> empty_map;
-  return empty_map;
+  IDebug::Throw(std::format("No uploaded timings found with name '{}'!", name));
 }
 
-std::map<std::string, std::chrono::milliseconds>& ITelemetry::GetTimings() {
+std::map<const char*, std::chrono::milliseconds>& ITelemetry::GetTimings() {
   return g_durations;
 }
 
-std::map<std::string, std::chrono::milliseconds>& ITelemetry::GetLog() {
+std::map<const char*, std::chrono::milliseconds>& ITelemetry::GetLog() {
   return g_duration_log;
-}
-
-void ITelemetry::Quit() {
-  g_durations.clear();
-  g_start_points.clear();
 }

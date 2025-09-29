@@ -3,10 +3,10 @@
 #include <format>
 #include <pugixml.hpp>
 
-void ILocalization::Init() {
+void ILocalization::i_Init() {
 }
 
-void ILocalization::Quit() {
+void ILocalization::i_Quit() {
 }
 
 void ILocalization::Load(std::string_view path) {

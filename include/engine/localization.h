@@ -5,12 +5,15 @@
 class ILocalization : public Interface {
   std::string g_language;
   std::map<std::string, std::string> g_dictionary;
-public:
+
+protected:
   const char* name() override {
     return "Localization";
   }
-  void Init() override;
-  void Quit() override;
+  void i_Init() override;
+  void i_Quit() override;
+
+public:
   void Load(std::string_view /*path*/);
   void Save(std::string_view /*path*/);
   std::string& GetString(const std::string& key) {

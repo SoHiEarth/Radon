@@ -51,7 +51,7 @@ bool IIO::CheckFile(std::string_view path) {
   return std::filesystem::exists(path);
 }
 
-void IIO::Init() {
+void IIO::i_Init() {
   if (!CheckFile("engine_assets")) {
     tinyfd_messageBox("Engine Directory Not Found",
                       "Please select the engine directory to continue.", "ok", "info", 1);
@@ -80,6 +80,19 @@ void IIO::Init() {
   }
 }
 
+void IIO::i_Quit() {
+  if (g_level != nullptr) {
+    g_level->Quit();
+    delete g_level;
+    g_level = nullptr;
+  }
+  for (auto& [key, texture] : g_loaded_textures) {
+    glDeleteTextures(1, &texture->id_);
+    delete texture;
+  }
+  g_loaded_textures.clear();
+}
+
 ///////////////////////////
 ///  Level IO functions ///
 ///////////////////////////
@@ -100,12 +113,11 @@ Level* IIO::LoadLevel(std::string_view path) {
   }
 
   auto level = new Level();
-  level->path_ = path;
+  level->path_ = strcpy(new char[path.size() + 1], path.data());
   for (pugi::xml_node object_node : root.children("object")) {
-    level->objects_.push_back(IIO::LoadObject(object_node));
+    level->AddObject(IIO::LoadObject(object_node));
   }
   glfwSetWindowTitle(glfwGetCurrentContext(), std::format("Radon Engine - {}", path).c_str());
-  IDebug::Log(std::format("Successfully loaded {}", path));
   level->Init();
   return level;
 }
@@ -166,7 +178,7 @@ void IIO::SaveObject(Object*& object, pugi::xml_node& base_node) {
   // First, write the component headers
   for (const auto& component : object->GetAllComponents()) {
     pugi::xml_node component_node = base_node.append_child("componentheader");
-    component_node.append_attribute("type").set_value(component->GetTypeName().c_str());
+    component_node.append_attribute("type").set_value(component->GetTypeName());
   }
 
   object->Save(base_node);
@@ -209,7 +221,7 @@ Shader* IIO::LoadShader(std::string_view vertex_path,
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);
-  auto shader = new Shader(vertex_path, fragment_path);
+  auto shader = new Shader(vertex_path.data(), fragment_path.data());
   shader->id_ = program;
   return shader;
 }

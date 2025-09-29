@@ -1,11 +1,7 @@
-#ifndef OBJECT_H
-#define OBJECT_H
-
+#pragma once
 #include <classes/editable.h>
 #include <classes/transform.h>
-#include <memory>
 #include <pugixml.hpp>
-#include <string>
 #include <vector>
 
 class Component;
@@ -13,7 +9,7 @@ class Object {
 public:
   Transform transform_{};
   std::vector<IEditable*> reg_;
-  Editable<std::string> name_ = {"Object", "Name", reg_};
+  Editable<const char*> name_ = {"Object", "Name", reg_};
   bool has_initialized_ = false;
   bool has_quit_ = false;
   void Init();
@@ -41,5 +37,3 @@ public:
 private:
   std::vector<Component*> components_;
 };
-
-#endif  // OBJECT_H

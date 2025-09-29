@@ -1,5 +1,4 @@
-#ifndef DEBUG_H
-#define DEBUG_H
+#pragma once
 #include <engine/interface.h>
 #include <cstdint>
 #include <functional>
@@ -15,21 +14,27 @@ struct DebugSettings {
 
 class IDebug : public Interface {
   DebugSettings g_debug_settings;
-  using location = std::source_location;
-public:
+  static std::function<void(const char*, const char*, std::uint8_t)> callback;
+
+protected:
   const char* name() override {
     return "Debug";
   }
+public:
   DebugSettings& Settings() {
     return g_debug_settings;
   }
   void SetCallback(std::function<void(const char*, const char*, std::uint8_t)> /*func*/) noexcept;
-  static void Log(const char* /*msg*/, const location& /*loc*/ = location::current()) noexcept;
-  static void Log(std::string_view /*msg*/, const location& /*loc*/ = location::current()) noexcept;
-  static void Warning(const char* /*msg*/, const location& /*loc*/ = location::current()) noexcept;
-  static void Warning(std::string_view /*msg*/, const location& /*loc*/ = location::current()) noexcept;
-  static void Throw(const char* /*msg*/, const location& /*loc*/ = location::current());
-  static void Throw(std::string_view /*msg*/, const location& /*loc*/ = location::current());
+  static void Log(const char* /*msg*/,
+    const std::source_location& /*loc*/ = std::source_location::current()) noexcept;
+  static void Log(std::string_view /*msg*/,
+    const std::source_location& /*loc*/ = std::source_location::current()) noexcept;
+  static void Warning(const char* /*msg*/,
+    const std::source_location& /*loc*/ = std::source_location::current()) noexcept;
+  static void Warning(std::string_view /*msg*/,
+    const std::source_location& /*loc*/ = std::source_location::current()) noexcept;
+  static void Throw(const char* /*msg*/,
+    const std::source_location& /*loc*/ = std::source_location::current());
+  static void Throw(std::string_view /*msg*/,
+    const std::source_location& /*loc*/ = std::source_location::current());
 };
-
-#endif  // DEBUG_H

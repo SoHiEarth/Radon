@@ -3,7 +3,9 @@
 #include <format>
 #include <utility>
 
-std::string GetTrace(const std::source_location& location) {
+std::function<void(const char*, const char*, std::uint8_t)> IDebug::callback = nullptr;
+
+static std::string GetTrace(const std::source_location& location) {
   std::string trace;
   if (IDebug::Get<IDebug>().Settings().trace_source_file_) {
     trace += location.file_name();
@@ -17,51 +19,49 @@ std::string GetTrace(const std::source_location& location) {
   return trace;
 }
 
-std::function<void(const char*, const char*, std::uint8_t)> g_debug_callback = nullptr;
 void IDebug::SetCallback(
     std::function<void(const char*, const char*, std::uint8_t)> func) noexcept {
-  g_debug_callback = std::move(func);
-  IDebug::Log("Set debug callback");
+  callback = std::move(func);
 }
 
-void IDebug::Log(const char* msg, const location& loc) noexcept {
+void IDebug::Log(const char* msg, const std::source_location& loc) noexcept {
   fmt::print("{}: {}\n", GetTrace(loc), msg);
-  if (g_debug_callback != nullptr) {
-    g_debug_callback(GetTrace(loc).c_str(), msg, 0);
+  if (callback != nullptr) {
+    callback(GetTrace(loc).c_str(), msg, 0);
   }
 }
 
-void IDebug::Log(std::string_view msg, const location& loc) noexcept {
+void IDebug::Log(std::string_view msg, const std::source_location& loc) noexcept {
   fmt::print("{}: {}\n", GetTrace(loc), msg);
-  if (g_debug_callback != nullptr) {
-    g_debug_callback(GetTrace(loc).c_str(), msg.data(), 0);
+  if (callback != nullptr) {
+    callback(GetTrace(loc).c_str(), msg.data(), 0);
   }
 }
 
-void IDebug::Warning(std::string_view msg, const location& loc) noexcept {
+void IDebug::Warning(std::string_view msg, const std::source_location& loc) noexcept {
   fmt::print("{}: {}\n", GetTrace(loc), msg);
-  if (g_debug_callback != nullptr) {
-    g_debug_callback(GetTrace(loc).c_str(), msg.data(), 1);
+  if (callback != nullptr) {
+    callback(GetTrace(loc).c_str(), msg.data(), 1);
   }
 }
 
-void IDebug::Warning(const char* msg, const location& loc) noexcept {
+void IDebug::Warning(const char* msg, const std::source_location& loc) noexcept {
   fmt::print("{}: {}\n", GetTrace(loc), msg);
-  if (g_debug_callback != nullptr) {
-    g_debug_callback(GetTrace(loc).c_str(), msg, 1);
+  if (callback != nullptr) {
+    callback(GetTrace(loc).c_str(), msg, 1);
   }
 }
 
-void IDebug::Throw(std::string_view msg, const location& loc) {
-  if (g_debug_callback != nullptr) {
-    g_debug_callback(GetTrace(loc).c_str(), msg.data(), 2);
+void IDebug::Throw(std::string_view msg, const std::source_location& loc) {
+  if (callback != nullptr) {
+    callback(GetTrace(loc).c_str(), msg.data(), 2);
   }
-  throw std::runtime_error(std::format("\t{}: {}\n", GetTrace(loc), msg));
+  throw std::runtime_error(std::format("\n\t{}: {}\n", GetTrace(loc), msg));
 }
 
-void IDebug::Throw(const char* msg, const location& loc) {
-  if (g_debug_callback != nullptr) {
-    g_debug_callback(GetTrace(loc).c_str(), msg, 2);
+void IDebug::Throw(const char* msg, const std::source_location& loc) {
+  if (callback != nullptr) {
+    callback(GetTrace(loc).c_str(), msg, 2);
   }
   throw std::runtime_error(std::format("\t{}: {}\n", GetTrace(loc), msg));
 }

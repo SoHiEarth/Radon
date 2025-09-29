@@ -6,7 +6,7 @@
 #include <functional>
 #include <map>
 
-static const std::map<ButtonState, const char*> kButtonStateMap = {
+static const std::map<ButtonState, std::string> kButtonStateMap {
     {ButtonState::kHold, "Hold"},
     {ButtonState::kPress, "Press"},
     {ButtonState::kRelease, "Release"},
@@ -19,8 +19,6 @@ void IInput::AddHook(const Trigger& key, const std::function<void()>& hook) {
     IDebug::Throw("No GLFW context to add input hook");
   } else {
     g_event_hooks[key] = hook;
-    IDebug::Log(std::format("Added input hook for key: {}\tWith state {}", key.first,
-                           kButtonStateMap.at(key.second)));
   }
 }
 
@@ -30,18 +28,16 @@ void IInput::RemoveHook(const Trigger& key) {
     return;
   }
   g_event_hooks.erase(key);
-  IDebug::Log(std::format("Removed input hook for key: {}\tWith state {}", key.first,
-                         kButtonStateMap.at(key.second)));
 }
 
-void IInput::Init() {
+void IInput::i_Init() {
   if (glfwGetCurrentContext() == nullptr) {
     throw std::runtime_error("No GLFW context to initialize input");
   }
   glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
-void IInput::Update() {
+void IInput::i_Update() {
   glfwPollEvents();
   for (const auto& [key, hook] : g_event_hooks) {
     bool is_pressed = (glfwGetKey(glfwGetCurrentContext(), key.first) == GLFW_PRESS);
@@ -57,7 +53,7 @@ void IInput::Update() {
   }
 }
 
-void IInput::Quit() {
+void IInput::i_Quit() {
   if (IRenderer::Get<IRenderer>().GetWindow() == nullptr) {
     IDebug::Throw("No GLFW context to quit input");
   } else {

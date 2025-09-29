@@ -1,8 +1,5 @@
-#ifndef MODELRENDERER_H
-#define MODELRENDERER_H
-
+#pragma once
 #include <classes/component.h>
-#include <string>
 
 class Mesh;
 class Material;
@@ -15,9 +12,7 @@ public:
   void Render() override;
   void Load(pugi::xml_node& /*unused*/) override;
   void Save(pugi::xml_node& /*unused*/) const override;
-  [[nodiscard]] std::string GetTypeName() const override {
+  [[nodiscard]] const char* GetTypeName() const override {
     return "ModelRenderer";
   }
 };
-
-#endif  // MODELRENDERER_H

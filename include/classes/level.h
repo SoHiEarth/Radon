@@ -1,8 +1,4 @@
-#ifndef LEVEL_H
-#define LEVEL_H
-
-#include <memory>
-#include <string>
+#pragma once
 #include <vector>
 
 class Object;
@@ -12,10 +8,8 @@ public:
   void Update();
   void Render();
   void Quit();
-  void AddObject(Object*, std::string_view /*name*/ = "Object");
+  void AddObject(Object*, const char* /*name*/ = "Object");
   void RemoveObject(const Object*);
-  std::string path_;
+  const char* path_;
   std::vector<Object*> objects_;
 };
-
-#endif  // LEVEL_H

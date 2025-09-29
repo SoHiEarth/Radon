@@ -1,26 +1,33 @@
-#ifndef AUDIO_H
-#define AUDIO_H
+#pragma once
 #include <engine/interface.h>
-using SoundHandle = unsigned int;
+#include <AL/al.h>
+#include <AL/alc.h>
 
 class IAudio : public Interface {
-public:
+private:
+  ALCdevice* g_device = nullptr;
+  ALCcontext* g_context = nullptr;
+  struct SoundData {
+    ALuint buffer_{};
+    ALuint source_{};
+    ALsizei frequency_{};
+    bool is_playing_ = false;
+  };
+  std::map<unsigned int, SoundData> g_sounds;
+  unsigned int g_next = 1;
+
+protected:
   const char* name() override {
     return "Audio";
   }
+  void i_Init() override;
+  void i_Update() override;
+  void i_Quit() override;
 
-  void Init() override;
-  void Update();
-  void Quit() override;
-
-  SoundHandle Load(const char* /*filepath*/);
-  void Unload(SoundHandle /*sound*/);
-  // Schedules the sound to be played on the next update, until stopped with audio::Stop
-  void PlaySound(SoundHandle /*sound*/);
-  // Stops the sound if it is scheduled to play.
-  void StopSound(SoundHandle /*sound*/);
-  // Sets the time position of the sound in seconds.
-  void SetHeader(SoundHandle /*sound*/, float /*position*/);
+public:
+  unsigned int Load(const char* /*filepath*/);
+  void Unload(unsigned int /*sound*/);
+  void PlaySound(unsigned int /*sound*/);
+  void StopSound(unsigned int /*sound*/);
+  void SetHeader(unsigned int /*sound*/, float /*position*/);
 };
-
-#endif  // AUDIO_H

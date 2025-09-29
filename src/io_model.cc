@@ -10,7 +10,7 @@
 //////////////////////////
 std::map<std::string, Model*> g_loaded_models;
 
-std::vector<Texture*> LoadMaterialTextures(Model* model, aiMaterial* mat, aiTextureType type,
+static std::vector<Texture*> LoadMaterialTextures(Model* model, aiMaterial* mat, aiTextureType type,
                                            std::string_view type_name) {
   std::vector<Texture*> textures;
   for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
@@ -25,10 +25,10 @@ std::vector<Texture*> LoadMaterialTextures(Model* model, aiMaterial* mat, aiText
       }
     }
     if (!skip) {
-      std::string texture_path = model->kDirectory + "/" + std::string(str.C_Str());
+      std::string texture_path = std::string(model->kDirectory) + "/" + std::string(str.C_Str());
       Texture* texture = IIO::Get<IIO>().LoadTexture(texture_path);
       if (texture != nullptr) {
-        texture->name = std::string(type_name);
+        texture->name = strcpy(new char[type_name.size() + 1], type_name.data());
         textures.push_back(texture);
         model->loaded_textures_.push_back(texture);
       }
@@ -37,13 +37,13 @@ std::vector<Texture*> LoadMaterialTextures(Model* model, aiMaterial* mat, aiText
   return textures;
 }
 
-Mesh* ProcessMesh(Model* model, aiMesh* mesh, const aiScene* scene) {
+static Mesh* ProcessMesh(Model* model, aiMesh* mesh, const aiScene* scene) {
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
   std::vector<Texture*> textures;
 
   for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
-    Vertex vertex;
+    Vertex vertex{};
     glm::vec3 vector{};
     vector.x = mesh->mVertices[i].x;
     vector.y = mesh->mVertices[i].y;
@@ -60,14 +60,6 @@ Mesh* ProcessMesh(Model* model, aiMesh* mesh, const aiScene* scene) {
       vec.x = mesh->mTextureCoords[0][i].x;
       vec.y = mesh->mTextureCoords[0][i].y;
       vertex.tex_coords_ = vec;
-      vector.x = mesh->mTangents[i].x;
-      vector.y = mesh->mTangents[i].y;
-      vector.z = mesh->mTangents[i].z;
-      vertex.tangent_ = vector;
-      vector.x = mesh->mBitangents[i].x;
-      vector.y = mesh->mBitangents[i].y;
-      vector.z = mesh->mBitangents[i].z;
-      vertex.bitangent_ = vector;
     } else {
       vertex.tex_coords_ = glm::vec2(0.0F, 0.0F);
     }
@@ -89,17 +81,13 @@ Mesh* ProcessMesh(Model* model, aiMesh* mesh, const aiScene* scene) {
   return new Mesh(vertices, indices, textures);
 }
 
-void ProcessNode(Model* model, aiNode* node, const aiScene* scene, int depth = 0) {
-  if (depth > 1000) {  // safeguard
-    IDebug::Warning("Max recursion depth hit in ProcessNode. Potential cyclic scene graph.");
-    return;
-  }
+static void ProcessNode(Model* model, aiNode* node, const aiScene* scene) {
   for (unsigned int i = 0; i < node->mNumMeshes; i++) {
     aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
     model->meshes_.push_back(ProcessMesh(model, mesh, scene));
   }
   for (unsigned int i = 0; i < node->mNumChildren; i++) {
-    ProcessNode(model, node->mChildren[i], scene, depth + 1);
+    ProcessNode(model, node->mChildren[i], scene);
   }
 }
 
@@ -110,8 +98,7 @@ Model* IIO::LoadModel(std::string_view path) {
   if (g_loaded_models.find(std::string(path)) != g_loaded_models.end()) {
     return g_loaded_models[std::string(path)];
   }
-  // Model path should be the directory of the model
-  auto model = new Model(path, std::filesystem::path(path).parent_path().string());
+  auto model = new Model(path.data(), std::filesystem::path(path).parent_path().string().c_str());
   Assimp::Importer importer;
   const aiScene* scene =
       importer.ReadFile(path.data(), aiProcess_Triangulate | aiProcess_GenSmoothNormals |
@@ -131,5 +118,5 @@ Model* IIO::LoadModel(pugi::xml_node& base_node) {
 
 void IIO::SaveModel(const Model* model, pugi::xml_node& base_node) {
   pugi::xml_node model_node = base_node.append_child("model");
-  model_node.append_attribute("path") = model->kPath.c_str();
+  model_node.append_attribute("path") = model->kPath;
 }

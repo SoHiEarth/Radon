@@ -1,14 +1,10 @@
-#ifndef TEXTURE_H
-#define TEXTURE_H
-
-#include <string>
-
+#pragma once
 struct Texture {
   unsigned int id_ = 0;
   int width_ = 0, height_ = 0, channels_ = 0;
-  std::string name;
-  const std::string kPath;
-  Texture(std::string_view path) : kPath(path) {}
+  const char* name = "";
+  const char* kPath = "";
+  Texture(const char* path) {
+    kPath = strcpy(new char[strlen(path) + 1], path);
+  }
 };
-
-#endif  // TEXTURE_H

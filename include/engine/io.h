@@ -17,15 +17,20 @@ class Material;
 class Object;
 
 class IIO : public Interface {
+private:
   Level* g_level = nullptr;
   std::string g_engine_directory{};
   std::map<std::string, Texture*> g_loaded_textures{};
   static std::unordered_map<std::string_view, std::function<Component*()>> g_component_factory;
-
-public:
+  bool CheckFile(std::string_view path);
+protected:
   const char* name() override {
     return "IO";
   }
+  void i_Init() override;
+  void i_Quit() override;
+
+public:
   Level*& GetLevel() {
     return g_level;
   }
@@ -41,9 +46,7 @@ public:
   std::unordered_map<std::string_view, std::function<Component*()>>& GetComponentFactory() {
     return g_component_factory;
   }
-
-  void Init() override;
-  bool CheckFile(std::string_view path);
+  
   Shader* LoadShader(std::string_view /*vertex_path*/, std::string_view /*fragment_path*/);
   Texture* LoadTexture(std::string_view /*path*/);
   Model* LoadModel(std::string_view /*path*/);

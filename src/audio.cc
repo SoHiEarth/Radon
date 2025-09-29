@@ -8,20 +8,7 @@
 #include <map>
 #include <vector>
 
-ALCdevice* g_device = nullptr;
-ALCcontext* g_context = nullptr;
-
-struct SoundData {
-  ALuint buffer_{};
-  ALuint source_{};
-  ALsizei frequency_{};
-  bool is_playing_ = false;
-};
-
-std::map<SoundHandle, SoundData> g_sounds;
-SoundHandle g_next = 1;
-
-void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsizei& frequency) {
+static void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsizei& frequency) {
   std::ifstream file(filename, std::ios::binary);
   if (!file) {
     IDebug::Throw(std::format("Failed to open WAV file: {}", filename));
@@ -65,7 +52,7 @@ void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsi
     IDebug::Throw(std::format("Unsupported WAV audio_format (only PCM supported): {}", filename));
   }
   if (subchunk_1_size > 16) {
-    file.ignore(subchunk_1_size - 16);
+    file.ignore(static_cast<std::streamsize>(subchunk_1_size) - 16);
   }
 
   char subchunk_2_id[4];
@@ -97,7 +84,7 @@ void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsi
   frequency = sample_rate;
 }
 
-void IAudio::Init() {
+void IAudio::i_Init() {
   g_device = alcOpenDevice(nullptr);
   if (g_device == nullptr) {
     IDebug::Throw("Failed to open OpenAL device.");
@@ -112,7 +99,7 @@ void IAudio::Init() {
   }
 }
 
-void IAudio::Update() {
+void IAudio::i_Update() {
   for (auto& [handle, sound] : g_sounds) {
     ALint state;
     alGetSourcei(sound.source_, AL_SOURCE_STATE, &state);
@@ -123,7 +110,7 @@ void IAudio::Update() {
   }
 }
 
-void IAudio::Quit() {
+void IAudio::i_Quit() {
   for (auto& [handle, sound] : g_sounds) {
     alDeleteSources(1, &sound.source_);
     alDeleteBuffers(1, &sound.buffer_);
@@ -141,7 +128,7 @@ void IAudio::Quit() {
   }
 }
 
-SoundHandle IAudio::Load(const char* filepath) {
+unsigned int IAudio::Load(const char* filepath) {
   std::vector<char> data;
   ALenum format;
   ALsizei frequency;
@@ -156,12 +143,12 @@ SoundHandle IAudio::Load(const char* filepath) {
   alSourcei(source, AL_BUFFER, buffer);
   alSourcei(source, AL_LOOPING, AL_FALSE);
 
-  SoundHandle handle = g_next++;
+  unsigned int handle = g_next++;
   g_sounds[handle] = {.buffer_ = buffer, .source_ = source};
   return handle;
 }
 
-void IAudio::Unload(SoundHandle sound) {
+void IAudio::Unload(unsigned int sound) {
   auto it = g_sounds.find(sound);
   if (it != g_sounds.end()) {
     alDeleteSources(1, &it->second.source_);
@@ -170,14 +157,14 @@ void IAudio::Unload(SoundHandle sound) {
   }
 }
 
-void IAudio::PlaySound(SoundHandle sound) {
+void IAudio::PlaySound(unsigned int sound) {
   auto it = g_sounds.find(sound);
   if (it != g_sounds.end()) {
     it->second.is_playing_ = true;
   }
 }
 
-void IAudio::StopSound(SoundHandle sound) {
+void IAudio::StopSound(unsigned int sound) {
   auto it = g_sounds.find(sound);
   if (it != g_sounds.end()) {
     it->second.is_playing_ = false;
@@ -185,7 +172,7 @@ void IAudio::StopSound(SoundHandle sound) {
   }
 }
 
-void IAudio::SetHeader(SoundHandle sound, float position) {
+void IAudio::SetHeader(unsigned int sound, float position) {
   auto it = g_sounds.find(sound);
   if (it != g_sounds.end()) {
     alSourcef(it->second.source_, AL_SEC_OFFSET, position);

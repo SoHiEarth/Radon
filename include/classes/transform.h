@@ -12,7 +12,7 @@ public:
   void Load(pugi::xml_node& /*unused*/) override;
   void Save(pugi::xml_node& /*unused*/) const override;
   ~Transform() = default;
-  [[nodiscard]] std::string GetTypeName() const override {
+  [[nodiscard]] const char* GetTypeName() const override {
     return "Transform";
   }
 };
