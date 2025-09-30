@@ -1,9 +1,11 @@
-#include <engine/io.h>
-#include <classes/mesh.h>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/scene.h>
+#include <classes/mesh.h>
+#include <engine/debug.h>
+#include <engine/io.h>
+#include <assimp/Importer.hpp>
 #include <filesystem>
+#include <format>
 
 //////////////////////////
 /// Model IO functions ///
@@ -11,27 +13,17 @@
 std::map<std::string, Model*> g_loaded_models;
 
 static std::vector<Texture*> LoadMaterialTextures(Model* model, aiMaterial* mat, aiTextureType type,
-                                           std::string_view type_name) {
+                                                  std::string_view type_name) {
   std::vector<Texture*> textures;
   for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
     aiString str;
     mat->GetTexture(type, i, &str);
-    bool skip = false;
-    for (auto& texture : model->loaded_textures_) {
-      if (texture->kPath == std::string(str.C_Str())) {
-        textures.push_back(texture);
-        skip = true;
-        break;
-      }
-    }
-    if (!skip) {
-      std::string texture_path = std::string(model->kDirectory) + "/" + std::string(str.C_Str());
-      Texture* texture = IIO::Get<IIO>().LoadTexture(texture_path);
-      if (texture != nullptr) {
-        texture->name = strcpy(new char[type_name.size() + 1], type_name.data());
-        textures.push_back(texture);
-        model->loaded_textures_.push_back(texture);
-      }
+    std::string texture_path = std::string(model->directory_) + "/" + std::string(str.C_Str());
+    Texture* texture = IIO::Get<IIO>().LoadTexture(texture_path);
+    if (texture != nullptr) {
+      texture->name_ = strcpy(new char[type_name.size() + 1], type_name.data());
+      textures.push_back(texture);
+      model->loaded_textures_.push_back(texture);
     }
   }
   return textures;
@@ -118,5 +110,5 @@ Model* IIO::LoadModel(pugi::xml_node& base_node) {
 
 void IIO::SaveModel(const Model* model, pugi::xml_node& base_node) {
   pugi::xml_node model_node = base_node.append_child("model");
-  model_node.append_attribute("path") = model->kPath;
+  model_node.append_attribute("path") = model->path_;
 }

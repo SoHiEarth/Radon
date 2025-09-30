@@ -1,6 +1,7 @@
 #pragma once
 #include <classes/editable.h>
 #include <classes/transform.h>
+#include <memory>
 #include <pugixml.hpp>
 #include <vector>
 
@@ -29,7 +30,7 @@ public:
     return {};
   }
   void RemoveComponent(Component*);
-  const std::vector<Component*>& GetAllComponents() const {
+  [[nodiscard]] const std::vector<Component*>& GetAllComponents() const {
     return components_;
   }
   virtual ~Object() = default;

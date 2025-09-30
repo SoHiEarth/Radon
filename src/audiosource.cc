@@ -1,5 +1,7 @@
 #include <classes/audiosource.h>
 #include <engine/audio.h>
+#include <engine/debug.h>
+#include <format>
 
 const char* prev_path;
 
@@ -34,5 +36,5 @@ void AudioSource::Load(pugi::xml_node& node) {
 }
 
 void AudioSource::Save(pugi::xml_node& node) const {
-  node.append_attribute("path") = path;
+  node.append_attribute("path") = (const char*) path;
 }

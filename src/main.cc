@@ -6,8 +6,8 @@
 #include <engine/devgui.h>
 #include <engine/input.h>
 #include <engine/io.h>
-#include <engine/physics.h>
 #include <engine/localization.h>
+#include <engine/physics.h>
 #include <engine/render.h>
 #include <engine/telemetry.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
@@ -29,9 +29,9 @@ constexpr const char* kTimerLevelRenderName = "Level Render";
 constexpr const char* kTimerRenderRenderName = "Render Render";
 constexpr const char* kTimerAudioUpdateName = "Audio Update";
 
-#define TIME(FUNC, NAME)       \
+#define TIME(FUNC, NAME)                          \
   ITelemetry::Get<ITelemetry>().BeginTimer(NAME); \
-  FUNC;                        \
+  FUNC;                                           \
   ITelemetry::Get<ITelemetry>().EndTimer(NAME);   \
   ITelemetry::Get<ITelemetry>().LogTimer(NAME);
 
@@ -49,11 +49,11 @@ int main(int argc, char** argv) {
     ITelemetry::Get<ITelemetry>().EndTimer(kTimerInitName);
     ITelemetry::Get<ITelemetry>().LogTimer(kTimerInitName);
     ITelemetry::Get<ITelemetry>().UploadTimings(ENGINE_INIT_NAME,
-      ITelemetry::Get<ITelemetry>().GetTimings());
+                                                ITelemetry::Get<ITelemetry>().GetTimings());
 
   } catch (std::exception& e) {
     IDebug::Log(std::format("Initialization failure: {}", e.what()));
-    tinyfd_messageBox("Initialization Failure", e.what(), "ok", "error", 1);
+    tinyfd_messageBox("Initialization Failure", std::string(e.what()).c_str(), "ok", "error", 1);
     return -1;
   }
 
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
     }
   } catch (std::exception& e) {
     IDebug::Log(std::format("Runtime failure: {}", e.what()));
-    tinyfd_messageBox("Runtime Failure", e.what(), "ok", "error", 1);
+    tinyfd_messageBox("Runtime Failure", std::string(e.what()).c_str(), "ok", "error", 1);
   }
 
   if (IIO::Get<IIO>().GetLevel() != nullptr) {

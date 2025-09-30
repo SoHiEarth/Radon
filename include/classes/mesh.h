@@ -1,9 +1,10 @@
 #pragma once
-#include <vector>
+#include <cstring>
 #include <glm/glm.hpp>
+#include <vector>
 
 class Vertex {
- public:
+public:
   glm::vec3 position_;
   glm::vec3 normal_;
   glm::vec2 tex_coords_;
@@ -11,30 +12,30 @@ class Vertex {
 
 class Texture;
 class Mesh {
- public:
+public:
   std::vector<Vertex> vertices_;
   std::vector<unsigned int> indices_;
   std::vector<Texture*> textures_;
-  Mesh(std::vector<Vertex> vertices,
-       std::vector<unsigned int> indices,
+  Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
        std::vector<Texture*> textures)
       : vertices_(std::move(vertices)),
         indices_(std::move(indices)),
         textures_(std::move(textures)) {
-      SetupMesh();
+    SetupMesh();
   }
-  unsigned int VAO, VBO, EBO;
- private:
+  unsigned int vao_, vbo_, ebo_;
+
+private:
   void SetupMesh();
 };
 
 class Model {
- public:
+public:
   std::vector<Texture*> loaded_textures_;
   std::vector<Mesh*> meshes_;
-  const char* kPath, *kDirectory;
+  const char *path_, *directory_;
   Model(const char* path, const char* directory) {
-    kPath = strcpy(new char[strlen(path) + 1], path);
-    kDirectory = strcpy(new char[strlen(directory) + 1], directory);
+    path_ = strcpy(new char[strlen(path) + 1], path);
+    directory_ = strcpy(new char[strlen(directory) + 1], directory);
   }
 };

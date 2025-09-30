@@ -6,9 +6,9 @@
 #include <classes/camera.h>
 #include <classes/light.h>
 #include <classes/material.h>
+#include <classes/mesh.h>
 #include <classes/shader.h>
 #include <classes/texture.h>
-#include <classes/mesh.h>
 #include <engine/debug.h>
 #include <engine/devgui.h>
 #include <engine/input.h>
@@ -37,7 +37,6 @@ static inline void IfNoHUD(const std::function<void()>& fn) {
     fn();
   }
 }
-
 
 using ImGui::TextColored;
 float g_camera_fov = kDefaultCameraFov;
@@ -116,7 +115,7 @@ void IRenderer::i_Init() {
   RecreateFramebuffer();
   g_screen_shader =
       IIO::Get<IIO>().LoadShader(IIO::Get<IIO>().GetEngineDirectory() + "/screen_shader/vert.glsl",
-                            IIO::Get<IIO>().GetEngineDirectory() + "/screen_shader/frag.glsl");
+                                 IIO::Get<IIO>().GetEngineDirectory() + "/screen_shader/frag.glsl");
   g_screen_shader->Use();
   g_screen_shader->SetInt("scene", 0);
 
@@ -231,8 +230,8 @@ static glm::mat4 GetTransform(const glm::vec3& pos, const glm::vec2& scale, cons
   return transform;
 }
 
-void IRenderer::DrawMesh(const Mesh* mesh, const Shader* shader,
-                      const glm::vec3& pos, const glm::vec2& size, const glm::vec3& rot) {
+void IRenderer::DrawMesh(const Mesh* mesh, const Shader* shader, const glm::vec3& pos,
+                         const glm::vec2& size, const glm::vec3& rot) {
   if (mesh == nullptr) {
     return;
   }
@@ -278,7 +277,7 @@ void IRenderer::DrawMesh(const Mesh* mesh, const Shader* shader,
   for (unsigned int i = 0; i < mesh->textures_.size(); i++) {
     glActiveTexture(GL_TEXTURE0 + i);
     std::string number;
-    std::string name = mesh->textures_[i]->name;
+    std::string name = mesh->textures_[i]->name_;
     if (name == "texture_diffuse") {
       number = std::to_string(diffuse_number++);
     } else if (name == "texture_specular") {
@@ -288,14 +287,14 @@ void IRenderer::DrawMesh(const Mesh* mesh, const Shader* shader,
     glBindTexture(GL_TEXTURE_2D, mesh->textures_[i]->id_);
   }
 
-  glBindVertexArray(mesh->VAO);
+  glBindVertexArray(mesh->vao_);
   glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(mesh->indices_.size()), GL_UNSIGNED_INT,
                  nullptr);
   glBindVertexArray(0);
 }
 
-void IRenderer::DrawModel(const Model* model, const Shader* shader,
-  const glm::vec3& pos, const glm::vec2& size, const glm::vec3& rot) {
+void IRenderer::DrawModel(const Model* model, const Shader* shader, const glm::vec3& pos,
+                          const glm::vec2& size, const glm::vec3& rot) {
   if (model == nullptr) {
     return;
   }
@@ -411,10 +410,10 @@ RenderDrawMode IRenderer::GetRenderDrawMode() {
 
 void RecreateFramebuffer() {
   IRenderer::Get<IRenderer>().DeleteFramebuffer(g_framebuffer);
-  int framebuffer_width =
-      std::max(1, IRenderer::Get<IRenderer>().GetWidth()) / IRenderer::Get<IRenderer>().GetSettings().render_factor_;
-  int framebuffer_height =
-      std::max(1, IRenderer::Get<IRenderer>().GetHeight()) / IRenderer::Get<IRenderer>().GetSettings().render_factor_;
+  int framebuffer_width = std::max(1, IRenderer::Get<IRenderer>().GetWidth()) /
+                          IRenderer::Get<IRenderer>().GetSettings().render_factor_;
+  int framebuffer_height = std::max(1, IRenderer::Get<IRenderer>().GetHeight()) /
+                           IRenderer::Get<IRenderer>().GetSettings().render_factor_;
   FramebufferCreateInfo create_info;
   create_info.num_colorbuffers_ = 2;
   create_info.level_ = 0;

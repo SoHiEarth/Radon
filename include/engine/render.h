@@ -1,13 +1,14 @@
 #ifndef RENDER_H
 #define RENDER_H
 
+#include <classes/camera.h>
 #include <engine/interface.h>
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <vector>
-#include <classes/camera.h>
 
 class GLFWwindow;
+class Shader;
 class Mesh;
 class Model;
 class Material;
@@ -46,11 +47,7 @@ struct Framebuffer {
   std::vector<unsigned int> attachments_;
 };
 
-enum class RenderDrawMode : std::uint8_t {
-  kFill = 0,
-  kLine = 1,
-  kPoint = 2
-};
+enum class RenderDrawMode : std::uint8_t { kFill = 0, kLine = 1, kPoint = 2 };
 
 class IRenderer : public Interface {
 private:
@@ -73,15 +70,15 @@ protected:
   void i_Quit() override;
 
 public:
-  void DrawMesh(const Mesh* /*mesh*/, const Shader* /*shader*/,
-    const glm::vec3& /*pos*/, const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
+  void DrawMesh(const Mesh* /*mesh*/, const Shader* /*shader*/, const glm::vec3& /*pos*/,
+                const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
 
-  void DrawModel(const Model* /*model*/, const Shader* /*shader*/,
-    const glm::vec3& /*pos*/, const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
-  
-  void RenderTexture(const Material*& /*material*/,
-    const glm::vec3& /*pos*/, const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
-  
+  void DrawModel(const Model* /*model*/, const Shader* /*shader*/, const glm::vec3& /*pos*/,
+                 const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
+
+  void RenderTexture(const Material*& /*material*/, const glm::vec3& /*pos*/,
+                     const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
+
   Framebuffer CreateFramebuffer(const FramebufferCreateInfo& /*create_info*/);
   void DeleteFramebuffer(Framebuffer& /*framebuffer*/);
   GLFWwindow* GetWindow() {

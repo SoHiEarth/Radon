@@ -3,12 +3,12 @@
 //
 
 #include <GLFW/glfw3.h>
+#include <classes/audiosource.h>
 #include <classes/level.h>
 #include <classes/light.h>
 #include <classes/modelrenderer.h>
 #include <classes/object.h>
 #include <classes/physicsobject.h>
-#include <classes/audiosource.h>
 #include <classes/shader.h>
 #include <classes/texture.h>
 #include <classes/transform.h>
@@ -33,19 +33,19 @@ constexpr const char* kMaterialVertexKeyName = "vs";
 constexpr const char* kMaterialFragmentKeyName = "fs";
 constexpr const char* kMaterialShininessKeyName = "shininess";
 constexpr float kMaterialShininessDefaultValue = 32.0F;
-#define OBJECT_FACTORY_KEY(Object)                \
-  {                                               \
-    #Object, {                                    \
+#define OBJECT_FACTORY_KEY(Object)  \
+  {                                 \
+    #Object, {                      \
       []() { return new Object(); } \
-    }                                             \
+    }                               \
   }
 
 enum : std::uint16_t { kLogSize = 512 };
 std::unordered_map<std::string_view, std::function<Component*()>> IIO::g_component_factory = {
-        OBJECT_FACTORY_KEY(Transform),     OBJECT_FACTORY_KEY(ModelRenderer),
-        OBJECT_FACTORY_KEY(AudioSource),
-        OBJECT_FACTORY_KEY(PhysicsObject), OBJECT_FACTORY_KEY(DirectionalLight),
-        OBJECT_FACTORY_KEY(PointLight),    OBJECT_FACTORY_KEY(SpotLight)};
+    OBJECT_FACTORY_KEY(Transform),        OBJECT_FACTORY_KEY(ModelRenderer),
+    OBJECT_FACTORY_KEY(AudioSource),      OBJECT_FACTORY_KEY(PhysicsObject),
+    OBJECT_FACTORY_KEY(DirectionalLight), OBJECT_FACTORY_KEY(PointLight),
+    OBJECT_FACTORY_KEY(SpotLight)};
 std::string ValidateName(std::string input);
 bool IIO::CheckFile(std::string_view path) {
   return std::filesystem::exists(path);
@@ -191,8 +191,7 @@ void IIO::SaveObject(Object*& object, pugi::xml_node& base_node) {
 std::string ReadFile(std::string_view path);
 unsigned int CompileShader(std::string_view code, int type);
 
-Shader* IIO::LoadShader(std::string_view vertex_path,
-                                       std::string_view fragment_path) {
+Shader* IIO::LoadShader(std::string_view vertex_path, std::string_view fragment_path) {
   if (!CheckFile(vertex_path) || !CheckFile(fragment_path)) {
     IDebug::Throw(
         std::format("Requested shader file does not exist. {}, {}", vertex_path, fragment_path));
@@ -231,8 +230,7 @@ Shader* IIO::LoadShader(std::string_view vertex_path,
 /////////////////////////////
 
 Material* IIO::LoadMaterial(std::string_view diffuse, std::string_view specular,
-                                           std::string_view vertex, std::string_view fragment,
-                                           float shininess) {
+                            std::string_view vertex, std::string_view fragment, float shininess) {
   auto material = new Material();
   material->shininess_ = shininess;
   try {
@@ -271,12 +269,12 @@ void IIO::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
     node = base_node.append_child(kMaterialKeyName);
   }
   if (material->diffuse_)
-    node.append_attribute(kMaterialDiffuseKeyName).set_value(material->diffuse_->kPath);
+    node.append_attribute(kMaterialDiffuseKeyName).set_value(material->diffuse_->path_);
   if (material->specular_)
-    node.append_attribute(kMaterialSpecularKeyName).set_value(material->specular_->kPath);
+    node.append_attribute(kMaterialSpecularKeyName).set_value(material->specular_->path_);
   if (material->shader_) {
-    node.append_attribute(kMaterialVertexKeyName).set_value(material->shader_->kVertexPath);
-    node.append_attribute(kMaterialFragmentKeyName).set_value(material->shader_->kFragmentPath);
+    node.append_attribute(kMaterialVertexKeyName).set_value(material->shader_->vertex_path_);
+    node.append_attribute(kMaterialFragmentKeyName).set_value(material->shader_->fragment_path_);
   }
   node.append_attribute(kMaterialShininessKeyName).set_value(material->shininess_);
 }

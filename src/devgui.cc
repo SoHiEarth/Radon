@@ -15,6 +15,7 @@
 #include <engine/render.h>
 #include <engine/telemetry.h>
 #define IMGUI_ENABLE_FREETYPE
+#include <classes/mesh.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -22,9 +23,8 @@
 #include <imgui_stdlib.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <algorithm>
-#include <filesystem>
 #include <array>
-#include <classes/mesh.h>
+#include <filesystem>
 #include <format>
 
 class GuiManager {
@@ -93,7 +93,9 @@ void IGui::i_Init() {
   style.TabRounding = kDevguiRoundingLess;
 
   ImFont* ui_font = imgui_io.Fonts->AddFontFromFileTTF(
-      (IIO::Get<IIO>().GetEngineDirectory() + "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf").c_str(),
+      (IIO::Get<IIO>().GetEngineDirectory() +
+       "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf")
+          .c_str(),
       kDevguiFontSize, nullptr, imgui_io.Fonts->GetGlyphRangesDefault());
   ImGui_ImplGlfw_InitForOpenGL(IRenderer::Get<IRenderer>().GetWindow(), true);
   ImGui_ImplOpenGL3_Init("#version 150");
@@ -251,21 +253,25 @@ void DrawTelemetry() {
   }
 
   ImGui::SeparatorText("Initialization Log");
-  if (ImGui::BeginTable("InitLogsTable", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
-    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
-    ImGui::TableSetupColumn("Time (ms)", ImGuiTableColumnFlags_WidthStretch);
-    ImGui::TableHeadersRow();
-    for (const auto& [name, time] :
-         ITelemetry::Get<ITelemetry>().DownloadTimings(ENGINE_INIT_NAME)) {
-      ImGui::PushID(&name);
-      ImGui::TableNextRow();
-      ImGui::TableSetColumnIndex(0);
-      ImGui::Text("%s", name);
-      ImGui::TableSetColumnIndex(1);
-      ImGui::Text("%.3f", time.count() * 1.0F);
-      ImGui::PopID();
+  try {
+    auto timings = ITelemetry::Get<ITelemetry>().DownloadTimings(ENGINE_INIT_NAME);
+    if (ImGui::BeginTable("InitLogsTable", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
+      ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
+      ImGui::TableSetupColumn("Time (ms)", ImGuiTableColumnFlags_WidthStretch);
+      ImGui::TableHeadersRow();
+      for (const auto& [name, time] : timings) {
+        ImGui::PushID(&name);
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("%s", name);
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text("%.3f", time.count() * 1.0F);
+        ImGui::PopID();
+      }
+      ImGui::EndTable();
     }
-    ImGui::EndTable();
+  } catch (...) {
+    ImGui::Text("Failed to fetch timings.");
   }
   ImGui::End();
 }
@@ -381,9 +387,9 @@ void DrawConsole() {
 }
 
 static void DevNewLevel() {
-  const char* filter_patterns[] = {"*.xml"};
-  const char* file =
-      tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1, filter_patterns, "Level Files");
+  const std::array<const char*, 128> kFilterPatterns = {"*.xml"};
+  const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1,
+                                           kFilterPatterns.data(), "Level Files");
   if (file != nullptr) {
     IIO::Get<IIO>().SetLevel(new Level());
     IIO::Get<IIO>().GetLevel()->path_ = file;
@@ -391,9 +397,9 @@ static void DevNewLevel() {
 }
 
 static void DevOpenLevel() {
-  const char* filter_patterns[] = {"*.xml"};
+  const std::array<const char*, 128> kFilterPatterns = {"*.xml"};
   const char* file =
-      tinyfd_openFileDialog("Open Level XML", "", 1, filter_patterns, "Level Files", 0);
+      tinyfd_openFileDialog("Open Level XML", "", 1, kFilterPatterns.data(), "Level Files", 0);
   if (file != nullptr) {
     IIO::Get<IIO>().GetLevel() = IIO::Get<IIO>().LoadLevel(file);
     GuiManager::Get().SetCurrentObject(nullptr);
@@ -508,9 +514,10 @@ void DrawLocalization() {
   ImGui::SameLine();
   if (ImGui::Button("Save")) {
     const char* filter_patterns[] = {"*.xml"};
-    const char* file = tinyfd_saveFileDialog("Save Localization Data",
-        std::string(ILocalization::Get<ILocalization>().GetLanguage() + ".xml").c_str(),
-                                             1, filter_patterns, "Localization Files");
+    const char* file = tinyfd_saveFileDialog(
+        "Save Localization Data",
+        std::string(ILocalization::Get<ILocalization>().GetLanguage() + ".xml").c_str(), 1,
+        filter_patterns, "Localization Files");
     if (file != nullptr) {
       ILocalization::Get<ILocalization>().Save(file);
     }
@@ -520,37 +527,40 @@ void DrawLocalization() {
 
 void DrawInterfaceStatus() {
   ImGui::Begin("Interfaces");
-  
-    if (ImGui::BeginTable("InterfaceStatusTable", 3,
-                          ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
-      ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
-      ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthStretch);
-      ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthFixed, 100.0F);
-      ImGui::TableHeadersRow();
-      for (const auto& interface : Interface::All()) {
-        ImGui::PushID(interface);
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
-        ImGui::Text("%s", interface->name());
-        ImGui::TableSetColumnIndex(1);
-        ImGui::Text("%s", interface->GetStatus() ? "Initialized" : "Not Initialized");
-        ImGui::TableSetColumnIndex(2);
-        if (interface->GetStatus()) {
-          if (ImGui::Button("Stop")) {
-            auto confirm = tinyfd_messageBox("Confirm", std::format("Are you sure you want to stop {}?", interface->name()).c_str(), "yesno",
-                "warning", 0);
-            if (confirm) {
-              interface->Stop();
-            }
-          }
-        } else {
-          if (ImGui::Button("Start")) {
-            interface->Start();
+
+  if (ImGui::BeginTable(
+          "InterfaceStatusTable", 3,
+          ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
+    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
+    ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthFixed, 100.0F);
+    ImGui::TableHeadersRow();
+    for (const auto& interface : Interface::All()) {
+      ImGui::PushID(interface);
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      ImGui::Text("%s", interface->name());
+      ImGui::TableSetColumnIndex(1);
+      ImGui::Text("%s", interface->GetStatus() ? "Initialized" : "Not Initialized");
+      ImGui::TableSetColumnIndex(2);
+      if (interface->GetStatus()) {
+        if (ImGui::Button("Stop")) {
+          auto confirm = tinyfd_messageBox(
+              "Confirm",
+              std::format("Are you sure you want to stop {}?", interface->name()).c_str(), "yesno",
+              "warning", 0);
+          if (confirm) {
+            interface->Stop();
           }
         }
-        ImGui::PopID();
+      } else {
+        if (ImGui::Button("Start")) {
+          interface->Start();
+        }
       }
-      ImGui::EndTable();
+      ImGui::PopID();
+    }
+    ImGui::EndTable();
   }
   ImGui::End();
 }
@@ -561,7 +571,8 @@ void ModelView(Model*& model) {
     if (ImGui::BeginTabItem("File")) {
       if (ImGui::Button("Load")) {
         const char* filter_patterns[] = {"*.obj", "*.fbx", "*.gltf", "*.glb"};
-        const char* file = tinyfd_openFileDialog("Select Mesh File", "", 4, filter_patterns, "Mesh Files", 0);
+        const char* file =
+            tinyfd_openFileDialog("Select Mesh File", "", 4, filter_patterns, "Mesh Files", 0);
         if (file != nullptr) {
           model = IIO::Get<IIO>().LoadModel(file);
         }
@@ -589,7 +600,7 @@ void ModelView(Model*& model) {
       ImGui::Text("Index Count: %zu", mesh->indices_.size());
     }
     ImGui::Text("Meshes: %zu", model->meshes_.size());
-    ImGui::Text("Path: %s", model->kPath);
+    ImGui::Text("Path: %s", model->path_);
   }
 }
 
@@ -602,15 +613,14 @@ void MaterialView(Material*& material) {
         if (material_path_c != nullptr) {
           std::string material_path = std::string(material_path_c);
           material = IIO::Get<IIO>().LoadMaterial(
-              material_path + "/diffuse.png",
-                                      material_path + "/specular.png", material_path + "/vert.glsl",
-                                      material_path + "/frag.glsl", kDefaultShininess);
+              material_path + "/diffuse.png", material_path + "/specular.png",
+              material_path + "/vert.glsl", material_path + "/frag.glsl", kDefaultShininess);
           if (material->diffuse_)
-            g_material_diffuse = material->diffuse_->kPath;
+            g_material_diffuse = material->diffuse_->path_;
           if (material->specular_)
-            g_material_specular = material->specular_->kPath;
-          g_material_vertex = material->shader_->kVertexPath;
-          g_material_fragment = material->shader_->kFragmentPath;
+            g_material_specular = material->specular_->path_;
+          g_material_vertex = material->shader_->vertex_path_;
+          g_material_fragment = material->shader_->fragment_path_;
         }
       }
       ImGui::EndTabItem();
@@ -623,8 +633,9 @@ void MaterialView(Material*& material) {
       ImGui::InputText("Material Fragment", &g_material_fragment);
       ImGui::DragInt("Material Shininess", &g_material_shininess);
       if (ImGui::Button("Load")) {
-        material = IIO::Get<IIO>().LoadMaterial(g_material_diffuse, g_material_specular, g_material_vertex,
-                                    g_material_fragment, g_material_shininess);
+        material =
+            IIO::Get<IIO>().LoadMaterial(g_material_diffuse, g_material_specular, g_material_vertex,
+                                         g_material_fragment, g_material_shininess);
       }
       ImGui::EndTabItem();
     }
@@ -641,14 +652,14 @@ void MaterialView(Material*& material) {
     ImGui::Text("Diffuse");
     if (material->diffuse_ != nullptr) {
       ImGui::Image(material->diffuse_->id_, ImVec2(kImagePreviewSize));
-      ImGui::LabelText("Path", "%s", material->diffuse_->kPath);
+      ImGui::LabelText("Path", "%s", material->diffuse_->path_);
     } else {
       ImGui::TextColored({1, 0, 0, 1}, "Diffuse texture not loaded");
     }
     ImGui::Text("Specular");
     if (material->specular_ != nullptr) {
       ImGui::Image(material->specular_->id_, ImVec2(kImagePreviewSize));
-      ImGui::LabelText("Path", "%s", material->specular_->kPath);
+      ImGui::LabelText("Path", "%s", material->specular_->path_);
     } else {
       ImGui::TextColored({1, 0, 0, 1}, "Specular texture not loaded");
     }
@@ -657,8 +668,8 @@ void MaterialView(Material*& material) {
     if (material->shader_ == nullptr) {
       ImGui::TextColored({1, 0, 0, 1}, "Shader not loaded");
     } else {
-      ImGui::LabelText("Vertex Path", "%s", material->shader_->kVertexPath);
-      ImGui::LabelText("Fragment Path", "%s", material->shader_->kFragmentPath);
+      ImGui::LabelText("Vertex Path", "%s", material->shader_->vertex_path_);
+      ImGui::LabelText("Fragment Path", "%s", material->shader_->fragment_path_);
     }
   }
 }
@@ -742,15 +753,18 @@ void DrawMenuEngine() {
   if (ImGui::BeginMenu("Engine")) {
     if (ImGui::BeginMenu("Render")) {
       if (ImGui::BeginMenu("Draw Mode")) {
-        if (ImGui::MenuItem("Fill", nullptr,
+        if (ImGui::MenuItem(
+                "Fill", nullptr,
                 IRenderer::Get<IRenderer>().GetRenderDrawMode() == RenderDrawMode::kFill)) {
           IRenderer::Get<IRenderer>().SetRenderDrawMode(RenderDrawMode::kFill);
         }
-        if (ImGui::MenuItem("Line", nullptr,
+        if (ImGui::MenuItem(
+                "Line", nullptr,
                 IRenderer::Get<IRenderer>().GetRenderDrawMode() == RenderDrawMode::kLine)) {
           IRenderer::Get<IRenderer>().SetRenderDrawMode(RenderDrawMode::kLine);
         }
-        if (ImGui::MenuItem("Point", nullptr,
+        if (ImGui::MenuItem(
+                "Point", nullptr,
                 IRenderer::Get<IRenderer>().GetRenderDrawMode() == RenderDrawMode::kPoint)) {
           IRenderer::Get<IRenderer>().SetRenderDrawMode(RenderDrawMode::kPoint);
         }
