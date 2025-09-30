@@ -30,48 +30,51 @@ constexpr const char* kTimerRenderRenderName = "Render Render";
 constexpr const char* kTimerAudioUpdateName = "Audio Update";
 
 #define TIME(FUNC, NAME)                          \
-  ITelemetry::Get<ITelemetry>().BeginTimer(NAME); \
+  Interface::Get<ITelemetry>().BeginTimer(NAME); \
   FUNC;                                           \
-  ITelemetry::Get<ITelemetry>().EndTimer(NAME);   \
-  ITelemetry::Get<ITelemetry>().LogTimer(NAME);
+  Interface::Get<ITelemetry>().EndTimer(NAME);   \
+  Interface::Get<ITelemetry>().LogTimer(NAME);
 
 int main(int argc, char** argv) {
   try {
-    ITelemetry::Get<ITelemetry>().Start();
-    ITelemetry::Get<ITelemetry>().BeginTimer(kTimerInitName);
-    TIME(IIO::Get<IIO>().Start(), kTimerIoInitName);
-    TIME(IRenderer::Get<IRenderer>().Start(), kTimerRenderInitName);
-    TIME(IGui::Get<IGui>().Start(), kTimerDevguiInitName);
-    TIME(IInput::Get<IInput>().Start(), kTimerInputInitName);
-    TIME(IAudio::Get<IAudio>().Start(), kTimerAudioInitName);
-    TIME(ILocalization::Get<ILocalization>().Start(), kTimerLocalizationInitName);
-    TIME(IPhysics::Get<IPhysics>().Start(), kTimerPhysicsInitName);
-    ITelemetry::Get<ITelemetry>().EndTimer(kTimerInitName);
-    ITelemetry::Get<ITelemetry>().LogTimer(kTimerInitName);
-    ITelemetry::Get<ITelemetry>().UploadTimings(ENGINE_INIT_NAME,
-                                                ITelemetry::Get<ITelemetry>().GetTimings());
-
+    Interface::Get<ITelemetry>().Start();
+    Interface::Get<ITelemetry>().BeginTimer(kTimerInitName);
+    TIME(Interface::Get<IIO>().Start(), kTimerIoInitName);
+    TIME(Interface::Get<IRenderer>().Start(), kTimerRenderInitName);
+    TIME(Interface::Get<IGui>().Start(), kTimerDevguiInitName);
+    TIME(Interface::Get<IInput>().Start(), kTimerInputInitName);
+    TIME(Interface::Get<IAudio>().Start(), kTimerAudioInitName);
+    TIME(Interface::Get<ILocalization>().Start(), kTimerLocalizationInitName);
+    TIME(Interface::Get<IPhysics>().Start(), kTimerPhysicsInitName);
+    Interface::Get<ITelemetry>().EndTimer(kTimerInitName);
+    Interface::Get<ITelemetry>().LogTimer(kTimerInitName);
+    Interface::Get<ITelemetry>().UploadTimings(ENGINE_INIT_NAME,
+                                                Interface::Get<ITelemetry>().GetTimings());
   } catch (std::exception& e) {
     IDebug::Log(std::format("Initialization failure: {}", e.what()));
     tinyfd_messageBox("Initialization Failure", std::string(e.what()).c_str(), "ok", "error", 1);
     return -1;
+  } catch (...) {
+    IDebug::Log("Unknown initialization failure");
+    tinyfd_messageBox("Initialization Failure", "Unknown failure", "ok", "error", 1);
+    return -1;
   }
 
-  IInput::Get<IInput>().AddHook({GLFW_KEY_ESCAPE, ButtonState::kRelease}, []() {
-    glfwSetWindowShouldClose(IRenderer::Get<IRenderer>().GetWindow(), true);
+  Interface::Get<IInput>().AddHook({GLFW_KEY_ESCAPE, ButtonState::kRelease}, []() {
+    glfwSetWindowShouldClose(Interface::Get<IRenderer>().GetWindow(), true);
   });
-  IInput::Get<IInput>().AddHook({GLFW_KEY_F1, ButtonState::kPress},
-                                []() { IGui::Get<IGui>().SetHud(!IGui::Get<IGui>().GetHud()); });
+  Interface::Get<IInput>().AddHook({GLFW_KEY_F1, ButtonState::kPress},
+                                []() { Interface::Get<IGui>().SetHud(!Interface::Get<IGui>().GetHud()); });
 
   try {
-    while (glfwWindowShouldClose(IRenderer::Get<IRenderer>().GetWindow()) == 0) {
-      ITelemetry::Get<ITelemetry>().BeginFrame();
-      TIME(IInput::Get<IInput>().Update(), kTimerInputUpdateName);
-      if (IIO::Get<IIO>().GetLevel() != nullptr) {
-        TIME(IIO::Get<IIO>().GetLevel()->Update(), kTimerLevelUpdateName);
+    while (glfwWindowShouldClose(Interface::Get<IRenderer>().GetWindow()) == 0) {
+      Interface::Get<ITelemetry>().BeginFrame();
+      TIME(Interface::Get<IInput>().Update(), kTimerInputUpdateName);
+      if (Interface::Get<IIO>().GetLevel() != nullptr) {
+        TIME(Interface::Get<IIO>().GetLevel()->Update(), kTimerLevelUpdateName);
       }
-      TIME(IPhysics::Get<IPhysics>().Update(), kTimerPhysicsUpdateName);
-      TIME(IRenderer::Get<IRenderer>().Update(), kTimerRenderUpdateName);
+      TIME(Interface::Get<IPhysics>().Update(), kTimerPhysicsUpdateName);
+      TIME(Interface::Get<IRenderer>().Update(), kTimerRenderUpdateName);
       if (IIO::Get<IIO>().GetLevel() != nullptr) {
         TIME(IIO::Get<IIO>().GetLevel()->Render(), kTimerLevelRenderName);
       }
@@ -95,7 +98,7 @@ int main(int argc, char** argv) {
     IGui::Get<IGui>().Stop();
     IRenderer::Get<IRenderer>().Stop();
     IIO::Get<IIO>().Stop();
-    ITelemetry::Get<ITelemetry>().Stop();
+    Interface::Get<ITelemetry>().Stop();
   } catch (std::exception& e) {
     IDebug::Log(std::format("Quit failure: {}", e.what()));
     tinyfd_messageBox("Quit Failure", e.what(), "ok", "error", 1);

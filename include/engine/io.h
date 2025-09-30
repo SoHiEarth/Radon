@@ -24,13 +24,13 @@ private:
   static std::unordered_map<std::string_view, std::function<Component*()>> g_component_factory;
   bool CheckFile(std::string_view path);
 protected:
-  const char* name() override {
-    return "IO";
-  }
   void i_Init() override;
   void i_Quit() override;
 
 public:
+  const char* name() override {
+    return "IO";
+  }
   Level*& GetLevel() {
     return g_level;
   }

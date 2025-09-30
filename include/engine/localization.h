@@ -7,13 +7,13 @@ class ILocalization : public Interface {
   std::map<std::string, std::string> g_dictionary;
 
 protected:
-  const char* name() override {
-    return "Localization";
-  }
   void i_Init() override;
   void i_Quit() override;
 
 public:
+  const char* name() override {
+    return "Localization";
+  }
   void Load(std::string_view /*path*/);
   void Save(std::string_view /*path*/);
   std::string& GetString(const std::string& key) {

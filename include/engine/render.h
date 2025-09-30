@@ -61,15 +61,15 @@ private:
   Camera camera{};
 
 protected:
-  const char* name() override {
-    return "Renderer";
-  }
   void i_Init() override;
   void i_Update();
   void i_Render();
   void i_Quit() override;
 
 public:
+  const char* name() override {
+    return "Renderer";
+  }
   void DrawMesh(const Mesh* /*mesh*/, const Shader* /*shader*/, const glm::vec3& /*pos*/,
                 const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
 

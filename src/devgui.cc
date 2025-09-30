@@ -541,9 +541,15 @@ void DrawInterfaceStatus() {
       ImGui::TableSetColumnIndex(0);
       ImGui::Text("%s", interface->name());
       ImGui::TableSetColumnIndex(1);
-      ImGui::Text("%s", interface->GetStatus() ? "Initialized" : "Not Initialized");
+      switch (interface->GetState()) { case InterfaceState::Initialized:
+          ImGui::TextColored(ImVec4(0.0F, 1.0F, 0.0F, 1.0F), "Initialized");
+          break;
+        case InterfaceState::Stopped:
+          ImGui::TextColored(ImVec4(1.0F, 0.0F, 0.0F, 1.0F), "Stopped");
+          break;
+      }
       ImGui::TableSetColumnIndex(2);
-      if (interface->GetStatus()) {
+      if (interface->GetState() == InterfaceState::Initialized) {
         if (ImGui::Button("Stop")) {
           auto confirm = tinyfd_messageBox(
               "Confirm",

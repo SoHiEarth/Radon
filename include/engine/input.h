@@ -13,13 +13,14 @@ using Trigger = std::pair<int, ButtonState>;
 
 class IInput : public Interface {
 protected:
-  const char* name() override {
-    return "Input";
-  }
   void i_Init() override;
   void i_Update() override;
   void i_Quit() override;
+
 public:
+  const char* name() override {
+    return "Input";
+  }
   void AddHook(const Trigger& /*key*/, const std::function<void()>& /*hook*/);
   void RemoveHook(const Trigger& /*key*/);
 };

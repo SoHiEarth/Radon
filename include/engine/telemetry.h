@@ -8,13 +8,13 @@ private:
   using Timing = std::map<const char*, std::chrono::milliseconds>;
   std::map<const char*, Timing> g_uploaded_timings;
 protected:
-  const char* name() override {
-    return "Telemetry";
-  }
   void i_Init() override;
   void i_Quit() override;
 
 public:
+  const char* name() override {
+    return "Telemetry";
+  }
   void BeginFrame();
   void BeginTimer(const char* /*name*/);
   void EndTimer(const char* /*name*/);

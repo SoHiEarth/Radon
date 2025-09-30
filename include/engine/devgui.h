@@ -18,14 +18,14 @@ class IGui : public Interface {
 private:
   bool hud_enabled = false;
 protected:
-  const char* name() override {
-    return "Gui";
-  }
   void i_Init() override;
   void i_Update() override;
   void i_Render() override;
   void i_Quit() override;
 public:
+  const char* name() override {
+    return "Gui";
+  }
   void SetHud(bool enabled) {
     hud_enabled = enabled;
   }

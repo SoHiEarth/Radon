@@ -13,14 +13,14 @@ struct DebugSettings {
 };
 
 class IDebug : public Interface {
+private:
   DebugSettings g_debug_settings;
   static std::function<void(const char*, const char*, std::uint8_t)> callback;
 
-protected:
+public:
   const char* name() override {
     return "Debug";
   }
-public:
   DebugSettings& Settings() {
     return g_debug_settings;
   }

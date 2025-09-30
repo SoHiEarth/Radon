@@ -8,6 +8,9 @@ std::vector<Interface*>& Interface::All() {
 }
 
 void Interface::Start() {
+  if (state == InterfaceState::Initialized) {
+    return;
+  }
   bool added = false;
   for (const auto& interface : All()) {
     if (strcmp(interface->name(), name()) == 0) {
@@ -18,31 +21,59 @@ void Interface::Start() {
     Interface::All().push_back(this);
   }
   fmt::print("Starting interface {}", name());
-  i_Init();
-  fmt::print("\tOK\n");
-  started = true;
+  try {
+    i_Init();
+  } catch (const std::exception& e) {
+    fmt::print("\tFAILED\n");
+    fmt::print("Exception during initialization of interface {}: {}\n", name(), e.what());
+    state = InterfaceState::Error;
+    throw e;
+  }
+    fmt::print("\tOK\n");
+  state = InterfaceState::Initialized;
 }
 
 void Interface::Update() {
-  if (!started) {
+  if (state != InterfaceState::Initialized) {
     return;
   }
-  i_Update();
+  try {
+    i_Update();
+  }
+  catch (const std::exception& e) {
+    fmt::print("Exception during update of interface {}: {}\n", name(), e.what());
+    state = InterfaceState::Error;
+    throw e;
+  }
 }
 
 void Interface::Render() {
-  if (!started) {
+  if (state != InterfaceState::Initialized) {
     return;
   }
-  i_Render();
+  try {
+    i_Render();
+  }
+  catch (const std::exception& e) {
+    fmt::print("Exception during render of interface {}: {}\n", name(), e.what());
+    state = InterfaceState::Error;
+    throw e;
+  }
 }
 
 void Interface::Stop() {
-  if (!started) {
+  if (state != InterfaceState::Initialized) {
     return;
   }
   fmt::print("Stopping interface {}", name());
-  i_Quit();
+  try {
+    i_Quit();
+  } catch (const std::exception& e) {
+    fmt::print("\tFAILED\n");
+    fmt::print("Exception during quitting of interface {}: {}\n", name(), e.what());
+    state = InterfaceState::Error;
+    throw e;
+  }
   fmt::print("\tOK\n");
-  started = false;
+  state = InterfaceState::Stopped;
 }

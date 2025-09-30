@@ -4,14 +4,14 @@
 #include <glm/glm.hpp>
 class IPhysics : public Interface {
 protected:
-  const char* name() override {
-    return "Physics";
-  }
   void i_Init() override;
   void i_Update() override;
   void i_Quit() override;
 
 public:
+  const char* name() override {
+    return "Physics";
+  }
   b2BodyId CreateBody(glm::vec2 /*position*/, glm::vec2 /*scale*/);
   glm::vec2 GetBodyPosition(b2BodyId /*body_id*/);
   void SetBodyPosition(b2BodyId /*body_id*/, glm::vec2 /*position*/);

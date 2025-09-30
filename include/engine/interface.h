@@ -1,17 +1,27 @@
 #pragma once
 #include <vector>
+#include <fmt/core.h>
+
+enum class InterfaceState : std::uint8_t {
+  Initialized = 1,
+  Stopped = 2,
+  Error = 3
+};
 
 class Interface {
-private:
-  bool started = false;
-
 protected:
+  InterfaceState state = InterfaceState::Stopped;
   virtual void i_Init() {};
   virtual void i_Update() {};
   virtual void i_Render() {};
   virtual void i_Quit() {};
 
 public:
+  virtual const char* name() {
+    return "Interface";
+  }
+
+  static std::vector<Interface*>& All();
   template <typename T>
   static T& Get() {
     static_assert(std::is_base_of<Interface, T>::value, "T must derive from Interface");
@@ -19,15 +29,10 @@ public:
     return instance;
   }
 
-  static std::vector<Interface*>& All();
-
-  virtual const char* name() {
-    return "Interface";
+  InterfaceState GetState() const {
+    return state;
   }
 
-  bool GetStatus() const {
-    return started;
-  }
   void Start();
   void Update();
   void Render();

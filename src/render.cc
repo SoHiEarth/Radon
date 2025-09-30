@@ -178,7 +178,12 @@ void IRenderer::i_Render() {
     glBindVertexArray(0);
   }
   IGui::Get<IGui>().Render();
-  glfwSwapBuffers(window);
+  if (window != nullptr) {
+    glfwSwapBuffers(window);
+  } else {
+    IDebug::Warning("Window is null in IRenderer::i_Render");
+    state = InterfaceState::Error;
+  }
 }
 
 void IRenderer::i_Quit() {

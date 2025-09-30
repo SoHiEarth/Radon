@@ -18,14 +18,14 @@ private:
   unsigned int g_next = 1;
 
 protected:
-  const char* name() override {
-    return "Audio";
-  }
   void i_Init() override;
   void i_Update() override;
   void i_Quit() override;
 
 public:
+  const char* name() override {
+    return "Audio";
+  }
   unsigned int Load(const char* /*filepath*/);
   void Unload(unsigned int /*sound*/);
   void PlaySound(unsigned int /*sound*/);
