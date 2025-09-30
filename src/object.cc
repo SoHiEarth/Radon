@@ -9,50 +9,38 @@ void Object::Init() {
   if (has_initialized_) {
     return;
   }
-  auto timer_code = std::format("Object Init {}", name_.i_value_);
-  ITelemetry::Get<ITelemetry>().BeginTimer(timer_code.c_str());
   for (const auto& component : components_) {
     component->Init();
   }
   has_initialized_ = true;
-  ITelemetry::Get<ITelemetry>().EndTimer(timer_code.c_str());
 }
 
 void Object::Update() {
   if (!has_initialized_) {
     Init();
   }
-  auto timer_code = std::format("Object Update {}", name_.i_value_);
-  ITelemetry::Get<ITelemetry>().BeginTimer(timer_code.c_str());
   for (const auto& component : components_) {
     component->Update();
   }
-  ITelemetry::Get<ITelemetry>().EndTimer(timer_code.c_str());
 }
 
 void Object::Render() {
   if (!has_initialized_) {
     Init();
   }
-  auto timer_code = std::format("Object Render {}", name_.i_value_);
-  ITelemetry::Get<ITelemetry>().BeginTimer(timer_code.c_str());
   for (const auto& component : components_) {
     component->Render();
   }
-  ITelemetry::Get<ITelemetry>().EndTimer(timer_code.c_str());
 }
 
 void Object::Quit() {
   if (has_quit_) {
     return;
   }
-  auto timer_code = std::format("Object Quit {}", name_.i_value_);
-  ITelemetry::Get<ITelemetry>().BeginTimer(timer_code.c_str());
   for (const auto& component : components_) {
     component->Quit();
   }
   has_quit_ = true;
-  ITelemetry::Get<ITelemetry>().EndTimer(timer_code.c_str());
 }
 
 void Object::Load(pugi::xml_node& node) {
