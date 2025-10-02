@@ -29,7 +29,7 @@ public:
   bool operator==(const Editable<T>& rhs) const {
     return (i_value_ == rhs.i_value_);
   }
-  explicit operator T() const {
+  operator T() const {
     return i_value_;
   }
   T& operator*() {
@@ -52,10 +52,10 @@ public:
     i_value_ = rhs;
     return i_value_;
   }
-  explicit operator T*() {
+  operator T*() {
     return &i_value_;
   }
-  explicit operator const T*() const {
+  operator const T*() const {
     return &i_value_;
   }
 

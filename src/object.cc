@@ -79,7 +79,6 @@ void Object::AddComponent(Component* component) {
 }
 
 void Object::RemoveComponent(Component* component) {
-  components_.erase(
-      std::ranges::remove_if(components_, [&](const Component* c) { return c == component; }),
-      components_.end());
+  components_.erase(std::remove(components_.begin(), components_.end(), component),
+                    components_.end());
 }
