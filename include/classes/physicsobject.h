@@ -4,9 +4,9 @@
 
 class PhysicsObject : public Component {
 public:
+  b2BodyId physics_body_ = {};
   void Init() override;
   void Update() override;
-  b2BodyId physics_body_ = {};
   [[nodiscard]] const char* GetTypeName() const override {
     return "PhysicsObject";
   }

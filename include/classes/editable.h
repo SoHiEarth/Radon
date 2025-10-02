@@ -59,13 +59,6 @@ public:
     return &i_value_;
   }
 
-  template <typename U = T>
-  explicit operator const char*() const
-    requires(std::is_same_v<U, std::string>)
-  {
-    return i_value_.c_str();
-  }
-
   void RenderInterface() override {
     if constexpr (std::is_same_v<T, bool>) {
       ImGui::Checkbox(i_label_, &i_value_);

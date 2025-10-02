@@ -1,5 +1,4 @@
-#ifndef TRANSFORM_H
-#define TRANSFORM_H
+#pragma once
 #include <classes/component.h>
 #include <classes/editable.h>
 #include <glm/glm.hpp>
@@ -11,10 +10,7 @@ public:
   Editable<glm::vec3> rotation_ = {glm::vec3(0.0F), "Rotation", reg_};
   void Load(pugi::xml_node& /*unused*/) override;
   void Save(pugi::xml_node& /*unused*/) const override;
-  ~Transform() = default;
   [[nodiscard]] const char* GetTypeName() const override {
     return "Transform";
   }
 };
-
-#endif  // TRANSFORM_H

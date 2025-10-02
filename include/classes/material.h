@@ -6,6 +6,4 @@ struct Material {
   Texture* specular_ = nullptr;
   Shader* shader_ = nullptr;
   float shininess_ = 0;
-  [[nodiscard]] bool IsValid() const;
-  void Bind() const;
 };

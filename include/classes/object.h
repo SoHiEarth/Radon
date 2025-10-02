@@ -7,9 +7,12 @@
 
 class Component;
 class Object {
+private:
+  std::vector<Component*> components_;
+
 public:
   Transform transform_{};
-  std::vector<IEditable*> reg_;
+  std::vector<IEditable*> reg_{};
   Editable<const char*> name_ = {"Object", "Name", reg_};
   bool has_initialized_ = false;
   bool has_quit_ = false;
@@ -34,7 +37,4 @@ public:
     return components_;
   }
   virtual ~Object() = default;
-
-private:
-  std::vector<Component*> components_;
 };

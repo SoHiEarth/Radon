@@ -31,7 +31,6 @@ private:
 
 class Model {
 public:
-  std::vector<Texture*> loaded_textures_;
   std::vector<Mesh*> meshes_;
   const char *path_, *directory_;
   Model(const char* path, const char* directory) {

@@ -1,5 +1,4 @@
-#ifndef COMPONENT_H
-#define COMPONENT_H
+#pragma once
 #define ATTR_NO_MATERIAL                      \
   virtual const bool HasMaterial() const {    \
     return false;                             \
@@ -54,5 +53,3 @@ public:
   [[nodiscard]] virtual const char* GetTypeName() const = 0;
   virtual ~Component() = default;
 };
-
-#endif  // COMPONENT_H

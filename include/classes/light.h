@@ -1,7 +1,6 @@
 #pragma once
 #include <classes/component.h>
 #include <glm/glm.hpp>
-#include <memory>
 #include <pugixml.hpp>
 
 class Shader;
@@ -41,8 +40,8 @@ public:
 class SpotLight : public Light {
 public:
   Editable<float> constant_ = {1.0F, "Constant", reg_}, linear_ = {0.0F, "Linear", reg_},
-                  quadratic_ = {0.0F, "Quadratic", reg_}, cut_off_ = {20.0F, "Cutoff", reg_},
-                  outer_cut_off_ = {25.0F, "Outer Cutoff", reg_};
+                  quadratic_ = {0.0F, "Quadratic", reg_}, cut_off_ = {0.0F, "Cutoff", reg_},
+                  outer_cut_off_ = {0.0F, "Outer Cutoff", reg_};
   void Init() override;
   void Quit() override;
   void Load(pugi::xml_node& /*node*/ /*unused*/) override;
