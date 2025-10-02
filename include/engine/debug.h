@@ -14,27 +14,28 @@ struct DebugSettings {
 
 class IDebug : public Interface {
 private:
-  DebugSettings g_debug_settings;
-  static std::function<void(const char*, const char*, std::uint8_t)> callback;
+  DebugSettings g_debug_settings_;
+  static std::function<void(const char*, const char*, std::uint8_t)> callback_;
 
 public:
-  const char* name() override {
+  const char* Name() override {
     return "Debug";
   }
   DebugSettings& Settings() {
-    return g_debug_settings;
+    return g_debug_settings_;
   }
-  void SetCallback(std::function<void(const char*, const char*, std::uint8_t)> /*func*/) noexcept;
+  static void SetCallback(
+      std::function<void(const char*, const char*, std::uint8_t)> /*func*/) noexcept;
   static void Log(const char* /*msg*/,
-    const std::source_location& /*loc*/ = std::source_location::current()) noexcept;
+                  const std::source_location& /*loc*/ = std::source_location::current()) noexcept;
   static void Log(std::string_view /*msg*/,
-    const std::source_location& /*loc*/ = std::source_location::current()) noexcept;
-  static void Warning(const char* /*msg*/,
-    const std::source_location& /*loc*/ = std::source_location::current()) noexcept;
-  static void Warning(std::string_view /*msg*/,
-    const std::source_location& /*loc*/ = std::source_location::current()) noexcept;
+                  const std::source_location& /*loc*/ = std::source_location::current()) noexcept;
+  static void Warning(const char* /*msg*/, const std::source_location& /*loc*/ =
+                                               std::source_location::current()) noexcept;
+  static void Warning(std::string_view /*msg*/, const std::source_location& /*loc*/ =
+                                                    std::source_location::current()) noexcept;
   static void Throw(const char* /*msg*/,
-    const std::source_location& /*loc*/ = std::source_location::current());
+                    const std::source_location& /*loc*/ = std::source_location::current());
   static void Throw(std::string_view /*msg*/,
-    const std::source_location& /*loc*/ = std::source_location::current());
+                    const std::source_location& /*loc*/ = std::source_location::current());
 };

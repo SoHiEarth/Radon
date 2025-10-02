@@ -6,7 +6,7 @@
 #include <functional>
 #include <map>
 
-static const std::map<ButtonState, std::string> kButtonStateMap {
+static const std::map<ButtonState, std::string> kButtonStateMap{
     {ButtonState::kHold, "Hold"},
     {ButtonState::kPress, "Press"},
     {ButtonState::kRelease, "Release"},
@@ -30,14 +30,14 @@ void IInput::RemoveHook(const Trigger& key) {
   g_event_hooks.erase(key);
 }
 
-void IInput::i_Init() {
+void IInput::IInit() {
   if (glfwGetCurrentContext() == nullptr) {
     throw std::runtime_error("No GLFW context to initialize input");
   }
   glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
-void IInput::i_Update() {
+void IInput::IUpdate() {
   glfwPollEvents();
   for (const auto& [key, hook] : g_event_hooks) {
     bool is_pressed = (glfwGetKey(glfwGetCurrentContext(), key.first) == GLFW_PRESS);
@@ -53,7 +53,7 @@ void IInput::i_Update() {
   }
 }
 
-void IInput::i_Quit() {
+void IInput::IQuit() {
   if (IRenderer::Get<IRenderer>().GetWindow() == nullptr) {
     IDebug::Throw("No GLFW context to quit input");
   } else {

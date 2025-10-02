@@ -3,11 +3,9 @@
 #include <format>
 #include <pugixml.hpp>
 
-void ILocalization::i_Init() {
-}
+void ILocalization::IInit() {}
 
-void ILocalization::i_Quit() {
-}
+void ILocalization::IQuit() {}
 
 void ILocalization::Load(std::string_view path) {
   pugi::xml_document doc;
@@ -16,11 +14,11 @@ void ILocalization::Load(std::string_view path) {
     IDebug::Throw(std::format("Failed to load dictionary. {}, {}", path, result.description()));
   }
   pugi::xml_node language_node = doc.child("language");
-  g_language = language_node.attribute("name").as_string();
+  g_language_ = language_node.attribute("name").as_string();
   pugi::xml_node dictionary = doc.child("dictionary");
-  ILocalization::g_dictionary.clear();
+  ILocalization::g_dictionary_.clear();
   for (pugi::xml_node entry_node : dictionary.children("entry")) {
-    ILocalization::g_dictionary.insert(
+    ILocalization::g_dictionary_.insert(
         {entry_node.attribute("key").as_string(), entry_node.attribute("value").as_string()});
   }
 }
@@ -28,9 +26,9 @@ void ILocalization::Load(std::string_view path) {
 void ILocalization::Save(std::string_view path) {
   pugi::xml_document doc;
   pugi::xml_node language = doc.append_child("language");
-  language.append_attribute("name") = g_language;
+  language.append_attribute("name") = g_language_;
   pugi::xml_node dictionary = doc.append_child("dictionary");
-  for (const auto& [key, value] : g_dictionary) {
+  for (const auto& [key, value] : g_dictionary_) {
     pugi::xml_node entry_node = dictionary.append_child("entry");
     entry_node.append_attribute("key") = key;
     entry_node.append_attribute("value") = value;

@@ -1,12 +1,12 @@
 #pragma once
+#include <classes/texture.h>
 #include <engine/interface.h>
 #include <functional>
-#include <string>
-#include <map>
-#include <unordered_map>
 #include <glm/glm.hpp>
+#include <map>
 #include <pugixml.hpp>
-#include <classes/texture.h>
+#include <string>
+#include <unordered_map>
 
 class Component;
 class Level;
@@ -18,60 +18,63 @@ class Object;
 
 class IIO : public Interface {
 private:
-  Level* g_level = nullptr;
-  std::string g_engine_directory{};
-  std::map<std::string, Texture*> g_loaded_textures{};
-  static std::unordered_map<std::string_view, std::function<Component*()>> g_component_factory;
-  bool CheckFile(std::string_view path);
+  Level* g_level_ = nullptr;
+  std::string g_engine_directory_;
+  std::map<std::string, Texture*> g_loaded_textures_;
+  static std::unordered_map<std::string_view, std::function<Component*()>> g_component_factory_;
+  static bool CheckFile(std::string_view path);
+
 protected:
-  void i_Init() override;
-  void i_Quit() override;
+  void IInit() override;
+  void IQuit() override;
 
 public:
-  const char* name() override {
+  const char* Name() override {
     return "IO";
   }
   Level*& GetLevel() {
-    return g_level;
+    return g_level_;
   }
   void SetLevel(Level* level) {
-    g_level = level;
+    g_level_ = level;
   }
-  std::string GetEngineDirectory() const {
-    return g_engine_directory;
+  [[nodiscard]] std::string GetEngineDirectory() const {
+    return g_engine_directory_;
   }
   std::map<std::string, Texture*>& GetLoadedTextures() {
-    return g_loaded_textures;
+    return g_loaded_textures_;
   }
-  std::unordered_map<std::string_view, std::function<Component*()>>& GetComponentFactory() {
-    return g_component_factory;
+  static std::unordered_map<std::string_view, std::function<Component*()>>& GetComponentFactory() {
+    return g_component_factory_;
   }
-  
-  Shader* LoadShader(std::string_view /*vertex_path*/, std::string_view /*fragment_path*/);
+
+  static Shader* LoadShader(std::string_view /*vertex_path*/, std::string_view /*fragment_path*/);
   Texture* LoadTexture(std::string_view /*path*/);
-  Model* LoadModel(std::string_view /*path*/);
+  static Model* LoadModel(std::string_view /*path*/);
   Material* LoadMaterial(std::string_view /*diffuse*/, std::string_view /*specular*/,
                          std::string_view /*vertex*/, std::string_view /*fragment*/,
                          float /*shininess*/);
-  Level* LoadLevel(std::string_view /*path*/);
-  Object* LoadObject(pugi::xml_node& /*base_node*/);
+  static Level* LoadLevel(std::string_view /*path*/);
+  static Object* LoadObject(pugi::xml_node& /*base_node*/);
   Material* LoadMaterial(pugi::xml_node& /*node*/);
-  Model* LoadModel(pugi::xml_node& /*base_node*/);
-  glm::vec3 LoadVec3(pugi::xml_node& /*base_node*/, std::string_view /*name*/);
-  glm::vec2 LoadVec2(pugi::xml_node& /*base_node*/, std::string_view /*name*/);
-  std::string LoadString(pugi::xml_node& /*base_node*/, std::string_view /*name*/);
-  int LoadInt(pugi::xml_node& /*base_node*/, std::string_view /*name*/);
-  float LoadFloat(pugi::xml_node& /*base_node*/, std::string_view /*name*/);
-  void SaveLevel(const Level* /*level*/, std::string_view /*path*/);
-  void SaveObject(Object*& /*object*/, pugi::xml_node& /*base_node*/);
-  void SaveModel(const Model* /*model*/, pugi::xml_node& /*base_node*/);
-  void SaveMaterial(const Material* /*material*/, pugi::xml_node& /*base_node*/);
-  void SaveVec3(const glm::vec3& /*value*/, pugi::xml_node& /*base_node*/,
-                std::string_view /*name*/);
-  void SaveVec2(const glm::vec2& /*value*/, pugi::xml_node& /*base_node*/,
-                std::string_view /*name*/);
-  void SaveString(std::string_view /*value*/, pugi::xml_node& /*base_node*/,
-                  std::string_view /*name*/);
-  void SaveInt(const int* /*value*/, pugi::xml_node& /*base_node*/, std::string_view /*name*/);
-  void SaveFloat(const float* /*value*/, pugi::xml_node& /*base_node*/, std::string_view /*name*/);
+  static Model* LoadModel(pugi::xml_node& /*base_node*/);
+  static glm::vec3 LoadVec3(pugi::xml_node& /*base_node*/, std::string_view /*name*/);
+  static glm::vec2 LoadVec2(pugi::xml_node& /*base_node*/, std::string_view /*name*/);
+  static std::string LoadString(pugi::xml_node& /*base_node*/, std::string_view /*name*/);
+  static int LoadInt(pugi::xml_node& /*base_node*/, std::string_view /*name*/);
+  static float LoadFloat(pugi::xml_node& /*base_node*/, std::string_view /*name*/);
+  static void SaveLevel(const Level* /*level*/, std::string_view /*path*/);
+  static void SaveObject(Object*& /*object*/, pugi::xml_node& /*base_node*/);
+  static void SaveModel(const Model* /*model*/, pugi::xml_node& /*base_node*/);
+  static void SaveMaterial(const Material* /*material*/, pugi::xml_node& /*base_node*/);
+  static void SaveVec3(const glm::vec3& /*value*/, pugi::xml_node& /*base_node*/,
+                       std::string_view /*name*/);
+  static void SaveVec2(const glm::vec2& /*value*/, pugi::xml_node& /*base_node*/,
+                       std::string_view /*name*/);
+  static void SaveString(std::string_view /*value*/, pugi::xml_node& /*base_node*/,
+                         std::string_view /*name*/);
+  static void SaveInt(const int* /*value*/, pugi::xml_node& /*base_node*/,
+                      std::string_view /*name*/);
+  static void SaveFloat(const float* /*value*/, pugi::xml_node& /*base_node*/,
+                        std::string_view /*name*/);
 };

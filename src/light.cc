@@ -20,15 +20,15 @@ void DirectionalLight::Quit() {
 }
 
 void DirectionalLight::Load(pugi::xml_node& node) {
-  ambient_ = IIO::Get<IIO>().LoadVec3(node, ambient_.i_label_);
-  diffuse_ = IIO::Get<IIO>().LoadVec3(node, diffuse_.i_label_);
-  specular_ = IIO::Get<IIO>().LoadVec3(node, specular_.i_label_);
+  ambient_ = IIO::LoadVec3(node, ambient_.i_label_);
+  diffuse_ = IIO::LoadVec3(node, diffuse_.i_label_);
+  specular_ = IIO::LoadVec3(node, specular_.i_label_);
 }
 
 void DirectionalLight::Save(pugi::xml_node& node) const {
-  IIO::Get<IIO>().SaveVec3(ambient_.i_value_, node, ambient_.i_label_);
-  IIO::Get<IIO>().SaveVec3(diffuse_.i_value_, node, diffuse_.i_label_);
-  IIO::Get<IIO>().SaveVec3(specular_.i_value_, node, specular_.i_label_);
+  IIO::SaveVec3(ambient_.i_value_, node, ambient_.i_label_);
+  IIO::SaveVec3(diffuse_.i_value_, node, diffuse_.i_label_);
+  IIO::SaveVec3(specular_.i_value_, node, specular_.i_label_);
 }
 
 void DirectionalLight::SetUniforms(const Shader* shader, const int kPos) {
@@ -48,20 +48,20 @@ void PointLight::Quit() {
 }
 
 void PointLight::Load(pugi::xml_node& node) {
-  ambient_ = IIO::Get<IIO>().LoadVec3(node, ambient_.i_label_);
-  diffuse_ = IIO::Get<IIO>().LoadVec3(node, diffuse_.i_label_);
-  specular_ = IIO::Get<IIO>().LoadVec3(node, specular_.i_label_);
-  constant_ = IIO::Get<IIO>().LoadFloat(node, constant_.i_label_);
-  linear_ = IIO::Get<IIO>().LoadFloat(node, linear_.i_label_);
-  quadratic_ = IIO::Get<IIO>().LoadFloat(node, quadratic_.i_label_);
+  ambient_ = IIO::LoadVec3(node, ambient_.i_label_);
+  diffuse_ = IIO::LoadVec3(node, diffuse_.i_label_);
+  specular_ = IIO::LoadVec3(node, specular_.i_label_);
+  constant_ = IIO::LoadFloat(node, constant_.i_label_);
+  linear_ = IIO::LoadFloat(node, linear_.i_label_);
+  quadratic_ = IIO::LoadFloat(node, quadratic_.i_label_);
 }
 void PointLight::Save(pugi::xml_node& node) const {
-  IIO::Get<IIO>().SaveVec3(ambient_.i_value_, node, ambient_.i_label_);
-  IIO::Get<IIO>().SaveVec3(diffuse_.i_value_, node, diffuse_.i_label_);
-  IIO::Get<IIO>().SaveVec3(specular_.i_value_, node, specular_.i_label_);
-  IIO::Get<IIO>().SaveFloat(&constant_.i_value_, node, constant_.i_label_);
-  IIO::Get<IIO>().SaveFloat(&linear_.i_value_, node, linear_.i_label_);
-  IIO::Get<IIO>().SaveFloat(&quadratic_.i_value_, node, quadratic_.i_label_);
+  IIO::SaveVec3(ambient_.i_value_, node, ambient_.i_label_);
+  IIO::SaveVec3(diffuse_.i_value_, node, diffuse_.i_label_);
+  IIO::SaveVec3(specular_.i_value_, node, specular_.i_label_);
+  IIO::SaveFloat(&constant_.i_value_, node, constant_.i_label_);
+  IIO::SaveFloat(&linear_.i_value_, node, linear_.i_label_);
+  IIO::SaveFloat(&quadratic_.i_value_, node, quadratic_.i_label_);
 }
 
 void PointLight::SetUniforms(const Shader* shader, const int kPos) {
@@ -84,30 +84,30 @@ void SpotLight::Quit() {
 }
 
 void SpotLight::Load(pugi::xml_node& node) {
-  ambient_ = IIO::Get<IIO>().LoadVec3(node, ambient_.i_label_);
-  diffuse_ = IIO::Get<IIO>().LoadVec3(node, diffuse_.i_label_);
-  specular_ = IIO::Get<IIO>().LoadVec3(node, specular_.i_label_);
-  constant_ = IIO::Get<IIO>().LoadFloat(node, constant_.i_label_);
-  linear_ = IIO::Get<IIO>().LoadFloat(node, linear_.i_label_);
-  quadratic_ = IIO::Get<IIO>().LoadFloat(node, quadratic_.i_label_);
-  cut_off_ = IIO::Get<IIO>().LoadFloat(node, cut_off_.i_label_);
-  outer_cut_off_ = IIO::Get<IIO>().LoadFloat(node, outer_cut_off_.i_label_);
+  ambient_ = IIO::LoadVec3(node, ambient_.i_label_);
+  diffuse_ = IIO::LoadVec3(node, diffuse_.i_label_);
+  specular_ = IIO::LoadVec3(node, specular_.i_label_);
+  constant_ = IIO::LoadFloat(node, constant_.i_label_);
+  linear_ = IIO::LoadFloat(node, linear_.i_label_);
+  quadratic_ = IIO::LoadFloat(node, quadratic_.i_label_);
+  cut_off_ = IIO::LoadFloat(node, cut_off_.i_label_);
+  outer_cut_off_ = IIO::LoadFloat(node, outer_cut_off_.i_label_);
 }
 
 void SpotLight::Save(pugi::xml_node& node) const {
-  IIO::Get<IIO>().SaveVec3(ambient_.i_value_, node, ambient_.i_label_);
-  IIO::Get<IIO>().SaveVec3(diffuse_.i_value_, node, diffuse_.i_label_);
-  IIO::Get<IIO>().SaveVec3(specular_.i_value_, node, specular_.i_label_);
-  IIO::Get<IIO>().SaveFloat(&constant_.i_value_, node, constant_.i_label_);
-  IIO::Get<IIO>().SaveFloat(&linear_.i_value_, node, linear_.i_label_);
-  IIO::Get<IIO>().SaveFloat(&quadratic_.i_value_, node, quadratic_.i_label_);
-  IIO::Get<IIO>().SaveFloat(&cut_off_.i_value_, node, cut_off_.i_label_);
-  IIO::Get<IIO>().SaveFloat(&outer_cut_off_.i_value_, node, outer_cut_off_.i_label_);
+  IIO::SaveVec3(ambient_.i_value_, node, ambient_.i_label_);
+  IIO::SaveVec3(diffuse_.i_value_, node, diffuse_.i_label_);
+  IIO::SaveVec3(specular_.i_value_, node, specular_.i_label_);
+  IIO::SaveFloat(&constant_.i_value_, node, constant_.i_label_);
+  IIO::SaveFloat(&linear_.i_value_, node, linear_.i_label_);
+  IIO::SaveFloat(&quadratic_.i_value_, node, quadratic_.i_label_);
+  IIO::SaveFloat(&cut_off_.i_value_, node, cut_off_.i_label_);
+  IIO::SaveFloat(&outer_cut_off_.i_value_, node, outer_cut_off_.i_label_);
 }
 
 void SpotLight::SetUniforms(const Shader* shader, const int kPos) {
   std::string prefix = "spot_lights[" + std::to_string(kPos) + "]";
-  shader->SetVec3((prefix + ".position").c_str(),parent_->transform_.position_);
+  shader->SetVec3((prefix + ".position").c_str(), parent_->transform_.position_);
   shader->SetVec3((prefix + ".direction").c_str(), parent_->transform_.rotation_);
   shader->SetVec3((prefix + ".ambient").c_str(), ambient_);
   shader->SetVec3((prefix + ".diffuse").c_str(), diffuse_);
@@ -115,6 +115,7 @@ void SpotLight::SetUniforms(const Shader* shader, const int kPos) {
   shader->SetFloat((prefix + ".constant").c_str(), constant_);
   shader->SetFloat((prefix + ".linear").c_str(), linear_);
   shader->SetFloat((prefix + ".quadratic").c_str(), quadratic_);
-  shader->SetFloat((prefix + ".cutoff").c_str(), glm::cos(glm::radians((float)cut_off_)));
-  shader->SetFloat((prefix + ".outerCutoff").c_str(), glm::cos(glm::radians((float)outer_cut_off_)));
+  shader->SetFloat((prefix + ".cutoff").c_str(), glm::cos(glm::radians((float) cut_off_)));
+  shader->SetFloat((prefix + ".outerCutoff").c_str(),
+                   glm::cos(glm::radians((float) outer_cut_off_)));
 }

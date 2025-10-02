@@ -8,8 +8,8 @@ public:
   void Update();
   void Render();
   void Quit();
-  void AddObject(Object*, const char* /*name*/ = "Object");
-  void RemoveObject(const Object*);
+  void AddObject(Object* /*object*/, const char* /*name*/ = "Object");
+  void RemoveObject(const Object* /*object*/);
   const char* path_;
   std::vector<Object*> objects_;
 };

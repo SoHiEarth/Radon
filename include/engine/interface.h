@@ -1,36 +1,32 @@
 #pragma once
-#include <vector>
 #include <fmt/core.h>
+#include <vector>
 
-enum class InterfaceState : std::uint8_t {
-  Initialized = 1,
-  Stopped = 2,
-  Error = 3
-};
+enum class InterfaceState : std::uint8_t { kInitialized = 1, kStopped = 2, kError = 3 };
 
 class Interface {
 protected:
-  InterfaceState state = InterfaceState::Stopped;
-  virtual void i_Init() {};
-  virtual void i_Update() {};
-  virtual void i_Render() {};
-  virtual void i_Quit() {};
+  InterfaceState state_ = InterfaceState::kStopped;
+  virtual void IInit() {};
+  virtual void IUpdate() {};
+  virtual void IRender() {};
+  virtual void IQuit() {};
 
 public:
-  virtual const char* name() {
+  virtual const char* Name() {
     return "Interface";
   }
 
   static std::vector<Interface*>& All();
   template <typename T>
   static T& Get() {
-    static_assert(std::is_base_of<Interface, T>::value, "T must derive from Interface");
+    static_assert(std::is_base_of_v<Interface, T>, "T must derive from Interface");
     static T instance;
     return instance;
   }
 
-  InterfaceState GetState() const {
-    return state;
+  [[nodiscard]] InterfaceState GetState() const {
+    return state_;
   }
 
   void Start();

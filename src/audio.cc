@@ -8,7 +8,8 @@
 #include <map>
 #include <vector>
 
-static void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format, ALsizei& frequency) {
+static void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format,
+                    ALsizei& frequency) {
   std::ifstream file(filename, std::ios::binary);
   if (!file) {
     IDebug::Throw(std::format("Failed to open WAV file: {}", filename));
@@ -84,23 +85,23 @@ static void LoadWAV(const char* filename, std::vector<char>& data, ALenum& forma
   frequency = sample_rate;
 }
 
-void IAudio::i_Init() {
-  g_device = alcOpenDevice(nullptr);
-  if (g_device == nullptr) {
+void IAudio::IInit() {
+  g_device_ = alcOpenDevice(nullptr);
+  if (g_device_ == nullptr) {
     IDebug::Throw("Failed to open OpenAL device.");
   }
-  g_context = alcCreateContext(g_device, nullptr);
-  if ((g_context == nullptr) || (alcMakeContextCurrent(g_context) == 0)) {
-    if (g_context != nullptr) {
-      alcDestroyContext(g_context);
+  g_context_ = alcCreateContext(g_device_, nullptr);
+  if ((g_context_ == nullptr) || (alcMakeContextCurrent(g_context_) == 0)) {
+    if (g_context_ != nullptr) {
+      alcDestroyContext(g_context_);
     }
-    alcCloseDevice(g_device);
+    alcCloseDevice(g_device_);
     IDebug::Throw("Failed to set OpenAL context.");
   }
 }
 
-void IAudio::i_Update() {
-  for (auto& [handle, sound] : g_sounds) {
+void IAudio::IUpdate() {
+  for (auto& [handle, sound] : g_sounds_) {
     ALint state;
     alGetSourcei(sound.source_, AL_SOURCE_STATE, &state);
     if (state != AL_PLAYING) {
@@ -110,21 +111,21 @@ void IAudio::i_Update() {
   }
 }
 
-void IAudio::i_Quit() {
-  for (auto& [handle, sound] : g_sounds) {
+void IAudio::IQuit() {
+  for (auto& [handle, sound] : g_sounds_) {
     alDeleteSources(1, &sound.source_);
     alDeleteBuffers(1, &sound.buffer_);
   }
-  g_sounds.clear();
+  g_sounds_.clear();
 
   alcMakeContextCurrent(nullptr);
-  if (g_context != nullptr) {
-    alcDestroyContext(g_context);
-    g_context = nullptr;
+  if (g_context_ != nullptr) {
+    alcDestroyContext(g_context_);
+    g_context_ = nullptr;
   }
-  if (g_device != nullptr) {
-    alcCloseDevice(g_device);
-    g_device = nullptr;
+  if (g_device_ != nullptr) {
+    alcCloseDevice(g_device_);
+    g_device_ = nullptr;
   }
 }
 
@@ -143,38 +144,38 @@ unsigned int IAudio::Load(const char* filepath) {
   alSourcei(source, AL_BUFFER, buffer);
   alSourcei(source, AL_LOOPING, AL_FALSE);
 
-  unsigned int handle = g_next++;
-  g_sounds[handle] = {.buffer_ = buffer, .source_ = source};
+  unsigned int handle = g_next_++;
+  g_sounds_[handle] = {.buffer_ = buffer, .source_ = source};
   return handle;
 }
 
 void IAudio::Unload(unsigned int sound) {
-  auto it = g_sounds.find(sound);
-  if (it != g_sounds.end()) {
+  auto it = g_sounds_.find(sound);
+  if (it != g_sounds_.end()) {
     alDeleteSources(1, &it->second.source_);
     alDeleteBuffers(1, &it->second.buffer_);
-    g_sounds.erase(it);
+    g_sounds_.erase(it);
   }
 }
 
 void IAudio::PlaySound(unsigned int sound) {
-  auto it = g_sounds.find(sound);
-  if (it != g_sounds.end()) {
+  auto it = g_sounds_.find(sound);
+  if (it != g_sounds_.end()) {
     it->second.is_playing_ = true;
   }
 }
 
 void IAudio::StopSound(unsigned int sound) {
-  auto it = g_sounds.find(sound);
-  if (it != g_sounds.end()) {
+  auto it = g_sounds_.find(sound);
+  if (it != g_sounds_.end()) {
     it->second.is_playing_ = false;
     alSourceStop(it->second.source_);
   }
 }
 
 void IAudio::SetHeader(unsigned int sound, float position) {
-  auto it = g_sounds.find(sound);
-  if (it != g_sounds.end()) {
+  auto it = g_sounds_.find(sound);
+  if (it != g_sounds_.end()) {
     alSourcef(it->second.source_, AL_SEC_OFFSET, position);
   }
 }

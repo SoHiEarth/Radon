@@ -29,7 +29,7 @@
 
 class GuiManager {
 private:
-  Object* current_object = nullptr;
+  Object* current_object_ = nullptr;
 
 public:
   static GuiManager& Get() {
@@ -37,10 +37,10 @@ public:
     return instance;
   }
   void SetCurrentObject(Object* object) {
-    current_object = object;
+    current_object_ = object;
   }
   Object*& GetCurrentObject() {
-    return current_object;
+    return current_object_;
   }
 };
 
@@ -76,7 +76,7 @@ void DrawMenuEngine();
 void DrawMenuHelp();
 void DrawMenuBar();
 
-void IGui::i_Init() {
+void IGui::IInit() {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO& imgui_io = ImGui::GetIO();
@@ -99,10 +99,10 @@ void IGui::i_Init() {
       kDevguiFontSize, nullptr, imgui_io.Fonts->GetGlyphRangesDefault());
   ImGui_ImplGlfw_InitForOpenGL(IRenderer::Get<IRenderer>().GetWindow(), true);
   ImGui_ImplOpenGL3_Init("#version 150");
-  IDebug::Get<IDebug>().SetCallback(IGui::AddConsoleMessage);
+  IDebug::SetCallback(IGui::AddConsoleMessage);
 }
 
-void IGui::i_Update() {
+void IGui::IUpdate() {
   if (!IGui::Get<IGui>().GetHud()) {
     glfwSetInputMode(IRenderer::Get<IRenderer>().GetWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     return;
@@ -169,7 +169,7 @@ void IGui::AddConsoleMessage(const char* traceback, const char* message, std::ui
   g_console_messages.push_back(console_message);
 }
 
-void IGui::i_Render() {
+void IGui::IRender() {
   if (!IGui::Get<IGui>().GetHud()) {
     return;
   }
@@ -182,7 +182,7 @@ void IGui::i_Render() {
   }
 }
 
-void IGui::i_Quit() {
+void IGui::IQuit() {
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
@@ -220,7 +220,7 @@ void DrawTelemetry() {
     ImGui::TableSetupColumn("Time (ms)", ImGuiTableColumnFlags_WidthFixed, 100.0F);
     ImGui::TableSetupColumn("Graph", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
-    auto& timings = ITelemetry::Get<ITelemetry>().GetTimings();
+    auto& timings = ITelemetry::GetTimings();
     g_timings_history.push_back(timings);
     if (g_timings_history.size() > 100) {
       g_timings_history.erase(g_timings_history.begin());
@@ -254,7 +254,7 @@ void DrawTelemetry() {
 
   ImGui::SeparatorText("Initialization Log");
   try {
-    auto timings = ITelemetry::Get<ITelemetry>().DownloadTimings(ENGINE_INIT_NAME);
+    auto timings = ITelemetry::Get<ITelemetry>().DownloadTimings(kEngineInitName);
     if (ImGui::BeginTable("InitLogsTable", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
       ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 150.0F);
       ImGui::TableSetupColumn("Time (ms)", ImGuiTableColumnFlags_WidthStretch);
@@ -401,7 +401,7 @@ static void DevOpenLevel() {
   const char* file =
       tinyfd_openFileDialog("Open Level XML", "", 1, kFilterPatterns.data(), "Level Files", 0);
   if (file != nullptr) {
-    IIO::Get<IIO>().GetLevel() = IIO::Get<IIO>().LoadLevel(file);
+    IIO::Get<IIO>().GetLevel() = IIO::LoadLevel(file);
     GuiManager::Get().SetCurrentObject(nullptr);
   }
 }
@@ -539,23 +539,24 @@ void DrawInterfaceStatus() {
       ImGui::PushID(interface);
       ImGui::TableNextRow();
       ImGui::TableSetColumnIndex(0);
-      ImGui::Text("%s", interface->name());
+      ImGui::Text("%s", interface->Name());
       ImGui::TableSetColumnIndex(1);
-      switch (interface->GetState()) { case InterfaceState::Initialized:
+      switch (interface->GetState()) {
+        case InterfaceState::kInitialized:
           ImGui::TextColored(ImVec4(0.0F, 1.0F, 0.0F, 1.0F), "Initialized");
           break;
-        case InterfaceState::Stopped:
+        case InterfaceState::kStopped:
           ImGui::TextColored(ImVec4(1.0F, 0.0F, 0.0F, 1.0F), "Stopped");
           break;
       }
       ImGui::TableSetColumnIndex(2);
-      if (interface->GetState() == InterfaceState::Initialized) {
+      if (interface->GetState() == InterfaceState::kInitialized) {
         if (ImGui::Button("Stop")) {
           auto confirm = tinyfd_messageBox(
               "Confirm",
-              std::format("Are you sure you want to stop {}?", interface->name()).c_str(), "yesno",
+              std::format("Are you sure you want to stop {}?", interface->Name()).c_str(), "yesno",
               "warning", 0);
-          if (confirm) {
+          if (confirm != 0) {
             interface->Stop();
           }
         }
@@ -580,7 +581,7 @@ void ModelView(Model*& model) {
         const char* file =
             tinyfd_openFileDialog("Select Mesh File", "", 4, filter_patterns, "Mesh Files", 0);
         if (file != nullptr) {
-          model = IIO::Get<IIO>().LoadModel(file);
+          model = IIO::LoadModel(file);
         }
       }
       ImGui::SameLine();
@@ -598,7 +599,7 @@ void ModelView(Model*& model) {
   if (model != nullptr) {
     ImGui::Text("Mesh Preview");
     for (const auto& mesh : model->meshes_) {
-      if (mesh->textures_.size() > 0) {
+      if (!mesh->textures_.empty()) {
         ImGui::Image(mesh->textures_[0]->id_, ImVec2(kImagePreviewSize));
         break;
       }
@@ -621,10 +622,12 @@ void MaterialView(Material*& material) {
           material = IIO::Get<IIO>().LoadMaterial(
               material_path + "/diffuse.png", material_path + "/specular.png",
               material_path + "/vert.glsl", material_path + "/frag.glsl", kDefaultShininess);
-          if (material->diffuse_)
+          if (material->diffuse_ != nullptr) {
             g_material_diffuse = material->diffuse_->path_;
-          if (material->specular_)
+          }
+          if (material->specular_ != nullptr) {
             g_material_specular = material->specular_->path_;
+          }
           g_material_vertex = material->shader_->vertex_path_;
           g_material_fragment = material->shader_->fragment_path_;
         }
@@ -691,7 +694,7 @@ void DrawMenuFile() {
     ImGui::BeginDisabled(IIO::Get<IIO>().GetLevel() == nullptr);
     if (ImGui::MenuItem("Save")) {
       if (IIO::Get<IIO>().GetLevel() != nullptr) {
-        IIO::Get<IIO>().SaveLevel(IIO::Get<IIO>().GetLevel(), IIO::Get<IIO>().GetLevel()->path_);
+        IIO::SaveLevel(IIO::Get<IIO>().GetLevel(), IIO::Get<IIO>().GetLevel()->path_);
       }
     }
     if (ImGui::MenuItem("Save As")) {
@@ -700,7 +703,7 @@ void DrawMenuFile() {
         const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1,
                                                  filter_patterns, "Level Files");
         if (file != nullptr) {
-          IIO::Get<IIO>().SaveLevel(IIO::Get<IIO>().GetLevel(), file);
+          IIO::SaveLevel(IIO::Get<IIO>().GetLevel(), file);
           IIO::Get<IIO>().GetLevel()->path_ = file;
         }
       }
@@ -725,7 +728,7 @@ void DrawMenuEdit() {
       ImGui::EndDisabled();
       ImGui::BeginDisabled(IIO::Get<IIO>().GetLevel() == nullptr ||
                            GuiManager::Get().GetCurrentObject() == nullptr);
-      for (const auto& [name, func] : IIO::Get<IIO>().GetComponentFactory()) {
+      for (const auto& [name, func] : IIO::GetComponentFactory()) {
         if (ImGui::MenuItem(std::format("{}", name).c_str())) {
           if (IIO::Get<IIO>().GetLevel() != nullptr &&
               GuiManager::Get().GetCurrentObject() != nullptr) {
@@ -761,18 +764,18 @@ void DrawMenuEngine() {
       if (ImGui::BeginMenu("Draw Mode")) {
         if (ImGui::MenuItem(
                 "Fill", nullptr,
-                IRenderer::Get<IRenderer>().GetRenderDrawMode() == RenderDrawMode::kFill)) {
-          IRenderer::Get<IRenderer>().SetRenderDrawMode(RenderDrawMode::kFill);
+                IRenderer::GetRenderDrawMode() == RenderDrawMode::kFill)) {
+          IRenderer::SetRenderDrawMode(RenderDrawMode::kFill);
         }
         if (ImGui::MenuItem(
                 "Line", nullptr,
-                IRenderer::Get<IRenderer>().GetRenderDrawMode() == RenderDrawMode::kLine)) {
-          IRenderer::Get<IRenderer>().SetRenderDrawMode(RenderDrawMode::kLine);
+                IRenderer::GetRenderDrawMode() == RenderDrawMode::kLine)) {
+          IRenderer::SetRenderDrawMode(RenderDrawMode::kLine);
         }
         if (ImGui::MenuItem(
                 "Point", nullptr,
-                IRenderer::Get<IRenderer>().GetRenderDrawMode() == RenderDrawMode::kPoint)) {
-          IRenderer::Get<IRenderer>().SetRenderDrawMode(RenderDrawMode::kPoint);
+                IRenderer::GetRenderDrawMode() == RenderDrawMode::kPoint)) {
+          IRenderer::SetRenderDrawMode(RenderDrawMode::kPoint);
         }
         ImGui::EndMenu();
       }

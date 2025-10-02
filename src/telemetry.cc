@@ -6,15 +6,15 @@ std::map<const char*, std::chrono::high_resolution_clock::time_point> g_start_po
 std::map<const char*, std::chrono::milliseconds> g_durations{};
 std::map<const char*, std::chrono::milliseconds> g_duration_log{};
 
-void ITelemetry::i_Init() {}
+void ITelemetry::IInit() {}
 
-void ITelemetry::i_Quit() {
+void ITelemetry::IQuit() {
   g_durations.clear();
   g_start_points.clear();
 }
 
 void ITelemetry::BeginFrame() {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::Initialized) {
+  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
     return;
   }
   g_start_points.clear();
@@ -22,7 +22,7 @@ void ITelemetry::BeginFrame() {
 }
 
 void ITelemetry::BeginTimer(const char* name) {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::Initialized) {
+  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
     return;
   }
   if (!g_start_points.contains(name)) {
@@ -33,7 +33,7 @@ void ITelemetry::BeginTimer(const char* name) {
 }
 
 void ITelemetry::EndTimer(const char* name) {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::Initialized) {
+  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
     return;
   }
   if (g_start_points.contains(name)) {
@@ -48,7 +48,7 @@ void ITelemetry::EndTimer(const char* name) {
 }
 
 void ITelemetry::LogTimer(const char* name) {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::Initialized) {
+  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
     return;
   }
   if (g_durations.contains(name)) {
@@ -59,33 +59,33 @@ void ITelemetry::LogTimer(const char* name) {
 }
 
 void ITelemetry::UploadTimings(const char* name, Timing& data) {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::Initialized) {
+  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
     return;
   }
-  g_uploaded_timings[name] = std::move(data);
+  g_uploaded_timings_[name] = std::move(data);
 }
 
 static std::map<const char*, std::chrono::milliseconds> g_empty = {};
 std::map<const char*, std::chrono::milliseconds>& ITelemetry::DownloadTimings(const char* name) {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::Initialized) {
+  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
     return g_empty;
   }
-  if (g_uploaded_timings.contains(name)) {
-    return g_uploaded_timings[name];
+  if (g_uploaded_timings_.contains(name)) {
+    return g_uploaded_timings_[name];
   }
   IDebug::Throw(std::format("No uploaded timings found with name '{}'!", name));
   return g_empty;
 }
 
 std::map<const char*, std::chrono::milliseconds>& ITelemetry::GetTimings() {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::Initialized) {
+  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
     return g_empty;
   }
   return g_durations;
 }
 
 std::map<const char*, std::chrono::milliseconds>& ITelemetry::GetLog() {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::Initialized) {
+  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
     return g_empty;
   }
   return g_duration_log;

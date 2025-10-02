@@ -1,7 +1,7 @@
 #pragma once
 #include <engine/interface.h>
-#include <string>
 #include <cstdint>
+#include <string>
 enum ConsoleMessageType : std::uint8_t {
   kConsoleMessageTypeInfo = 0,
   kConsoleMessageTypeWarning = 1,
@@ -16,21 +16,23 @@ struct ConsoleMessage {
 
 class IGui : public Interface {
 private:
-  bool hud_enabled = false;
+  bool hud_enabled_ = false;
+
 protected:
-  void i_Init() override;
-  void i_Update() override;
-  void i_Render() override;
-  void i_Quit() override;
+  void IInit() override;
+  void IUpdate() override;
+  void IRender() override;
+  void IQuit() override;
+
 public:
-  const char* name() override {
+  const char* Name() override {
     return "Gui";
   }
   void SetHud(bool enabled) {
-    hud_enabled = enabled;
+    hud_enabled_ = enabled;
   }
-  bool GetHud() const {
-    return hud_enabled;
+  [[nodiscard]] bool GetHud() const {
+    return hud_enabled_;
   }
   static void AddConsoleMessage(const char* traceback, const char* message, std::uint8_t type);
 };

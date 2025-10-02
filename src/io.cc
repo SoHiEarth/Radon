@@ -41,7 +41,7 @@ constexpr float kMaterialShininessDefaultValue = 32.0F;
   }
 
 enum : std::uint16_t { kLogSize = 512 };
-std::unordered_map<std::string_view, std::function<Component*()>> IIO::g_component_factory = {
+std::unordered_map<std::string_view, std::function<Component*()>> IIO::g_component_factory_ = {
     OBJECT_FACTORY_KEY(Transform),        OBJECT_FACTORY_KEY(ModelRenderer),
     OBJECT_FACTORY_KEY(AudioSource),      OBJECT_FACTORY_KEY(PhysicsObject),
     OBJECT_FACTORY_KEY(DirectionalLight), OBJECT_FACTORY_KEY(PointLight),
@@ -51,14 +51,14 @@ bool IIO::CheckFile(std::string_view path) {
   return std::filesystem::exists(path);
 }
 
-void IIO::i_Init() {
+void IIO::IInit() {
   if (!CheckFile("engine_assets")) {
     tinyfd_messageBox("Engine Directory Not Found",
                       "Please select the engine directory to continue.", "ok", "info", 1);
     char* engine_path = tinyfd_selectFolderDialog("Select the engine directory",
                                                   std::filesystem::current_path().string().c_str());
     if (engine_path != nullptr) {
-      g_engine_directory = std::string(engine_path);
+      g_engine_directory_ = std::string(engine_path);
       bool copy_assets =
           tinyfd_messageBox("Copy Assets",
                             "Would you like to copy the engine assets to the current directory?",
@@ -67,7 +67,7 @@ void IIO::i_Init() {
         if (!CheckFile("engine_assets")) {
           std::filesystem::create_directory("engine_assets");
         }
-        for (const auto& entry : std::filesystem::directory_iterator(g_engine_directory)) {
+        for (const auto& entry : std::filesystem::directory_iterator(g_engine_directory_)) {
           std::filesystem::copy(entry.path(), "engine_assets/" + entry.path().filename().string(),
                                 std::filesystem::copy_options::overwrite_existing);
         }
@@ -76,21 +76,21 @@ void IIO::i_Init() {
       IDebug::Throw("Engine directory selection cancelled, application cannot continue.");
     }
   } else {
-    IIO::g_engine_directory = "engine_assets";
+    IIO::g_engine_directory_ = "engine_assets";
   }
 }
 
-void IIO::i_Quit() {
-  if (g_level != nullptr) {
-    g_level->Quit();
-    delete g_level;
-    g_level = nullptr;
+void IIO::IQuit() {
+  if (g_level_ != nullptr) {
+    g_level_->Quit();
+    delete g_level_;
+    g_level_ = nullptr;
   }
-  for (auto& [key, texture] : g_loaded_textures) {
+  for (auto& [key, texture] : g_loaded_textures_) {
     glDeleteTextures(1, &texture->id_);
     delete texture;
   }
-  g_loaded_textures.clear();
+  g_loaded_textures_.clear();
 }
 
 ///////////////////////////
@@ -112,7 +112,7 @@ Level* IIO::LoadLevel(std::string_view path) {
     IDebug::Throw(std::format("Requested file {} is not a valid level file", path));
   }
 
-  auto level = new Level();
+  auto* level = new Level();
   level->path_ = strcpy(new char[path.size() + 1], path.data());
   for (pugi::xml_node object_node : root.children("object")) {
     level->AddObject(IIO::LoadObject(object_node));
@@ -127,7 +127,7 @@ void IIO::SaveLevel(const Level* level, std::string_view path) {
   pugi::xml_node root = doc.append_child("level");
   for (Object* object : level->objects_) {
     auto child = root.append_child("object");
-    IIO::Get<IIO>().SaveObject(object, child);
+    IIO::SaveObject(object, child);
   }
   bool save_result = doc.save_file(path.data());
   if (!save_result) {
@@ -140,7 +140,7 @@ void IIO::SaveLevel(const Level* level, std::string_view path) {
 ////////////////////////////
 
 Object* IIO::LoadObject(pugi::xml_node& base_node) {
-  auto object = new Object();
+  auto* object = new Object();
 
   // Transform is required, so read it first
   auto transform_node = base_node.child("transform");
@@ -152,8 +152,8 @@ Object* IIO::LoadObject(pugi::xml_node& base_node) {
 
   for (auto& component_node : base_node.children("componentheader")) {
     std::string component_type = component_node.attribute("type").as_string();
-    if (g_component_factory.contains(component_type)) {
-      Component* component = g_component_factory[component_type]();
+    if (g_component_factory_.contains(component_type)) {
+      Component* component = g_component_factory_[component_type]();
       if (component != nullptr) {
         object->AddComponent(component);
       } else {
@@ -220,7 +220,7 @@ Shader* IIO::LoadShader(std::string_view vertex_path, std::string_view fragment_
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);
-  auto shader = new Shader(vertex_path.data(), fragment_path.data());
+  auto* shader = new Shader(vertex_path.data(), fragment_path.data());
   shader->id_ = program;
   return shader;
 }
@@ -231,7 +231,7 @@ Shader* IIO::LoadShader(std::string_view vertex_path, std::string_view fragment_
 
 Material* IIO::LoadMaterial(std::string_view diffuse, std::string_view specular,
                             std::string_view vertex, std::string_view fragment, float shininess) {
-  auto material = new Material();
+  auto* material = new Material();
   material->shininess_ = shininess;
   try {
     material->diffuse_ = IIO::LoadTexture(diffuse);
@@ -268,11 +268,13 @@ void IIO::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
   if (!node) {
     node = base_node.append_child(kMaterialKeyName);
   }
-  if (material->diffuse_)
+  if (material->diffuse_ != nullptr) {
     node.append_attribute(kMaterialDiffuseKeyName).set_value(material->diffuse_->path_);
-  if (material->specular_)
+  }
+  if (material->specular_ != nullptr) {
     node.append_attribute(kMaterialSpecularKeyName).set_value(material->specular_->path_);
-  if (material->shader_) {
+  }
+  if (material->shader_ != nullptr) {
     node.append_attribute(kMaterialVertexKeyName).set_value(material->shader_->vertex_path_);
     node.append_attribute(kMaterialFragmentKeyName).set_value(material->shader_->fragment_path_);
   }

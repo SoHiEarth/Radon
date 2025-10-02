@@ -3,6 +3,7 @@
 #include <engine/debug.h>
 #include <engine/io.h>
 #include <engine/telemetry.h>
+#include <algorithm>
 #include <format>
 
 void Object::Init() {
@@ -44,7 +45,7 @@ void Object::Quit() {
 }
 
 void Object::Load(pugi::xml_node& node) {
-  name_ = IIO::Get<IIO>().LoadString(node, name_.i_label_).c_str();
+  name_ = IIO::LoadString(node, name_.i_label_).c_str();
   for (auto& component : components_) {
     component->parent_ = this;
     component->Load(node);
@@ -52,7 +53,7 @@ void Object::Load(pugi::xml_node& node) {
 }
 
 void Object::Save(pugi::xml_node& node) const {
-  IIO::Get<IIO>().SaveString(name_.i_value_, node, name_.i_label_);
+  IIO::SaveString(name_.i_value_, node, name_.i_label_);
   for (const auto& component : components_) {
     component->Save(node);
   }
@@ -79,7 +80,6 @@ void Object::AddComponent(Component* component) {
 
 void Object::RemoveComponent(Component* component) {
   components_.erase(
-      std::remove_if(components_.begin(), components_.end(),
-                     [&](const Component* c) { return c == component; }),
+      std::ranges::remove_if(components_, [&](const Component* c) { return c == component; }),
       components_.end());
 }

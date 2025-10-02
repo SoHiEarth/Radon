@@ -12,7 +12,7 @@ constexpr float kFloatStep = 0.1F;
 class IEditable {
 public:
   virtual void RenderInterface() = 0;
-  IEditable(std::vector<IEditable*>& registry) {
+  explicit IEditable(std::vector<IEditable*>& registry) {
     registry.push_back(this);
   }
 };
@@ -29,7 +29,7 @@ public:
   bool operator==(const Editable<T>& rhs) const {
     return (i_value_ == rhs.i_value_);
   }
-  operator T() const {
+  explicit operator T() const {
     return i_value_;
   }
   T& operator*() {
@@ -52,15 +52,17 @@ public:
     i_value_ = rhs;
     return i_value_;
   }
-  operator T*() {
+  explicit operator T*() {
     return &i_value_;
   }
-  operator const T*() const {
+  explicit operator const T*() const {
     return &i_value_;
   }
 
   template <typename U = T>
-  operator std::enable_if_t<std::is_same_v<U, std::string>, const char*>() const {
+  explicit operator const char*() const
+    requires(std::is_same_v<U, std::string>)
+  {
     return i_value_.c_str();
   }
 

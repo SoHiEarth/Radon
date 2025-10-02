@@ -6,24 +6,24 @@
 
 class IAudio : public Interface {
 private:
-  ALCdevice* g_device = nullptr;
-  ALCcontext* g_context = nullptr;
+  ALCdevice* g_device_ = nullptr;
+  ALCcontext* g_context_ = nullptr;
   struct SoundData {
     ALuint buffer_{};
     ALuint source_{};
     ALsizei frequency_{};
     bool is_playing_ = false;
   };
-  std::map<unsigned int, SoundData> g_sounds;
-  unsigned int g_next = 1;
+  std::map<unsigned int, SoundData> g_sounds_;
+  unsigned int g_next_ = 1;
 
 protected:
-  void i_Init() override;
-  void i_Update() override;
-  void i_Quit() override;
+  void IInit() override;
+  void IUpdate() override;
+  void IQuit() override;
 
 public:
-  const char* name() override {
+  const char* Name() override {
     return "Audio";
   }
   unsigned int Load(const char* /*filepath*/);

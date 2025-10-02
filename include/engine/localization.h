@@ -3,29 +3,29 @@
 #include <map>
 #include <string>
 class ILocalization : public Interface {
-  std::string g_language;
-  std::map<std::string, std::string> g_dictionary;
+  std::string g_language_;
+  std::map<std::string, std::string> g_dictionary_;
 
 protected:
-  void i_Init() override;
-  void i_Quit() override;
+  void IInit() override;
+  void IQuit() override;
 
 public:
-  const char* name() override {
+  const char* Name() override {
     return "Localization";
   }
   void Load(std::string_view /*path*/);
   void Save(std::string_view /*path*/);
   std::string& GetString(const std::string& key) {
-    if (g_dictionary.find(key) != g_dictionary.end()) {
-      return g_dictionary[key];
+    if (g_dictionary_.contains(key)) {
+      return g_dictionary_[key];
     }
-    return g_dictionary[""];
+    return g_dictionary_[""];
   }
   std::string& GetLanguage() {
-    return g_language;
+    return g_language_;
   }
   std::map<std::string, std::string>& GetDictionary() {
-    return g_dictionary;
+    return g_dictionary_;
   }
 };

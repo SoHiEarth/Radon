@@ -1,9 +1,9 @@
 #include <glad/glad.h>
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-#include <engine/io.h>
-#include <engine/debug.h>
 #include <classes/texture.h>
+#include <engine/debug.h>
+#include <engine/io.h>
+#include <stb_image.h>
 #include <format>
 #include <map>
 #include <string>
@@ -13,13 +13,13 @@
 ////////////////////////////
 
 Texture* IIO::LoadTexture(std::string_view path) {
-  for (const auto& [key, value] : g_loaded_textures) {
+  for (const auto& [key, value] : g_loaded_textures_) {
     if (key == path) {
       return value;
     }
   }
 
-  auto texture = new Texture(path.data());
+  auto* texture = new Texture(path.data());
   glGenTextures(1, &texture->id_);
   stbi_set_flip_vertically_on_load(1);
   unsigned char* data =
@@ -48,6 +48,6 @@ Texture* IIO::LoadTexture(std::string_view path) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   stbi_image_free(data);
-  g_loaded_textures[std::string(path)] = texture;
+  g_loaded_textures_[std::string(path)] = texture;
   return texture;
 }

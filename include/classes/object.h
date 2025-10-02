@@ -17,9 +17,9 @@ public:
   void Update();
   void Render();
   void Quit();
-  void Load(pugi::xml_node&);
-  void Save(pugi::xml_node&) const;
-  void AddComponent(Component*);
+  void Load(pugi::xml_node& /*node*/);
+  void Save(pugi::xml_node& /*node*/) const;
+  void AddComponent(Component* /*component*/);
   template <typename T>
   T*& GetComponent() {
     for (auto& component : components_) {
@@ -29,7 +29,7 @@ public:
     }
     return {};
   }
-  void RemoveComponent(Component*);
+  void RemoveComponent(Component* /*component*/);
   [[nodiscard]] const std::vector<Component*>& GetAllComponents() const {
     return components_;
   }

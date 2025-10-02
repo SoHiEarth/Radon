@@ -47,7 +47,7 @@ static Mesh* ProcessMesh(Model* model, aiMesh* mesh, const aiScene* scene) {
       vector.z = mesh->mNormals[i].z;
       vertex.normal_ = vector;
     }
-    if (mesh->mTextureCoords[0]) {
+    if (mesh->mTextureCoords[0] != nullptr) {
       glm::vec2 vec{};
       vec.x = mesh->mTextureCoords[0][i].x;
       vec.y = mesh->mTextureCoords[0][i].y;
@@ -87,15 +87,16 @@ Model* IIO::LoadModel(std::string_view path) {
   if (!CheckFile(path)) {
     IDebug::Throw(std::format("Requested model file does not exist. {}", path));
   }
-  if (g_loaded_models.find(std::string(path)) != g_loaded_models.end()) {
+  if (g_loaded_models.contains(std::string(path))) {
     return g_loaded_models[std::string(path)];
   }
-  auto model = new Model(path.data(), std::filesystem::path(path).parent_path().string().c_str());
+  auto* model = new Model(path.data(), std::filesystem::path(path).parent_path().string().c_str());
   Assimp::Importer importer;
   const aiScene* scene =
       importer.ReadFile(path.data(), aiProcess_Triangulate | aiProcess_GenSmoothNormals |
                                          aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
-  if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+  if ((scene == nullptr) || ((scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) != 0U) ||
+      (scene->mRootNode == nullptr)) {
     IDebug::Throw(std::format("Failed to load model. {}, {}", path, importer.GetErrorString()));
   }
   ProcessNode(model, scene->mRootNode, scene);

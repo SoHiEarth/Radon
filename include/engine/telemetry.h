@@ -2,25 +2,26 @@
 #include <engine/interface.h>
 #include <chrono>
 #include <map>
-constexpr auto ENGINE_INIT_NAME = "Engine Init";
+constexpr auto kEngineInitName = "Engine Init";
 class ITelemetry : public Interface {
 private:
   using Timing = std::map<const char*, std::chrono::milliseconds>;
-  std::map<const char*, Timing> g_uploaded_timings;
+  std::map<const char*, Timing> g_uploaded_timings_;
+
 protected:
-  void i_Init() override;
-  void i_Quit() override;
+  void IInit() override;
+  void IQuit() override;
 
 public:
-  const char* name() override {
+  const char* Name() override {
     return "Telemetry";
   }
-  void BeginFrame();
-  void BeginTimer(const char* /*name*/);
-  void EndTimer(const char* /*name*/);
-  void LogTimer(const char* /*name*/);
+  static void BeginFrame();
+  static void BeginTimer(const char* /*name*/);
+  static void EndTimer(const char* /*name*/);
+  static void LogTimer(const char* /*name*/);
   void UploadTimings(const char* /*name*/, Timing& /*data*/);
   Timing& DownloadTimings(const char* /*name*/);
-  Timing& GetTimings();
-  Timing& GetLog();
+  static Timing& GetTimings();
+  static Timing& GetLog();
 };

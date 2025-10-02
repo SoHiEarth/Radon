@@ -10,9 +10,9 @@
 void ModelRenderer::Render() {
   if (material_ != nullptr) {
     IRenderer::Get<IRenderer>().DrawModel(model_, material_->shader_,
-                      static_cast<glm::vec3>(parent_->transform_.position_),
-                      static_cast<glm::vec2>(parent_->transform_.scale_),
-                      static_cast<glm::vec3>(parent_->transform_.rotation_));
+                                          static_cast<glm::vec3>(parent_->transform_.position_),
+                                          static_cast<glm::vec2>(parent_->transform_.scale_),
+                                          static_cast<glm::vec3>(parent_->transform_.rotation_));
   }
 }
 
@@ -21,6 +21,6 @@ void ModelRenderer::Load(pugi::xml_node& node) {
   material_ = IIO::Get<IIO>().LoadMaterial(node);
 }
 void ModelRenderer::Save(pugi::xml_node& node) const {
-  IIO::Get<IIO>().SaveModel(model_, node);
-  IIO::Get<IIO>().SaveMaterial(material_, node);
+  IIO::SaveModel(model_, node);
+  IIO::SaveMaterial(material_, node);
 }

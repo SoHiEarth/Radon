@@ -3,38 +3,38 @@
 #include <engine/debug.h>
 #include <format>
 
-const char* prev_path;
+const char* g_prev_path;
 
 void AudioSource::Init() {
   try {
-    handle = IAudio::Get<IAudio>().Load(path);
+    handle_ = IAudio::Get<IAudio>().Load(path_);
   } catch (std::runtime_error& e) {
-    IDebug::Warning(std::format("Failed to load audio at path {}. {}", *path, e.what()));
+    IDebug::Warning(std::format("Failed to load audio at path {}. {}", *path_, e.what()));
   }
-  prev_path = path;
+  g_prev_path = path_;
 }
 
 void AudioSource::Update() {
-  if (strcmp(path, prev_path) == 0) {
+  if (strcmp(path_, g_prev_path) == 0) {
     try {
-      IAudio::Get<IAudio>().Unload(handle);
-      handle = IAudio::Get<IAudio>().Load(path);
+      IAudio::Get<IAudio>().Unload(handle_);
+      handle_ = IAudio::Get<IAudio>().Load(path_);
     } catch (std::runtime_error& e) {
-      IDebug::Warning(std::format("Failed to load audio at path {}. {}", *path, e.what()));
+      IDebug::Warning(std::format("Failed to load audio at path {}. {}", *path_, e.what()));
     }
-    prev_path = static_cast<const char*>(path);
+    g_prev_path = static_cast<const char*>(path_);
   }
-  IAudio::Get<IAudio>().PlaySound(handle);
+  IAudio::Get<IAudio>().PlaySound(handle_);
 }
 
 void AudioSource::Quit() {
-  IAudio::Get<IAudio>().Unload(handle);
+  IAudio::Get<IAudio>().Unload(handle_);
 }
 
 void AudioSource::Load(pugi::xml_node& node) {
-  path = node.attribute("path").as_string();
+  path_ = node.attribute("path").as_string();
 }
 
 void AudioSource::Save(pugi::xml_node& node) const {
-  node.append_attribute("path") = (const char*) path;
+  node.append_attribute("path") = (const char*) path_;
 }

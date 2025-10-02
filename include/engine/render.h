@@ -51,23 +51,23 @@ enum class RenderDrawMode : std::uint8_t { kFill = 0, kLine = 1, kPoint = 2 };
 
 class IRenderer : public Interface {
 private:
-  std::vector<DirectionalLight*> directional_lights;
-  std::vector<PointLight*> point_lights;
-  std::vector<SpotLight*> spot_lights;
-  RenderSettings settings{};
-  GLFWwindow* window = nullptr;
-  int width = kDefaultWindowWidth;
-  int height = kDefaultWindowHeight;
-  Camera camera{};
+  std::vector<DirectionalLight*> directional_lights_;
+  std::vector<PointLight*> point_lights_;
+  std::vector<SpotLight*> spot_lights_;
+  RenderSettings settings_{};
+  GLFWwindow* window_ = nullptr;
+  int width_ = kDefaultWindowWidth;
+  int height_ = kDefaultWindowHeight;
+  Camera camera_{};
 
 protected:
-  void i_Init() override;
-  void i_Update();
-  void i_Render();
-  void i_Quit() override;
+  void IInit() override;
+  void IUpdate() override;
+  void IRender() override;
+  void IQuit() override;
 
 public:
-  const char* name() override {
+  const char* Name() override {
     return "Renderer";
   }
   void DrawMesh(const Mesh* /*mesh*/, const Shader* /*shader*/, const glm::vec3& /*pos*/,
@@ -79,34 +79,34 @@ public:
   void RenderTexture(const Material*& /*material*/, const glm::vec3& /*pos*/,
                      const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
 
-  Framebuffer CreateFramebuffer(const FramebufferCreateInfo& /*create_info*/);
-  void DeleteFramebuffer(Framebuffer& /*framebuffer*/);
+  static Framebuffer CreateFramebuffer(const FramebufferCreateInfo& /*create_info*/);
+  static void DeleteFramebuffer(Framebuffer& /*framebuffer*/);
   GLFWwindow* GetWindow() {
-    return window;
+    return window_;
   }
   Camera& GetCamera() {
-    return camera;
+    return camera_;
   }
   RenderSettings& GetSettings() {
-    return settings;
+    return settings_;
   }
   std::vector<DirectionalLight*>& GetDirectionalLights() {
-    return directional_lights;
+    return directional_lights_;
   }
   std::vector<PointLight*>& GetPointLights() {
-    return point_lights;
+    return point_lights_;
   }
   std::vector<SpotLight*>& GetSpotLights() {
-    return spot_lights;
+    return spot_lights_;
   }
   int& GetWidth() {
-    return width;
+    return width_;
   }
   int& GetHeight() {
-    return height;
+    return height_;
   }
-  void SetRenderDrawMode(const RenderDrawMode& /*mode*/);
-  RenderDrawMode GetRenderDrawMode();
+  static void SetRenderDrawMode(const RenderDrawMode& /*mode*/);
+  static RenderDrawMode GetRenderDrawMode();
   void GAddLight(DirectionalLight* /*light*/);
   void GAddLight(PointLight* /*light*/);
   void GAddLight(SpotLight* /*light*/);

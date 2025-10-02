@@ -4,7 +4,7 @@
 
 class AudioSource : public Component {
 public:
-  Editable<const char*> path = {"", "Path", reg_};
+  Editable<const char*> path_ = {"", "Path", reg_};
   void Init() override;
   void Update() override;
   void Quit() override;
@@ -13,6 +13,7 @@ public:
   [[nodiscard]] const char* GetTypeName() const override {
     return "AudioSource";
   }
+
 private:
-  unsigned int handle;
+  unsigned int handle_;
 };
