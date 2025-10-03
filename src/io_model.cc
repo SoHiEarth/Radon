@@ -23,7 +23,6 @@ static std::vector<Texture*> LoadMaterialTextures(Model* model, aiMaterial* mat,
     if (texture != nullptr) {
       texture->name_ = strcpy(new char[type_name.size() + 1], type_name.data());
       textures.push_back(texture);
-      model->loaded_textures_.push_back(texture);
     }
   }
   return textures;

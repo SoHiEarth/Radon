@@ -112,8 +112,7 @@ Level* IIO::LoadLevel(std::string_view path) {
     IDebug::Throw(std::format("Requested file {} is not a valid level file", path));
   }
 
-  auto* level = new Level();
-  level->path_ = strcpy(new char[path.size() + 1], path.data());
+  auto* level = new Level(path.data());
   for (pugi::xml_node object_node : root.children("object")) {
     level->AddObject(IIO::LoadObject(object_node));
   }

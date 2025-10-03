@@ -391,8 +391,7 @@ static void DevNewLevel() {
   const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1,
                                            kFilterPatterns.data(), "Level Files");
   if (file != nullptr) {
-    IIO::Get<IIO>().SetLevel(new Level());
-    IIO::Get<IIO>().GetLevel()->path_ = file;
+    IIO::Get<IIO>().SetLevel(new Level(file));
   }
 }
 
@@ -418,7 +417,7 @@ void DrawLevel() {
     ImGui::End();
     return;
   }
-  ImGui::LabelText("Level Path", "%s", IIO::Get<IIO>().GetLevel()->path_);
+  ImGui::LabelText("Level Path", "%s", IIO::Get<IIO>().GetLevel()->GetPath());
   ImGui::SeparatorText("Scene Objects");
   if (ImGui::BeginTable(
           "AddObjectTable", 1,
@@ -581,7 +580,7 @@ void ModelView(Model*& model) {
         const char* file =
             tinyfd_openFileDialog("Select Mesh File", "", 4, filter_patterns, "Mesh Files", 0);
         if (file != nullptr) {
-          model = IIO::LoadModel(file);
+          model = IIO::Get<IIO>().LoadModel(file);
         }
       }
       ImGui::SameLine();
@@ -694,7 +693,7 @@ void DrawMenuFile() {
     ImGui::BeginDisabled(IIO::Get<IIO>().GetLevel() == nullptr);
     if (ImGui::MenuItem("Save")) {
       if (IIO::Get<IIO>().GetLevel() != nullptr) {
-        IIO::SaveLevel(IIO::Get<IIO>().GetLevel(), IIO::Get<IIO>().GetLevel()->path_);
+        IIO::SaveLevel(IIO::Get<IIO>().GetLevel(), IIO::Get<IIO>().GetLevel()->GetPath());
       }
     }
     if (ImGui::MenuItem("Save As")) {
@@ -704,7 +703,6 @@ void DrawMenuFile() {
                                                  filter_patterns, "Level Files");
         if (file != nullptr) {
           IIO::SaveLevel(IIO::Get<IIO>().GetLevel(), file);
-          IIO::Get<IIO>().GetLevel()->path_ = file;
         }
       }
     }
