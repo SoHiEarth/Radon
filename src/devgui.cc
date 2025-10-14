@@ -64,6 +64,7 @@ void MaterialView(Material*& material);
 void DrawProperties();
 void DrawDebug();
 void DrawLevel();
+void DrawAssets();
 void DrawIO();
 void DrawLocalization();
 void DrawInterfaceStatus();
@@ -146,6 +147,7 @@ void IGui::IUpdate() {
     ImGui::DockBuilderDockWindow("Localization", dock_main_id);
     ImGui::DockBuilderDockWindow("IRenderer", dock_id_right);
     ImGui::DockBuilderDockWindow("IO", dock_id_bottom);
+    ImGui::DockBuilderDockWindow("Assets", dock_id_bottom);
     ImGui::DockBuilderDockWindow("Console", dock_id_bottom);
     ImGui::DockBuilderDockWindow("Telemetry", dock_id_bottom);
     ImGui::DockBuilderDockWindow("Interfaces", dock_id_bottom);
@@ -158,6 +160,7 @@ void IGui::IUpdate() {
   DrawInterfaceStatus();
   DrawConsole();
   DrawIO();
+  DrawAssets();
   DrawTelemetry();
   DrawMenuBar();
 }
@@ -417,7 +420,6 @@ void DrawLevel() {
     ImGui::End();
     return;
   }
-  ImGui::LabelText("Level Path", "%s", IIO::Get<IIO>().GetLevel()->GetPath());
   ImGui::SeparatorText("Scene Objects");
   if (ImGui::BeginTable(
           "AddObjectTable", 1,
@@ -434,6 +436,52 @@ void DrawLevel() {
         ImGui::PopID();
       }
       object_index++;
+    }
+    ImGui::EndTable();
+  }
+  ImGui::End();
+}
+
+void DrawAssets() {
+  ImGui::Begin("Assets");
+  if (ImGui::BeginTable("AssetManagerTable", 3,
+          ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
+    ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed, 200.0F);
+    ImGui::TableSetupColumn("GUID", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableHeadersRow();
+    for (const auto& asset : Interface::Get<IAssetManager>().GetAssets()) {
+      ImGui::TableNextRow();
+      ImGui::PushID(&asset);
+      ImGui::TableSetColumnIndex(0);
+      switch (asset->GetType()) {
+        case AssetType::kAssetTypeLevel:
+          ImGui::Text("Level");
+          break;
+        case AssetType::kAssetTypeModel:
+          ImGui::Text("Model");
+          break;
+        case AssetType::kAssetTypeTexture:
+          ImGui::Text("Texture");
+          break;
+        case AssetType::kAssetTypeShader:
+          ImGui::Text("Shader");
+          break;
+        case AssetType::kAssetTypeMaterial:
+          ImGui::Text("Material");
+          break;
+        case AssetType::kAssetTypeAudio:
+          ImGui::Text("Audio");
+          break;
+        default:
+          ImGui::Text("Unknown");
+          break;
+      }
+      ImGui::TableSetColumnIndex(1);
+      ImGui::Text("%s", asset->GetPath().c_str());
+      ImGui::TableSetColumnIndex(2);
+      ImGui::Text("%s", boost::uuids::to_string(asset->GetID()).c_str());
+      ImGui::PopID();
     }
     ImGui::EndTable();
   }
@@ -606,7 +654,7 @@ void ModelView(Model*& model) {
       ImGui::Text("Index Count: %zu", mesh->indices_.size());
     }
     ImGui::Text("Meshes: %zu", model->meshes_.size());
-    ImGui::Text("Path: %s", model->path_);
+    ImGui::Text("Path: %s", model->GetPath());
   }
 }
 
@@ -618,17 +666,24 @@ void MaterialView(Material*& material) {
         char* material_path_c = tinyfd_selectFolderDialog("Select Material Directory", "");
         if (material_path_c != nullptr) {
           std::string material_path = std::string(material_path_c);
-          material = IIO::Get<IIO>().LoadMaterial(
-              material_path + "/diffuse.png", material_path + "/specular.png",
-              material_path + "/vert.glsl", material_path + "/frag.glsl", kDefaultShininess);
-          if (material->diffuse_ != nullptr) {
-            g_material_diffuse = material->diffuse_->path_;
+          try {
+            material = IIO::Get<IIO>().LoadMaterial(
+                material_path + "/diffuse.png", material_path + "/specular.png",
+                material_path + "/vert.glsl", material_path + "/frag.glsl", kDefaultShininess);
+          } catch (const std::exception& e) {
+            tinyfd_messageBox("Error", e.what(), "ok", "error", 1);
+            material = nullptr;
           }
-          if (material->specular_ != nullptr) {
-            g_material_specular = material->specular_->path_;
+          if (material != nullptr) {
+            if (material->diffuse_ != nullptr) {
+              g_material_diffuse = material->diffuse_->GetPath();
+            }
+            if (material->specular_ != nullptr) {
+              g_material_specular = material->specular_->GetPath();
+            }
+            g_material_vertex = material->shader_->vertex_path_;
+            g_material_fragment = material->shader_->fragment_path_;
           }
-          g_material_vertex = material->shader_->vertex_path_;
-          g_material_fragment = material->shader_->fragment_path_;
         }
       }
       ImGui::EndTabItem();
@@ -641,15 +696,22 @@ void MaterialView(Material*& material) {
       ImGui::InputText("Material Fragment", &g_material_fragment);
       ImGui::DragInt("Material Shininess", &g_material_shininess);
       if (ImGui::Button("Load")) {
-        material =
-            IIO::Get<IIO>().LoadMaterial(g_material_diffuse, g_material_specular, g_material_vertex,
-                                         g_material_fragment, g_material_shininess);
+        try {
+          material = IIO::Get<IIO>().LoadMaterial(g_material_diffuse, g_material_specular,
+                                                  g_material_vertex, g_material_fragment,
+                                                  g_material_shininess);
+        }
+        catch (const std::exception& e) {
+          tinyfd_messageBox("Error", e.what(), "ok", "error", 1);
+          material = nullptr;
+        }
       }
       ImGui::EndTabItem();
     }
     ImGui::EndTabBar();
   }
   if (ImGui::Button("Clear Material")) {
+    delete material;
     material = nullptr;
   }
   if (material == nullptr) {
@@ -660,14 +722,14 @@ void MaterialView(Material*& material) {
     ImGui::Text("Diffuse");
     if (material->diffuse_ != nullptr) {
       ImGui::Image(material->diffuse_->id_, ImVec2(kImagePreviewSize));
-      ImGui::LabelText("Path", "%s", material->diffuse_->path_);
+      ImGui::LabelText("Path", "%s", material->diffuse_->GetPath());
     } else {
       ImGui::TextColored({1, 0, 0, 1}, "Diffuse texture not loaded");
     }
     ImGui::Text("Specular");
     if (material->specular_ != nullptr) {
       ImGui::Image(material->specular_->id_, ImVec2(kImagePreviewSize));
-      ImGui::LabelText("Path", "%s", material->specular_->path_);
+      ImGui::LabelText("Path", "%s", material->specular_->GetPath());
     } else {
       ImGui::TextColored({1, 0, 0, 1}, "Specular texture not loaded");
     }

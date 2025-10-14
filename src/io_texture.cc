@@ -25,6 +25,8 @@ Texture* IIO::LoadTexture(std::string_view path) {
   unsigned char* data =
       stbi_load(path.data(), &texture->width_, &texture->height_, &texture->channels_, 0);
   if (data == nullptr) {
+    delete texture;
+    texture = nullptr;
     IDebug::Throw(std::format("Failed to load texture. Details: {}", path));
   }
   GLenum format = GL_RGB;

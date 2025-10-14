@@ -230,22 +230,37 @@ Shader* IIO::LoadShader(std::string_view vertex_path, std::string_view fragment_
 
 Material* IIO::LoadMaterial(std::string_view diffuse, std::string_view specular,
                             std::string_view vertex, std::string_view fragment, float shininess) {
+  Texture* diffuse_texture = nullptr;
+  Texture* specular_texture = nullptr;
+  Shader* shader = nullptr;
+  try {
+    diffuse_texture = IIO::LoadTexture(diffuse);
+    specular_texture = IIO::LoadTexture(specular);
+  } catch (std::runtime_error& e) {
+    IDebug::Warning(std::format("Material load failed. {}", e.what()));
+    diffuse_texture = nullptr;
+    specular_texture = nullptr;
+  }
+  try {
+    shader = IIO::LoadShader(vertex, fragment);
+    shader ->Use();
+    shader ->SetInt("material.diffuse", 0);
+    shader ->SetInt("material.specular", 1);
+  } catch (std::runtime_error& e) {
+    IDebug::Warning(std::format("Material load failed. {}", e.what()));
+    delete shader;
+    shader = nullptr;
+  }
+  if (diffuse_texture == nullptr &&
+      specular_texture == nullptr &&
+      shader == nullptr) {
+    IDebug::Throw("Material load failed, no valid textures or shader.");
+    return nullptr;
+  }
   auto* material = new Material();
+  material->SetPath(std::string(diffuse) + ";" + std::string(specular) + ";" + std::string(vertex) +
+                    ";" + std::string(fragment));
   material->shininess_ = shininess;
-  try {
-    material->diffuse_ = IIO::LoadTexture(diffuse);
-    material->specular_ = IIO::LoadTexture(specular);
-  } catch (std::runtime_error& e) {
-    IDebug::Warning(std::format("Material load failed. {}", e.what()));
-  }
-  try {
-    material->shader_ = IIO::LoadShader(vertex, fragment);
-    material->shader_->Use();
-    material->shader_->SetInt("material.diffuse", 0);
-    material->shader_->SetInt("material.specular", 1);
-  } catch (std::runtime_error& e) {
-    IDebug::Warning(std::format("Material load failed. {}", e.what()));
-  }
   return material;
 }
 
@@ -268,10 +283,10 @@ void IIO::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
     node = base_node.append_child(kMaterialKeyName);
   }
   if (material->diffuse_ != nullptr) {
-    node.append_attribute(kMaterialDiffuseKeyName).set_value(material->diffuse_->path_);
+    node.append_attribute(kMaterialDiffuseKeyName).set_value(material->diffuse_->GetPath());
   }
   if (material->specular_ != nullptr) {
-    node.append_attribute(kMaterialSpecularKeyName).set_value(material->specular_->path_);
+    node.append_attribute(kMaterialSpecularKeyName).set_value(material->specular_->GetPath());
   }
   if (material->shader_ != nullptr) {
     node.append_attribute(kMaterialVertexKeyName).set_value(material->shader_->vertex_path_);

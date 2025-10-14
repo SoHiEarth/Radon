@@ -1,4 +1,5 @@
 #pragma once
+#include <engine/asset_manager.h>
 #include <cstring>
 #include <glm/glm.hpp>
 #include <vector>
@@ -29,12 +30,15 @@ private:
   void SetupMesh();
 };
 
-class Model {
+class Model : public Asset {
 public:
+  AssetType GetType() const override {
+    return AssetType::kAssetTypeModel;
+  }
   std::vector<Mesh*> meshes_;
-  const char *path_, *directory_;
+  const char *directory_;
   Model(const char* path, const char* directory) {
-    path_ = strcpy(new char[strlen(path) + 1], path);
+    path_ = std::string(path);
     directory_ = strcpy(new char[strlen(directory) + 1], directory);
   }
 };

@@ -9,11 +9,13 @@
 #include <engine/localization.h>
 #include <engine/physics.h>
 #include <engine/render.h>
+#include <engine/asset_manager.h>
 #include <engine/telemetry.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <format>
 constexpr const char* kTimerInitName = "Engine Init";
 constexpr const char* kTimerIoInitName = "IO Init";
+constexpr const char* kTimerAssetManagerInitName = "Asset Manager Init";
 constexpr const char* kTimerRenderInitName = "Render Init";
 constexpr const char* kTimerDevguiInitName = "Dev GUI Init";
 constexpr const char* kTimerInputInitName = "Input Init";
@@ -40,6 +42,7 @@ int main(int argc, char** argv) {
     Interface::Get<ITelemetry>().Start();
     ITelemetry::BeginTimer(kTimerInitName);
     TIME(Interface::Get<IIO>().Start(), kTimerIoInitName);
+    TIME(Interface::Get<IAssetManager>().Start(), kTimerAssetManagerInitName);
     TIME(Interface::Get<IRenderer>().Start(), kTimerRenderInitName);
     TIME(Interface::Get<IGui>().Start(), kTimerDevguiInitName);
     TIME(Interface::Get<IInput>().Start(), kTimerInputInitName);
@@ -76,7 +79,7 @@ int main(int argc, char** argv) {
       }
       TIME(Interface::Get<IPhysics>().Update(), kTimerPhysicsUpdateName);
       TIME(Interface::Get<IRenderer>().Update(), kTimerRenderUpdateName);
-      if (IIO::Get<IIO>().GetLevel() != nullptr) {
+      if (Interface::Get<IIO>().GetLevel() != nullptr) {
         TIME(IIO::Get<IIO>().GetLevel()->Render(), kTimerLevelRenderName);
       }
       TIME(IRenderer::Get<IRenderer>().Render(), kTimerRenderRenderName);
@@ -98,6 +101,7 @@ int main(int argc, char** argv) {
     IInput::Get<IInput>().Stop();
     IGui::Get<IGui>().Stop();
     IRenderer::Get<IRenderer>().Stop();
+    IAssetManager::Get<IAssetManager>().Stop();
     IIO::Get<IIO>().Stop();
     Interface::Get<ITelemetry>().Stop();
   } catch (std::exception& e) {

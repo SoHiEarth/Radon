@@ -1,9 +1,13 @@
 #pragma once
+#include <engine/asset_manager.h>
 #include <cstring>
 #include <glm/glm.hpp>
 
-class Shader {
+class Shader : public Asset {
 public:
+  AssetType GetType() const override {
+    return AssetType::kAssetTypeShader;
+  }
   const char* vertex_path_;
   const char* fragment_path_;
   unsigned int id_ = 0;
@@ -16,5 +20,6 @@ public:
   Shader(const char* vert, const char* frag) {
     vertex_path_ = strcpy(new char[strlen(vert) + 1], vert);
     fragment_path_ = strcpy(new char[strlen(frag) + 1], frag);
+    path_ = std::string(vert) + ";" + std::string(frag);
   };
 };

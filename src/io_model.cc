@@ -110,5 +110,5 @@ Model* IIO::LoadModel(pugi::xml_node& base_node) {
 
 void IIO::SaveModel(const Model* model, pugi::xml_node& base_node) {
   pugi::xml_node model_node = base_node.append_child("model");
-  model_node.append_attribute("path") = model->path_;
+  model_node.append_attribute("path") = model->GetPath();
 }
