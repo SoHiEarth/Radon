@@ -1,6 +1,7 @@
 #include <GLFW/glfw3.h>
 #include <classes/camera.h>
 #include <classes/level.h>
+#include <engine/asset_manager.h>
 #include <engine/audio.h>
 #include <engine/debug.h>
 #include <engine/devgui.h>
@@ -9,10 +10,10 @@
 #include <engine/localization.h>
 #include <engine/physics.h>
 #include <engine/render.h>
-#include <engine/asset_manager.h>
 #include <engine/telemetry.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <format>
+#include "engine/engine.h"
 
 int main(int argc, char** argv) {
   Engine engine;
@@ -32,7 +33,7 @@ int main(int argc, char** argv) {
     glfwSetWindowShouldClose(engine->GetRenderer().GetWindow(), true);
   });
   engine.GetInput().AddHook({GLFW_KEY_F1, ButtonState::kPress}, [](Engine* engine) {
-      engine->GetGui().SetHud(!engine->GetGui().GetHud());
+    engine->GetGui().SetHud(!engine->GetGui().GetHud());
   });
 
   try {

@@ -2,6 +2,7 @@
 #include <AL/alc.h>
 #include <engine/audio.h>
 #include <engine/debug.h>
+#include <engine/engine.h>
 #include <cstring>
 #include <format>
 #include <fstream>
@@ -9,28 +10,28 @@
 #include <vector>
 
 void IAudio::LoadWAV(const char* filename, std::vector<char>& data, ALenum& format,
-                    ALsizei& frequency) {
+                     ALsizei& frequency) {
   auto& debug = engine_->GetDebug();
   std::ifstream file(filename, std::ios::binary);
   if (!file) {
     debug.Throw(std::format("Failed to open WAV file: {}", filename));
   }
-  char chunk_id[4];
-  file.read(chunk_id, 4);
-  if (std::strncmp(chunk_id, "RIFF", 4) != 0) {
+  std::array<char, 4> chunk_id;
+  std::array<char, 4> format_id;
+  std::array<char, 4> subchunk_1_id;
+  file.read(chunk_id.data(), 4);
+  if (std::strncmp(chunk_id.data(), "RIFF", 4) != 0) {
     debug.Throw(std::format("Invalid WAV file (missing RIFF): {}", filename));
   }
   file.ignore(4);  // Skip chunk size
 
-  char format_id[4];
-  file.read(format_id, 4);
-  if (std::strncmp(format_id, "WAVE", 4) != 0) {
+  file.read(format_id.data(), 4);
+  if (std::strncmp(format_id.data(), "WAVE", 4) != 0) {
     debug.Throw(std::format("Invalid WAV file (missing WAVE): {}", filename));
   }
 
-  char subchunk_1_id[4];
-  file.read(subchunk_1_id, 4);
-  if (std::strncmp(subchunk_1_id, "fmt ", 4) != 0) {
+  file.read(subchunk_1_id.data(), 4);
+  if (std::strncmp(subchunk_1_id.data(), "fmt ", 4) != 0) {
     debug.Throw(std::format("Invalid WAV file (missing fmt ): {}", filename));
   }
 
@@ -79,8 +80,7 @@ void IAudio::LoadWAV(const char* filename, std::vector<char>& data, ALenum& form
   } else if (bits_per_sample == 16) {
     format = (channels == 1) ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
   } else {
-    debug.Throw(
-        std::format("Unsupported WAV bit depth: {} in file {}", bits_per_sample, filename));
+    debug.Throw(std::format("Unsupported WAV bit depth: {} in file {}", bits_per_sample, filename));
   }
 
   frequency = sample_rate;

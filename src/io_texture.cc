@@ -1,4 +1,5 @@
 #include <glad/glad.h>
+#include "engine/engine.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include <classes/texture.h>
 #include <engine/debug.h>

@@ -2,9 +2,9 @@
 #include <fmt/core.h>
 #include <format>
 #include <utility>
+#include "engine/engine.h"
 
-std::function<void(std::string_view, std::string_view, std::uint8_t)> IDebug::callback_ =
-    nullptr;
+std::function<void(std::string_view, std::string_view, std::uint8_t)> IDebug::callback_ = nullptr;
 
 std::string IDebug::GetTrace(const std::source_location& location) {
   std::string trace;

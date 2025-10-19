@@ -6,14 +6,15 @@
 #include <assimp/Importer.hpp>
 #include <filesystem>
 #include <format>
+#include "engine/engine.h"
 
 //////////////////////////
 /// Model IO functions ///
 //////////////////////////
 std::map<std::string, Model*> g_loaded_models;
 
-std::vector<Texture*> LoadMaterialTextures(Engine* engine, Model* model, aiMaterial* mat, aiTextureType type,
-                                                  std::string_view type_name) {
+std::vector<Texture*> LoadMaterialTextures(Engine* engine, Model* model, aiMaterial* mat,
+                                           aiTextureType type, std::string_view type_name) {
   std::vector<Texture*> textures;
   for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
     aiString str;

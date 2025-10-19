@@ -1,5 +1,8 @@
 #include <engine/interface.h>
 #include <fmt/core.h>
+#include <format>
+#include "engine/debug.h"
+#include "engine/engine.h"
 
 std::vector<Interface*>& Interface::All() {
   static std::vector<Interface*> interfaces;

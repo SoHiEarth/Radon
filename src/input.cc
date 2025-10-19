@@ -5,6 +5,7 @@
 #include <format>
 #include <functional>
 #include <map>
+#include "engine/engine.h"
 
 static const std::map<ButtonState, std::string> kButtonStateMap{
     {ButtonState::kHold, "Hold"},

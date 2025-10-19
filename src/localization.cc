@@ -2,6 +2,7 @@
 #include <engine/localization.h>
 #include <format>
 #include <pugixml.hpp>
+#include "engine/engine.h"
 
 void ILocalization::IInit() {}
 
@@ -11,7 +12,8 @@ void ILocalization::Load(std::string_view path) {
   pugi::xml_document doc;
   auto result = doc.load_file(path.data());
   if (!result) {
-    engine_->GetDebug().Throw(std::format("Failed to load dictionary. {}, {}", path, result.description()));
+    engine_->GetDebug().Throw(
+        std::format("Failed to load dictionary. {}, {}", path, result.description()));
   }
   pugi::xml_node language_node = doc.child("language");
   g_language_ = language_node.attribute("name").as_string();
