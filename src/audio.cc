@@ -129,12 +129,12 @@ void IAudio::IQuit() {
   }
 }
 
-unsigned int IAudio::Load(const char* filepath) {
+unsigned int IAudio::Load(std::string_view filepath) {
   std::vector<char> data;
   ALenum format;
   ALsizei frequency;
 
-  LoadWAV(filepath, data, format, frequency);
+  LoadWAV(filepath.data(), data, format, frequency);
 
   ALuint buffer;
   alGenBuffers(1, &buffer);

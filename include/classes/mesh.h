@@ -36,9 +36,8 @@ public:
     return AssetType::kAssetTypeModel;
   }
   std::vector<Mesh*> meshes_;
-  const char *directory_;
-  Model(const char* path, const char* directory) {
-    path_ = std::string(path);
-    directory_ = strcpy(new char[strlen(directory) + 1], directory);
+  std::string directory_;
+  Model(const std::string& path, const std::string& directory) : directory_(directory) {
+    path_ = path;
   }
 };

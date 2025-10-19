@@ -46,18 +46,15 @@ void Level::Quit() {
   }
 }
 
-void Level::AddObject(Object* object, const char* name) {
-  if (object == nullptr) {
-    return;
-  }
-  if (name != "Object") {
-    object->name_ = strcpy(new char[strlen(name) + 1], name);
-  }
+Object* Level::NewObject(const std::string& name) {
+  Object* object = new Object(engine_);
+  object->name_ = name;
   if (!object->has_initialized_) {
     object->Init();
     object->has_initialized_ = true;
   }
-  objects_.push_back(object);
+  objects_.emplace_back(object);
+  return object;
 }
 
 void Level::RemoveObject(const Object* object) {

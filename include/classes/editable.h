@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <engine/io.h>
 constexpr float kFloatStep = 0.1F;
 
 class IEditable {
@@ -16,12 +17,13 @@ public:
     registry.push_back(this);
   }
 };
+
 template <typename T>
 class Editable : public IEditable {
 public:
   T i_value_;
-  const char* i_label_;
-  Editable(T value, const char* label, std::vector<IEditable*>& registry)
+  std::string i_label_;
+  Editable(T value, std::string label, std::vector<IEditable*>& registry)
       : i_value_(std::move(value)), i_label_(label), IEditable(registry) {}
   bool operator==(const T& rhs) const {
     return (i_value_ == rhs);
@@ -61,21 +63,29 @@ public:
 
   void RenderInterface() override {
     if constexpr (std::is_same_v<T, bool>) {
-      ImGui::Checkbox(i_label_, &i_value_);
+      ImGui::Checkbox(i_label_.c_str(), &i_value_);
     } else if constexpr (std::is_same_v<T, int>) {
-      ImGui::DragInt(i_label_, &i_value_);
+      ImGui::DragInt(i_label_.c_str(), &i_value_);
     } else if constexpr (std::is_same_v<T, float>) {
-      ImGui::DragFloat(i_label_, &i_value_);
+      ImGui::DragFloat(i_label_.c_str(), &i_value_);
     } else if constexpr (std::is_same_v<T, std::string>) {
-      ImGui::InputText(i_label_, &i_value_);
+      ImGui::InputText(i_label_.c_str(), &i_value_);
     } else if constexpr (std::is_same_v<T, char*>) {
       std::string str = i_value_;
-      ImGui::InputText(i_label_, &str);
+      ImGui::InputText(i_label_.c_str(), &str);
       i_value_ = str.c_str();
     } else if constexpr (std::is_same_v<T, glm::vec2>) {
-      ImGui::DragFloat2(i_label_, glm::value_ptr(i_value_), kFloatStep);
+      ImGui::DragFloat2(i_label_.c_str(), glm::value_ptr(i_value_), kFloatStep);
     } else if constexpr (std::is_same_v<T, glm::vec3>) {
-      ImGui::DragFloat3(i_label_, glm::value_ptr(i_value_), kFloatStep);
+      ImGui::DragFloat3(i_label_.c_str(), glm::value_ptr(i_value_), kFloatStep);
     }
+  }
+
+  void Load(pugi::xml_node& node) {
+    i_value_ = IIO::Load<T>(node, i_label_);
+  }
+
+  void Save(pugi::xml_node& node) {
+    IIO::Save(i_value_, node, i_label_);
   }
 };

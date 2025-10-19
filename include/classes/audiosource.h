@@ -4,7 +4,7 @@
 
 class AudioSource : public Component {
 public:
-  Editable<const char*> path_ = {"", "Path", reg_};
+  Editable<std::string> path_ = {"", "Path", reg_};
   void Init() override;
   void Update() override;
   void Quit() override;

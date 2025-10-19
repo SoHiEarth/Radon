@@ -9,8 +9,8 @@ enum ConsoleMessageType : std::uint8_t {
 };
 
 struct ConsoleMessage {
-  const char* traceback_;
-  const char* message_;
+  const std::string traceback_;
+  const std::string message_;
   ConsoleMessageType type_;
 };
 
@@ -34,5 +34,6 @@ public:
   [[nodiscard]] bool GetHud() const {
     return hud_enabled_;
   }
-  static void AddConsoleMessage(const char* traceback, const char* message, std::uint8_t type);
+  static void AddConsoleMessage(std::string_view traceback, std::string_view message,
+                                std::uint8_t type);
 };

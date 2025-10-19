@@ -15,7 +15,7 @@ struct DebugSettings {
 class IDebug : public Interface {
 private:
   DebugSettings g_debug_settings_;
-  static std::function<void(const char*, const char*, std::uint8_t)> callback_;
+  static std::function<void(std::string_view, std::string_view, std::uint8_t)> callback_;
 
 public:
   const char* Name() override {
@@ -25,17 +25,11 @@ public:
     return g_debug_settings_;
   }
   static void SetCallback(
-      std::function<void(const char*, const char*, std::uint8_t)> /*func*/) noexcept;
-  static void Log(const char* /*msg*/,
-                  const std::source_location& /*loc*/ = std::source_location::current()) noexcept;
+      std::function<void(std::string_view, std::string_view, std::uint8_t)> /*func*/) noexcept;
   static void Log(std::string_view /*msg*/,
                   const std::source_location& /*loc*/ = std::source_location::current()) noexcept;
-  static void Warning(const char* /*msg*/, const std::source_location& /*loc*/ =
-                                               std::source_location::current()) noexcept;
   static void Warning(std::string_view /*msg*/, const std::source_location& /*loc*/ =
-                                                    std::source_location::current()) noexcept;
-  static void Throw(const char* /*msg*/,
-                    const std::source_location& /*loc*/ = std::source_location::current());
+                                               std::source_location::current()) noexcept;
   static void Throw(std::string_view /*msg*/,
                     const std::source_location& /*loc*/ = std::source_location::current());
 };

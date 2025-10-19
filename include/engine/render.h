@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-class GLFWwindow;
+struct GLFWwindow;
 class Shader;
 class Mesh;
 class Model;
@@ -104,12 +104,12 @@ public:
   }
   static void SetRenderDrawMode(const RenderDrawMode& /*mode*/);
   static RenderDrawMode GetRenderDrawMode();
-  void GAddLight(DirectionalLight* /*light*/);
-  void GAddLight(PointLight* /*light*/);
-  void GAddLight(SpotLight* /*light*/);
-  void GRemoveLight(const DirectionalLight* /*light*/);
-  void GRemoveLight(const PointLight* /*light*/);
-  void GRemoveLight(const SpotLight* /*light*/);
+  void AddLight(DirectionalLight* /*light*/);
+  void AddLight(PointLight* /*light*/);
+  void AddLight(SpotLight* /*light*/);
+  void RemoveLight(const DirectionalLight* /*light*/);
+  void RemoveLight(const PointLight* /*light*/);
+  void RemoveLight(const SpotLight* /*light*/);
 };
 
 #endif  // RENDER_H

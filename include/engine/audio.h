@@ -3,6 +3,7 @@
 #include <AL/alc.h>
 #include <engine/interface.h>
 #include <map>
+#include <string>
 
 class IAudio : public Interface {
 private:
@@ -26,7 +27,7 @@ public:
   const char* Name() override {
     return "Audio";
   }
-  unsigned int Load(const char* /*filepath*/);
+  unsigned int Load(std::string_view /*filepath*/);
   void Unload(unsigned int /*sound*/);
   void PlaySound(unsigned int /*sound*/);
   void StopSound(unsigned int /*sound*/);

@@ -63,19 +63,19 @@ void ModelView(Model*& model);
 void MaterialView(Material*& material);
 void DrawProperties();
 void DrawDebug();
-void DrawLevel();
+void DrawLevel(Engine* engine);
 void DrawAssets();
 void DrawIO();
 void DrawLocalization();
 void DrawInterfaceStatus();
 void DrawConsole();
 void DrawTelemetry();
-void DrawMenuFile();
+void DrawMenuFile(Engine* engine);
 void DrawMenuEdit();
 void DrawMenuView();
 void DrawMenuEngine();
 void DrawMenuHelp();
-void DrawMenuBar();
+void DrawMenuBar(Engine* engine);
 
 void IGui::IInit() {
   IMGUI_CHECKVERSION();
@@ -94,9 +94,10 @@ void IGui::IInit() {
   style.TabRounding = kDevguiRoundingLess;
 
   ImFont* ui_font = imgui_io.Fonts->AddFontFromFileTTF(
-      (IIO::Get<IIO>().GetEngineDirectory() +
-       "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf")
-          .c_str(),
+    std::format("{}{}",
+      IIO::Get<IIO>().GetEngineDirectory(),
+      "/IBM_Plex_Sans/IBMPlexSans-VariableFont_wdth,wght.ttf"
+    ).c_str(),
       kDevguiFontSize, nullptr, imgui_io.Fonts->GetGlyphRangesDefault());
   ImGui_ImplGlfw_InitForOpenGL(IRenderer::Get<IRenderer>().GetWindow(), true);
   ImGui_ImplOpenGL3_Init("#version 150");
@@ -155,19 +156,20 @@ void IGui::IUpdate() {
   }
   DrawProperties();
   DrawDebug();
-  DrawLevel();
+  DrawLevel(engine_);
   DrawLocalization();
   DrawInterfaceStatus();
   DrawConsole();
   DrawIO();
   DrawAssets();
   DrawTelemetry();
-  DrawMenuBar();
+  DrawMenuBar(engine_);
 }
 
-void IGui::AddConsoleMessage(const char* traceback, const char* message, std::uint8_t type) {
-  ConsoleMessage console_message{.traceback_ = strcpy(new char[strlen(traceback) + 1], traceback),
-                                 .message_ = strcpy(new char[strlen(message) + 1], message),
+void IGui::AddConsoleMessage(std::string_view traceback, std::string_view message,
+                             std::uint8_t type) {
+  ConsoleMessage console_message{.traceback_ = std::string(traceback),
+                                 .message_ = std::string(message),
                                  .type_ = ConsoleMessageType(type)};
   g_console_messages.push_back(console_message);
 }
@@ -192,7 +194,7 @@ void IGui::IQuit() {
 }
 
 std::vector<float> g_fps_history;
-std::vector<std::map<const char*, std::chrono::milliseconds>> g_timings_history;
+std::vector<std::map<std::string, std::chrono::milliseconds>> g_timings_history;
 
 void DrawTelemetry() {
   ImGui::Begin("Telemetry");
@@ -229,7 +231,7 @@ void DrawTelemetry() {
       g_timings_history.erase(g_timings_history.begin());
     }
     for (const auto& [label, time] : timings) {
-      ImGui::PushID(label);
+      ImGui::PushID(label.c_str());
       ImGui::TableNextRow();
       ImGui::TableSetColumnIndex(0);
       ImGui::Text("%s", label);
@@ -375,9 +377,9 @@ void DrawConsole() {
           break;
       }
       ImGui::TableSetColumnIndex(1);
-      ImGui::Text("%s", message.traceback_);
+      ImGui::Text("%s", message.traceback_.c_str());
       ImGui::TableSetColumnIndex(2);
-      ImGui::Text("%s", message.message_);
+      ImGui::Text("%s", message.message_.c_str());
       ImGui::PopID();
     }
     ImGui::EndTable();
@@ -389,33 +391,33 @@ void DrawConsole() {
   ImGui::End();
 }
 
-static void DevNewLevel() {
+static void DevNewLevel(Engine* engine) {
   const std::array<const char*, 128> kFilterPatterns = {"*.xml"};
   const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1,
                                            kFilterPatterns.data(), "Level Files");
   if (file != nullptr) {
-    IIO::Get<IIO>().SetLevel(new Level(file));
+    IIO::Get<IIO>().SetLevel(new Level(file, engine));
   }
 }
 
-static void DevOpenLevel() {
+static void DevOpenLevel(Engine* engine) {
   const std::array<const char*, 128> kFilterPatterns = {"*.xml"};
   const char* file =
       tinyfd_openFileDialog("Open Level XML", "", 1, kFilterPatterns.data(), "Level Files", 0);
   if (file != nullptr) {
-    IIO::Get<IIO>().GetLevel() = IIO::LoadLevel(file);
+    IIO::Get<IIO>().GetLevel() = IIO::LoadLevel(file, engine);
     GuiManager::Get().SetCurrentObject(nullptr);
   }
 }
 
-void DrawLevel() {
+void DrawLevel(Engine* engine) {
   ImGui::Begin("Level");
   if (IIO::Get<IIO>().GetLevel() == nullptr) {
     if (ImGui::Button("New Level")) {
-      DevNewLevel();
+      DevNewLevel(engine);
     }
     if (ImGui::Button("Open Level")) {
-      DevOpenLevel();
+      DevOpenLevel(engine);
     }
     ImGui::End();
     return;
@@ -478,7 +480,7 @@ void DrawAssets() {
           break;
       }
       ImGui::TableSetColumnIndex(1);
-      ImGui::Text("%s", asset->GetPath().c_str());
+      ImGui::Text("%s", asset->GetPath().data());
       ImGui::TableSetColumnIndex(2);
       ImGui::Text("%s", boost::uuids::to_string(asset->GetID()).c_str());
       ImGui::PopID();
@@ -744,13 +746,13 @@ void MaterialView(Material*& material) {
   }
 }
 
-void DrawMenuFile() {
+void DrawMenuFile(Engine* engine) {
   if (ImGui::BeginMenu("File")) {
     if (ImGui::MenuItem("New")) {
-      DevNewLevel();
+      DevNewLevel(engine);
     }
     if (ImGui::MenuItem("Open")) {
-      DevOpenLevel();
+      DevOpenLevel(engine);
     }
     ImGui::BeginDisabled(IIO::Get<IIO>().GetLevel() == nullptr);
     if (ImGui::MenuItem("Save")) {
@@ -782,7 +784,7 @@ void DrawMenuEdit() {
       ImGui::BeginDisabled(IIO::Get<IIO>().GetLevel() == nullptr);
       if (ImGui::MenuItem("Empty Object")) {
         if (IIO::Get<IIO>().GetLevel() != nullptr) {
-          IIO::Get<IIO>().GetLevel()->AddObject(new Object(), "Object");
+          IIO::Get<IIO>().GetLevel()->NewObject();
         }
       }
       ImGui::EndDisabled();
@@ -851,9 +853,9 @@ void DrawMenuHelp() {
   }
 }
 
-void DrawMenuBar() {
+void DrawMenuBar(Engine* engine) {
   if (ImGui::BeginMainMenuBar()) {
-    DrawMenuFile();
+    DrawMenuFile(engine);
     DrawMenuEdit();
     DrawMenuView();
     DrawMenuEngine();

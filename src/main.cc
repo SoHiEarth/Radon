@@ -38,16 +38,26 @@ constexpr const char* kTimerAudioUpdateName = "Audio Update";
   Interface::Get<ITelemetry>().LogTimer(NAME);
 
 int main(int argc, char** argv) {
+  Engine* engine = new Engine();
   try {
+    Interface::Get<ITelemetry>().SetEngineInstance(engine);
     Interface::Get<ITelemetry>().Start();
     ITelemetry::BeginTimer(kTimerInitName);
+    Interface::Get<IIO>().SetEngineInstance(engine);
     TIME(Interface::Get<IIO>().Start(), kTimerIoInitName);
+    Interface::Get<IAssetManager>().SetEngineInstance(engine);
     TIME(Interface::Get<IAssetManager>().Start(), kTimerAssetManagerInitName);
+    Interface::Get<IRenderer>().SetEngineInstance(engine);
     TIME(Interface::Get<IRenderer>().Start(), kTimerRenderInitName);
+    Interface::Get<IGui>().SetEngineInstance(engine);
     TIME(Interface::Get<IGui>().Start(), kTimerDevguiInitName);
+    Interface::Get<IInput>().SetEngineInstance(engine);
     TIME(Interface::Get<IInput>().Start(), kTimerInputInitName);
+    Interface::Get<IAudio>().SetEngineInstance(engine);
     TIME(Interface::Get<IAudio>().Start(), kTimerAudioInitName);
+    Interface::Get<ILocalization>().SetEngineInstance(engine);
     TIME(Interface::Get<ILocalization>().Start(), kTimerLocalizationInitName);
+    Interface::Get<IPhysics>().SetEngineInstance(engine);
     TIME(Interface::Get<IPhysics>().Start(), kTimerPhysicsInitName);
     ITelemetry::EndTimer(kTimerInitName);
     ITelemetry::LogTimer(kTimerInitName);

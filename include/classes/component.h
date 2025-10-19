@@ -32,11 +32,16 @@
 
 #include <classes/editable.h>
 #include <pugixml.hpp>
+#include <engine/engine.h>
 
 class Model;
 class Object;
 class Material;
 class Component {
+protected:
+  Engine* engine_ = nullptr;
+  Component() = default;
+
 public:
   ATTR_NO_MATERIAL;
   ATTR_NO_MODEL;
@@ -51,5 +56,8 @@ public:
   virtual void Load(pugi::xml_node& /*unused*/) {};
   virtual void Save(pugi::xml_node& /*unused*/) const {};
   [[nodiscard]] virtual const char* GetTypeName() const = 0;
+  void SetEngineInstance(Engine* engine) {
+    engine_ = engine;
+  }
   virtual ~Component() = default;
 };

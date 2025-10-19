@@ -97,7 +97,7 @@ void IIO::IQuit() {
 ///  Level IO functions ///
 ///////////////////////////
 
-Level* IIO::LoadLevel(std::string_view path) {
+Level* IIO::LoadLevel(std::string_view path, Engine* engine) {
   if (!CheckFile(path)) {
     IDebug::Throw(std::format("Requested file does not exist. {}", path));
   }
@@ -112,9 +112,9 @@ Level* IIO::LoadLevel(std::string_view path) {
     IDebug::Throw(std::format("Requested file {} is not a valid level file", path));
   }
 
-  auto* level = new Level(path.data());
+  auto* level = new Level(path.data(), engine);
   for (pugi::xml_node object_node : root.children("object")) {
-    level->AddObject(IIO::LoadObject(object_node));
+    level->objects_.push_back(IIO::LoadObject(object_node, engine));
   }
   glfwSetWindowTitle(glfwGetCurrentContext(), std::format("Radon Engine - {}", path).c_str());
   level->Init();
@@ -138,8 +138,8 @@ void IIO::SaveLevel(const Level* level, std::string_view path) {
 ///  Object IO functions ///
 ////////////////////////////
 
-Object* IIO::LoadObject(pugi::xml_node& base_node) {
-  auto* object = new Object();
+Object* IIO::LoadObject(pugi::xml_node& base_node, Engine* engine) {
+  auto* object = new Object(engine);
 
   // Transform is required, so read it first
   auto transform_node = base_node.child("transform");
@@ -299,38 +299,6 @@ void IIO::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
 /// Serialized IO functions ///
 ///////////////////////////////
 
-glm::vec3 IIO::LoadVec3(pugi::xml_node& base_node, std::string_view name) {
-  pugi::xml_node node = base_node.child(ValidateName(name.data()));
-  glm::vec3 value{};
-  value.x = node.attribute("x").as_float(0.0F);
-  value.y = node.attribute("y").as_float(0.0F);
-  value.z = node.attribute("z").as_float(0.0F);
-  return value;
-}
-
-glm::vec2 IIO::LoadVec2(pugi::xml_node& base_node, std::string_view name) {
-  pugi::xml_node node = base_node.child(ValidateName(name.data()));
-  glm::vec2 value{};
-  value.x = node.attribute("x").as_float(0.0F);
-  value.y = node.attribute("y").as_float(0.0F);
-  return value;
-}
-
-std::string IIO::LoadString(pugi::xml_node& base_node, std::string_view name) {
-  pugi::xml_node node = base_node.child(ValidateName(name.data()));
-  return node.attribute("value").as_string("");
-}
-
-int IIO::LoadInt(pugi::xml_node& base_node, std::string_view name) {
-  pugi::xml_node node = base_node.child(ValidateName(name.data()));
-  return node.attribute("value").as_int(0);
-}
-
-float IIO::LoadFloat(pugi::xml_node& base_node, std::string_view name) {
-  pugi::xml_node node = base_node.child(ValidateName(name.data()));
-  return node.attribute("value").as_float(0.0F);
-}
-
 inline pugi::xml_node GetOrCreateNode(pugi::xml_node& base_node, std::string_view name) {
   auto val_name = ValidateName(name.data());
   pugi::xml_node node = base_node.child(val_name);
@@ -338,34 +306,6 @@ inline pugi::xml_node GetOrCreateNode(pugi::xml_node& base_node, std::string_vie
     node = base_node.append_child(val_name);
   }
   return node;
-}
-
-void IIO::SaveVec3(const glm::vec3& value, pugi::xml_node& base_node, std::string_view name) {
-  auto node = GetOrCreateNode(base_node, name);
-  node.append_attribute("x").set_value(value.x);
-  node.append_attribute("y").set_value(value.y);
-  node.append_attribute("z").set_value(value.z);
-}
-
-void IIO::SaveVec2(const glm::vec2& value, pugi::xml_node& base_node, std::string_view name) {
-  auto node = GetOrCreateNode(base_node, name);
-  node.append_attribute("x").set_value(value.x);
-  node.append_attribute("y").set_value(value.y);
-}
-
-void IIO::SaveString(std::string_view value, pugi::xml_node& base_node, std::string_view name) {
-  auto node = GetOrCreateNode(base_node, name);
-  node.append_attribute("value").set_value(value.data());
-}
-
-void IIO::SaveInt(const int* value, pugi::xml_node& base_node, std::string_view name) {
-  auto node = GetOrCreateNode(base_node, name);
-  node.append_attribute("value").set_value(*value);
-}
-
-void IIO::SaveFloat(const float* value, pugi::xml_node& base_node, std::string_view name) {
-  auto node = GetOrCreateNode(base_node, name);
-  node.append_attribute("value").set_value(*value);
 }
 
 ///////////////////////////

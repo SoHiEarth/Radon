@@ -45,7 +45,7 @@ void Object::Quit() {
 }
 
 void Object::Load(pugi::xml_node& node) {
-  name_ = IIO::LoadString(node, name_.i_label_).c_str();
+  name_ = IIO::Load<std::string>(node, name_.i_label_).c_str();
   for (auto& component : components_) {
     component->parent_ = this;
     component->Load(node);
@@ -53,7 +53,7 @@ void Object::Load(pugi::xml_node& node) {
 }
 
 void Object::Save(pugi::xml_node& node) const {
-  IIO::SaveString(name_.i_value_, node, name_.i_label_);
+  IIO::Save<std::string>(name_.i_value_, node, name_.i_label_);
   for (const auto& component : components_) {
     component->Save(node);
   }

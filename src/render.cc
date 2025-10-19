@@ -113,9 +113,9 @@ void IRenderer::IInit() {
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<void*>(3 * sizeof(float)));
   RecreateFramebuffer();
-  g_screen_shader =
-      IIO::LoadShader(IIO::Get<IIO>().GetEngineDirectory() + "/screen_shader/vert.glsl",
-                                 IIO::Get<IIO>().GetEngineDirectory() + "/screen_shader/frag.glsl");
+  g_screen_shader = IIO::LoadShader(
+      std::format("{}{}", IIO::Get<IIO>().GetEngineDirectory().data(), "/screen_shader/vert.glsl"),
+      std::format("{}{}", IIO::Get<IIO>().GetEngineDirectory().data(), "/screen_shader/frag.glsl"));
   g_screen_shader->Use();
   g_screen_shader->SetInt("scene", 0);
 
@@ -181,12 +181,14 @@ void IRenderer::IRender() {
   if (window_ != nullptr) {
     glfwSwapBuffers(window_);
   } else {
-    IDebug::Warning("Window is null in IRenderer::i_Render");
+    IDebug::Warning("Window is null");
     state_ = InterfaceState::kError;
   }
 }
 
 void IRenderer::IQuit() {
+  delete g_screen_shader;
+  g_screen_shader = nullptr;
   glDeleteVertexArrays(1, &g_vao);
   glDeleteBuffers(1, &g_vbo);
   DeleteFramebuffer(g_framebuffer);
@@ -434,19 +436,19 @@ void RecreateFramebuffer() {
   g_prev_render_factor = IRenderer::Get<IRenderer>().GetSettings().render_factor_;
 }
 
-void IRenderer::GAddLight(DirectionalLight* light) {
+void IRenderer::AddLight(DirectionalLight* light) {
   directional_lights_.push_back(light);
 }
 
-void IRenderer::GAddLight(PointLight* light) {
+void IRenderer::AddLight(PointLight* light) {
   point_lights_.push_back(light);
 }
 
-void IRenderer::GAddLight(SpotLight* light) {
+void IRenderer::AddLight(SpotLight* light) {
   spot_lights_.push_back(light);
 }
 
-void IRenderer::GRemoveLight(const DirectionalLight* light) {
+void IRenderer::RemoveLight(const DirectionalLight* light) {
   for (int i = 0; i < directional_lights_.size(); i++) {
     if (directional_lights_.at(i) == light) {
       directional_lights_.erase(directional_lights_.begin() + i);
@@ -454,7 +456,7 @@ void IRenderer::GRemoveLight(const DirectionalLight* light) {
   }
 }
 
-void IRenderer::GRemoveLight(const PointLight* light) {
+void IRenderer::RemoveLight(const PointLight* light) {
   for (int i = 0; i < point_lights_.size(); i++) {
     if (point_lights_.at(i) == light) {
       point_lights_.erase(point_lights_.begin() + i);
@@ -462,7 +464,7 @@ void IRenderer::GRemoveLight(const PointLight* light) {
   }
 }
 
-void IRenderer::GRemoveLight(const SpotLight* light) {
+void IRenderer::RemoveLight(const SpotLight* light) {
   for (int i = 0; i < spot_lights_.size(); i++) {
     if (spot_lights_.at(i) == light) {
       spot_lights_.erase(spot_lights_.begin() + i);

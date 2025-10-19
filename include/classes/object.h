@@ -9,11 +9,12 @@ class Component;
 class Object {
 private:
   std::vector<Component*> components_;
+  Engine* engine_;
 
 public:
   Transform transform_{};
   std::vector<IEditable*> reg_{};
-  Editable<const char*> name_ = {"Object", "Name", reg_};
+  Editable<std::string> name_ = {"Object", "Name", reg_};
   bool has_initialized_ = false;
   bool has_quit_ = false;
   void Init();
@@ -35,6 +36,9 @@ public:
   void RemoveComponent(Component* /*component*/);
   [[nodiscard]] const std::vector<Component*>& GetAllComponents() const {
     return components_;
+  }
+  explicit Object(Engine* engine) : engine_(engine) {
+    transform_.SetEngineInstance(engine);  // Set engine for transform
   }
   virtual ~Object() = default;
 };

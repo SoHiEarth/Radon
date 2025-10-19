@@ -60,10 +60,10 @@ public:
   boost::uuids::uuid GetID() const {
     return id_;
   }
-  void SetPath(const std::string& p) {
+  void SetPath(std::string_view p) {
     path_ = p;
   }
-  const std::string& GetPath() const {
+  std::string_view GetPath() const {
     return path_;
   }
   Asset() :

@@ -3,6 +3,7 @@
 #include <vector>
 
 enum class InterfaceState : std::uint8_t { kInitialized = 1, kStopped = 2, kError = 3 };
+class Engine;
 
 class Interface {
 protected:
@@ -11,6 +12,7 @@ protected:
   virtual void IUpdate() {};
   virtual void IRender() {};
   virtual void IQuit() {};
+  Engine* engine_ = nullptr;
 
 public:
   virtual const char* Name() {
@@ -23,6 +25,10 @@ public:
     static_assert(std::is_base_of_v<Interface, T>, "T must derive from Interface");
     static T instance;
     return instance;
+  }
+
+  void SetEngineInstance(Engine* engine) {
+    engine_ = engine;
   }
 
   [[nodiscard]] InterfaceState GetState() const {
