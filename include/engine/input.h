@@ -21,6 +21,6 @@ public:
   const char* Name() override {
     return "Input";
   }
-  static void AddHook(const Trigger& /*key*/, const std::function<void()>& /*hook*/);
-  static void RemoveHook(const Trigger& /*key*/);
+  void AddHook(const Trigger& /*key*/, const std::function<void(Engine*)>& /*hook*/);
+  void RemoveHook(const Trigger& /*key*/);
 };

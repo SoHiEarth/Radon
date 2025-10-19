@@ -11,7 +11,7 @@ void Interface::Start() {
     return;
   }
   if (engine_ == nullptr) {
-    IDebug::Warning(std::format("Engine instance for {} not set.", Name()));
+    engine_->GetDebug().Warning(std::format("Engine instance for {} not set.", Name()));
   }
   bool added = false;
   for (const auto& interface : All()) {
@@ -40,7 +40,7 @@ void Interface::Update() {
     return;
   }
   if (engine_ == nullptr) {
-    IDebug::Warning(std::format("Engine instance for {} not set.", Name()));
+    engine_->GetDebug().Warning(std::format("Engine instance for {} not set.", Name()));
   }
   try {
     IUpdate();
@@ -56,7 +56,7 @@ void Interface::Render() {
     return;
   }
   if (engine_ == nullptr) {
-    IDebug::Warning(std::format("Engine instance for {} not set.", Name()));
+    engine_->GetDebug().Warning(std::format("Engine instance for {} not set.", Name()));
   }
   try {
     IRender();
@@ -72,7 +72,7 @@ void Interface::Stop() {
     return;
   }
   if (engine_ == nullptr) {
-    IDebug::Warning(std::format("Engine instance for {} not set.", Name()));
+    engine_->GetDebug().Warning(std::format("Engine instance for {} not set.", Name()));
   }
   fmt::print("Stopping interface {}", Name());
   try {

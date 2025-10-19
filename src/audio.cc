@@ -8,29 +8,30 @@
 #include <map>
 #include <vector>
 
-static void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format,
+void IAudio::LoadWAV(const char* filename, std::vector<char>& data, ALenum& format,
                     ALsizei& frequency) {
+  auto& debug = engine_->GetDebug();
   std::ifstream file(filename, std::ios::binary);
   if (!file) {
-    IDebug::Throw(std::format("Failed to open WAV file: {}", filename));
+    debug.Throw(std::format("Failed to open WAV file: {}", filename));
   }
   char chunk_id[4];
   file.read(chunk_id, 4);
   if (std::strncmp(chunk_id, "RIFF", 4) != 0) {
-    IDebug::Throw(std::format("Invalid WAV file (missing RIFF): {}", filename));
+    debug.Throw(std::format("Invalid WAV file (missing RIFF): {}", filename));
   }
   file.ignore(4);  // Skip chunk size
 
   char format_id[4];
   file.read(format_id, 4);
   if (std::strncmp(format_id, "WAVE", 4) != 0) {
-    IDebug::Throw(std::format("Invalid WAV file (missing WAVE): {}", filename));
+    debug.Throw(std::format("Invalid WAV file (missing WAVE): {}", filename));
   }
 
   char subchunk_1_id[4];
   file.read(subchunk_1_id, 4);
   if (std::strncmp(subchunk_1_id, "fmt ", 4) != 0) {
-    IDebug::Throw(std::format("Invalid WAV file (missing fmt ): {}", filename));
+    debug.Throw(std::format("Invalid WAV file (missing fmt ): {}", filename));
   }
 
   uint32_t subchunk_1_size = 0;
@@ -50,7 +51,7 @@ static void LoadWAV(const char* filename, std::vector<char>& data, ALenum& forma
   file.read(reinterpret_cast<char*>(&bits_per_sample), 2);
 
   if (audio_format != 1) {
-    IDebug::Throw(std::format("Unsupported WAV audio_format (only PCM supported): {}", filename));
+    debug.Throw(std::format("Unsupported WAV audio_format (only PCM supported): {}", filename));
   }
   if (subchunk_1_size > 16) {
     file.ignore(static_cast<std::streamsize>(subchunk_1_size) - 16);
@@ -67,7 +68,7 @@ static void LoadWAV(const char* filename, std::vector<char>& data, ALenum& forma
   }
 
   if (subchunk_2_size == 0) {
-    IDebug::Throw(std::format("Invalid WAV file (missing data chunk): {}", filename));
+    debug.Throw(std::format("Invalid WAV file (missing data chunk): {}", filename));
   }
 
   data.resize(subchunk_2_size);
@@ -78,7 +79,7 @@ static void LoadWAV(const char* filename, std::vector<char>& data, ALenum& forma
   } else if (bits_per_sample == 16) {
     format = (channels == 1) ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
   } else {
-    IDebug::Throw(
+    debug.Throw(
         std::format("Unsupported WAV bit depth: {} in file {}", bits_per_sample, filename));
   }
 
@@ -86,9 +87,10 @@ static void LoadWAV(const char* filename, std::vector<char>& data, ALenum& forma
 }
 
 void IAudio::IInit() {
+  auto& debug = engine_->GetDebug();
   g_device_ = alcOpenDevice(nullptr);
   if (g_device_ == nullptr) {
-    IDebug::Throw("Failed to open OpenAL device.");
+    debug.Throw("Failed to open OpenAL device.");
   }
   g_context_ = alcCreateContext(g_device_, nullptr);
   if ((g_context_ == nullptr) || (alcMakeContextCurrent(g_context_) == 0)) {
@@ -96,7 +98,7 @@ void IAudio::IInit() {
       alcDestroyContext(g_context_);
     }
     alcCloseDevice(g_device_);
-    IDebug::Throw("Failed to set OpenAL context.");
+    debug.Throw("Failed to set OpenAL context.");
   }
 }
 

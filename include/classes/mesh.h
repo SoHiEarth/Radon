@@ -37,7 +37,6 @@ public:
   }
   std::vector<Mesh*> meshes_;
   std::string directory_;
-  Model(const std::string& path, const std::string& directory) : directory_(directory) {
-    path_ = path;
-  }
+  Model(Engine* engine, std::string_view path, std::string_view directory)
+      : Asset(engine, path), directory_(directory) {}
 };

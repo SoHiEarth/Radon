@@ -6,15 +6,16 @@
 std::function<void(std::string_view, std::string_view, std::uint8_t)> IDebug::callback_ =
     nullptr;
 
-static std::string GetTrace(const std::source_location& location) {
+std::string IDebug::GetTrace(const std::source_location& location) {
   std::string trace;
-  if (IDebug::Get<IDebug>().Settings().trace_source_file_) {
+  auto& debug = engine_->GetDebug();
+  if (debug.Settings().trace_source_file_) {
     trace += location.file_name();
   }
-  if (IDebug::Get<IDebug>().Settings().trace_source_file_) {
+  if (debug.Settings().trace_source_file_) {
     trace += "(" + std::to_string(location.line()) + ":" + std::to_string(location.column()) + ")";
   }
-  if (IDebug::Get<IDebug>().Settings().trace_function_name_) {
+  if (debug.Settings().trace_function_name_) {
     trace += location.function_name();
   }
   return trace;

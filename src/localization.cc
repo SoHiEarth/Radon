@@ -11,7 +11,7 @@ void ILocalization::Load(std::string_view path) {
   pugi::xml_document doc;
   auto result = doc.load_file(path.data());
   if (!result) {
-    IDebug::Throw(std::format("Failed to load dictionary. {}, {}", path, result.description()));
+    engine_->GetDebug().Throw(std::format("Failed to load dictionary. {}, {}", path, result.description()));
   }
   pugi::xml_node language_node = doc.child("language");
   g_language_ = language_node.attribute("name").as_string();
@@ -35,6 +35,6 @@ void ILocalization::Save(std::string_view path) {
   }
   bool save_result = doc.save_file(path.data());
   if (!save_result) {
-    IDebug::Throw(std::format("Failed to save level file. {}", path));
+    engine_->GetDebug().Throw(std::format("Failed to save level file. {}", path));
   }
 }

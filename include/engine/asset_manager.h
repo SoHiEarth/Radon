@@ -46,7 +46,8 @@ protected:
   boost::uuids::uuid id_;
   bool loaded_ = false;
   std::string path_;
-  
+  Engine* engine_ = nullptr;
+
 public:
   virtual AssetType GetType() const {
     return AssetType::kAssetTypeUnknown;
@@ -66,13 +67,7 @@ public:
   std::string_view GetPath() const {
     return path_;
   }
-  Asset() :
-    id_(boost::uuids::random_generator()()) {
-    Interface::Get<IDebug>().Log("Created asset " + boost::uuids::to_string(id_));
-    Interface::Get<IAssetManager>().AddAsset(this);
-  }
-  ~Asset() {
-    Interface::Get<IDebug>().Log("Destroyed asset " + boost::uuids::to_string(id_));
-    Interface::Get<IAssetManager>().RemoveAsset(this);
-  }
+
+  explicit Asset(Engine* engine, std::string_view path);
+  ~Asset();
 };

@@ -19,7 +19,7 @@ Texture* IIO::LoadTexture(std::string_view path) {
     }
   }
 
-  auto* texture = new Texture(path.data());
+  auto* texture = new Texture(engine_, path);
   glGenTextures(1, &texture->id_);
   stbi_set_flip_vertically_on_load(1);
   unsigned char* data =
@@ -27,7 +27,7 @@ Texture* IIO::LoadTexture(std::string_view path) {
   if (data == nullptr) {
     delete texture;
     texture = nullptr;
-    IDebug::Throw(std::format("Failed to load texture. Details: {}", path));
+    engine_->GetDebug().Throw(std::format("Failed to load texture. Details: {}", path));
   }
   GLenum format = GL_RGB;
   switch (texture->channels_) {

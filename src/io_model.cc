@@ -12,14 +12,14 @@
 //////////////////////////
 std::map<std::string, Model*> g_loaded_models;
 
-static std::vector<Texture*> LoadMaterialTextures(Model* model, aiMaterial* mat, aiTextureType type,
+std::vector<Texture*> LoadMaterialTextures(Engine* engine, Model* model, aiMaterial* mat, aiTextureType type,
                                                   std::string_view type_name) {
   std::vector<Texture*> textures;
   for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
     aiString str;
     mat->GetTexture(type, i, &str);
     std::string texture_path = std::string(model->directory_) + "/" + std::string(str.C_Str());
-    Texture* texture = IIO::Get<IIO>().LoadTexture(texture_path);
+    Texture* texture = engine->GetIO().LoadTexture(texture_path);
     if (texture != nullptr) {
       texture->name_ = strcpy(new char[type_name.size() + 1], type_name.data());
       textures.push_back(texture);
@@ -28,7 +28,7 @@ static std::vector<Texture*> LoadMaterialTextures(Model* model, aiMaterial* mat,
   return textures;
 }
 
-static Mesh* ProcessMesh(Model* model, aiMesh* mesh, const aiScene* scene) {
+static Mesh* ProcessMesh(Engine* engine, Model* model, aiMesh* mesh, const aiScene* scene) {
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
   std::vector<Texture*> textures;
@@ -64,41 +64,42 @@ static Mesh* ProcessMesh(Model* model, aiMesh* mesh, const aiScene* scene) {
   }
   aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
   std::vector<Texture*> diffuse_textures =
-      LoadMaterialTextures(model, material, aiTextureType_DIFFUSE, "texture_diffuse");
+      LoadMaterialTextures(engine, model, material, aiTextureType_DIFFUSE, "texture_diffuse");
   textures.insert(textures.end(), diffuse_textures.begin(), diffuse_textures.end());
   std::vector<Texture*> specular_textures =
-      LoadMaterialTextures(model, material, aiTextureType_SPECULAR, "texture_specular");
+      LoadMaterialTextures(engine, model, material, aiTextureType_SPECULAR, "texture_specular");
   textures.insert(textures.end(), specular_textures.begin(), specular_textures.end());
   return new Mesh(vertices, indices, textures);
 }
 
-static void ProcessNode(Model* model, aiNode* node, const aiScene* scene) {
+static void ProcessNode(Engine* engine, Model* model, aiNode* node, const aiScene* scene) {
   for (unsigned int i = 0; i < node->mNumMeshes; i++) {
     aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-    model->meshes_.push_back(ProcessMesh(model, mesh, scene));
+    model->meshes_.push_back(ProcessMesh(engine, model, mesh, scene));
   }
   for (unsigned int i = 0; i < node->mNumChildren; i++) {
-    ProcessNode(model, node->mChildren[i], scene);
+    ProcessNode(engine, model, node->mChildren[i], scene);
   }
 }
 
 Model* IIO::LoadModel(std::string_view path) {
   if (!CheckFile(path)) {
-    IDebug::Throw(std::format("Requested model file does not exist. {}", path));
+    engine_->GetDebug().Throw(std::format("Requested model file does not exist. {}", path));
   }
   if (g_loaded_models.contains(std::string(path))) {
     return g_loaded_models[std::string(path)];
   }
-  auto* model = new Model(path.data(), std::filesystem::path(path).parent_path().string().c_str());
+  auto* model = new Model(engine_, path, std::filesystem::path(path).parent_path().string());
   Assimp::Importer importer;
   const aiScene* scene =
       importer.ReadFile(path.data(), aiProcess_Triangulate | aiProcess_GenSmoothNormals |
                                          aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
   if ((scene == nullptr) || ((scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) != 0U) ||
       (scene->mRootNode == nullptr)) {
-    IDebug::Throw(std::format("Failed to load model. {}, {}", path, importer.GetErrorString()));
+    engine_->GetDebug().Throw(
+        std::format("Failed to load model. {}, {}", path, importer.GetErrorString()));
   }
-  ProcessNode(model, scene->mRootNode, scene);
+  ProcessNode(engine_, model, scene->mRootNode, scene);
   g_loaded_models[std::string(path)] = model;
   return model;
 }

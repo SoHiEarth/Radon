@@ -32,12 +32,6 @@ constexpr float kCameraNearPlane = 0.1F;
 constexpr float kCameraFarPlane = 100.0F;
 constexpr float kDefaultCameraSpeed = 0.1;
 float g_camera_speed = kDefaultCameraSpeed;
-static inline void IfNoHUD(const std::function<void()>& fn) {
-  if (!IGui::Get<IGui>().GetHud()) {
-    fn();
-  }
-}
-
 using ImGui::TextColored;
 float g_camera_fov = kDefaultCameraFov;
 unsigned int g_vao, g_vbo;
@@ -45,22 +39,29 @@ Framebuffer g_framebuffer;
 unsigned int g_screen_vao, g_screen_vbo;
 Shader* g_screen_shader = nullptr;
 Shader* g_screen_shader_blur = nullptr;
-float g_prev_render_factor = IRenderer::Get<IRenderer>().GetSettings().render_factor_;
+float g_prev_render_factor = 1.0F;
 ImVec2 g_last_viewport_size = ImVec2(0.0F, 0.0F);
-
 const std::array<float, 32> kGVertices = {-0.5F, 0.5F,  0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 1.0F,
                                           -0.5F, -0.5F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
                                           0.5F,  0.5F,  0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F,
                                           0.5F,  -0.5F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 0.0F};
-
 const std::array<float, 20> kGScreenVertices = {
     -1.0F, 1.0F, 0.0F, 0.0F, 1.0F, -1.0F, -1.0F, 0.0F, 0.0F, 0.0F,
     1.0F,  1.0F, 0.0F, 1.0F, 1.0F, 1.0F,  -1.0F, 0.0F, 1.0F, 0.0F,
 };
-void DrawRendererStatus();
-void RecreateFramebuffer();
-void FBSizeCallback(GLFWwindow* window, int width, int height);
 
+static void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
+  auto* engine = static_cast<Engine*>(glfwGetWindowUserPointer(window));
+  if (engine) {
+    auto& renderer = engine->GetRenderer();
+    renderer.GetWidth() = width;
+    renderer.GetHeight() = height;
+    renderer.RecreateFramebuffer();
+    glViewport(0, 0, width, height);
+  }
+}
+
+#include <fmt/core.h>
 void IRenderer::IInit() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -71,16 +72,18 @@ void IRenderer::IInit() {
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
   window_ = glfwCreateWindow(width_, height_, "Radon Engine", nullptr, nullptr);
+  auto& debug = engine_->GetDebug();
   if (window_ == nullptr) {
     const char* error_desc;
     glfwGetError(&error_desc);
-    IDebug::Throw(std::format("Failed to create GLFW window. {}", error_desc));
+    debug.Throw(std::format("Failed to create GLFW window. {}", error_desc));
   }
   glfwMakeContextCurrent(window_);
-  glfwSetFramebufferSizeCallback(window_, FBSizeCallback);
+  glfwSetWindowUserPointer(window_, engine_);
+  glfwSetFramebufferSizeCallback(window_, &FramebufferSizeCallback);
   glfwSwapInterval(1);
   if (0 == gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    IDebug::Throw("Failed to initialize GLAD");
+    debug.Throw("Failed to initialize GLAD");
     glfwTerminate();
     return;
   }
@@ -113,29 +116,42 @@ void IRenderer::IInit() {
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<void*>(3 * sizeof(float)));
   RecreateFramebuffer();
-  g_screen_shader = IIO::LoadShader(
-      std::format("{}{}", IIO::Get<IIO>().GetEngineDirectory().data(), "/screen_shader/vert.glsl"),
-      std::format("{}{}", IIO::Get<IIO>().GetEngineDirectory().data(), "/screen_shader/frag.glsl"));
+  auto& io = engine_->GetIO();
+  auto directory = io.GetEngineDirectory();
+  g_screen_shader = io.LoadShader(directory + "/screen_shader/vert.glsl",
+                                  directory + "/screen_shader/frag.glsl");
   g_screen_shader->Use();
   g_screen_shader->SetInt("scene", 0);
-
-  IInput::AddHook({GLFW_KEY_W, ButtonState::kHold}, []() {
-    IfNoHUD([]() { IRenderer::Get<IRenderer>().camera_.position_.z -= g_camera_speed; });
+  auto& input = engine_->GetInput();
+  input.AddHook({GLFW_KEY_W, ButtonState::kHold}, [](Engine* engine) {
+    if (!engine->GetGui().GetHud()) {
+      engine->GetRenderer().camera_.position_.z -= g_camera_speed;
+    }
   });
-  IInput::AddHook({GLFW_KEY_S, ButtonState::kHold}, []() {
-    IfNoHUD([]() { IRenderer::Get<IRenderer>().camera_.position_.z += g_camera_speed; });
+  input.AddHook({GLFW_KEY_S, ButtonState::kHold}, [](Engine* engine) {
+    if (!engine->GetGui().GetHud()) {
+      engine->GetRenderer().camera_.position_.z += g_camera_speed;
+    }
   });
-  IInput::AddHook({GLFW_KEY_A, ButtonState::kHold}, []() {
-    IfNoHUD([]() { IRenderer::Get<IRenderer>().camera_.position_.x -= g_camera_speed; });
+  input.AddHook({GLFW_KEY_A, ButtonState::kHold}, [](Engine* engine) {
+    if (!engine->GetGui().GetHud()) {
+      engine->GetRenderer().camera_.position_.x -= g_camera_speed;
+    }
   });
-  IInput::AddHook({GLFW_KEY_D, ButtonState::kHold}, []() {
-    IfNoHUD([]() { IRenderer::Get<IRenderer>().camera_.position_.x += g_camera_speed; });
+  input.AddHook({GLFW_KEY_D, ButtonState::kHold}, [](Engine* engine) {
+    if (!engine->GetGui().GetHud()) {
+      engine->GetRenderer().camera_.position_.x += g_camera_speed;
+    }
   });
-  IInput::AddHook({GLFW_KEY_E, ButtonState::kHold}, []() {
-    IfNoHUD([]() { IRenderer::Get<IRenderer>().camera_.position_.y += g_camera_speed; });
+  input.AddHook({GLFW_KEY_E, ButtonState::kHold}, [](Engine* engine) {
+    if (!engine->GetGui().GetHud()) {
+      engine->GetRenderer().camera_.position_.y += g_camera_speed;
+    }
   });
-  IInput::AddHook({GLFW_KEY_Q, ButtonState::kHold}, []() {
-    IfNoHUD([]() { IRenderer::Get<IRenderer>().camera_.position_.y -= g_camera_speed; });
+  input.AddHook({GLFW_KEY_Q, ButtonState::kHold}, [](Engine* engine) {
+    if (!engine->GetGui().GetHud()) {
+      engine->GetRenderer().camera_.position_.y -= g_camera_speed;
+    }
   });
 }
 
@@ -158,9 +174,10 @@ void IRenderer::IRender() {
   glViewport(0, 0, width_, height_);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  IGui::Get<IGui>().Update();
+  auto& gui = engine_->GetGui();
+  gui.Update();
   DrawRendererStatus();
-  if (IGui::Get<IGui>().GetHud()) {
+  if (gui.GetHud()) {
     ImGui::Begin("Viewport");
     auto image_size = ImGui::GetContentRegionAvail();
 #ifdef __linux__
@@ -177,11 +194,11 @@ void IRenderer::IRender() {
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindVertexArray(0);
   }
-  IGui::Get<IGui>().Render();
+  gui.Render();
   if (window_ != nullptr) {
     glfwSwapBuffers(window_);
   } else {
-    IDebug::Warning("Window is null");
+    engine_->GetDebug().Warning("Window is null");
     state_ = InterfaceState::kError;
   }
 }
@@ -203,21 +220,21 @@ void IRenderer::IQuit() {
 /// Helper Functions etc. ///
 /////////////////////////////
 
-void DrawRendererStatus() {
-  if (IGui::Get<IGui>().GetHud()) {
+void IRenderer::DrawRendererStatus() {
+  if (engine_->GetGui().GetHud()) {
     ImGui::Begin("IRenderer");
     ImGui::Text("Directional light count: %d",
-                static_cast<int>(IRenderer::Get<IRenderer>().GetDirectionalLights().size()));
+                static_cast<int>(directional_lights_.size()));
     ImGui::Text("Point light count: %d",
-                static_cast<int>(IRenderer::Get<IRenderer>().GetPointLights().size()));
+                static_cast<int>(point_lights_.size()));
     ImGui::Text("Spot light count: %d",
-                static_cast<int>(IRenderer::Get<IRenderer>().GetSpotLights().size()));
+                static_cast<int>(spot_lights_.size()));
     ImGui::DragFloat3("Camera Position",
-                      glm::value_ptr(IRenderer::Get<IRenderer>().GetCamera().position_));
+                      glm::value_ptr(camera_.position_));
     ImGui::DragFloat("Camera Field of View", &g_camera_fov);
     ImGui::DragFloat("Camera Speed", &g_camera_speed, 0.01F, 0.01F, 10.0F);
     ImGui::SeparatorText("Screen Shader");
-    ImGui::InputFloat("Render Factor", &IRenderer::Get<IRenderer>().GetSettings().render_factor_,
+    ImGui::InputFloat("Render Factor", &settings_.render_factor_,
                       kGuiDragStep);
     ImGui::Text("Colorbuffer");
     for (unsigned int colorbuffer : g_framebuffer.colorbuffers_) {
@@ -246,7 +263,7 @@ void IRenderer::DrawMesh(const Mesh* mesh, const Shader* shader, const glm::vec3
     return;
   }
   glm::mat4 model = GetTransform(pos, size, rot);
-  glm::mat4 view = glm::translate(glm::mat4(1.0F), -IRenderer::Get<IRenderer>().camera_.position_);
+  glm::mat4 view = glm::translate(glm::mat4(1.0F), -camera_.position_);
   glm::mat4 projection = glm::perspective(
       glm::radians(g_camera_fov),
       (static_cast<float>(g_framebuffer.width_) / static_cast<float>(g_framebuffer.height_)),
@@ -258,24 +275,24 @@ void IRenderer::DrawMesh(const Mesh* mesh, const Shader* shader, const glm::vec3
   shader->SetMat4("model", model);
   shader->SetMat4("view", view);
   shader->SetMat4("projection", projection);
-  shader->SetVec3("viewPos", IRenderer::Get<IRenderer>().camera_.position_);
+  shader->SetVec3("viewPos", camera_.position_);
   shader->SetInt("NUM_DIRECTIONAL_LIGHTS",
-                 static_cast<int>(IRenderer::GetDirectionalLights().size()));
-  for (int i = 0; i < IRenderer::GetDirectionalLights().size(); i++) {
-    if (IRenderer::GetDirectionalLights()[i] != nullptr) {
-      IRenderer::GetDirectionalLights()[i]->SetUniforms(shader, i);
+                 static_cast<int>(directional_lights_.size()));
+  for (int i = 0; i < directional_lights_.size(); i++) {
+    if (directional_lights_[i] != nullptr) {
+      directional_lights_[i]->SetUniforms(shader, i);
     }
   }
-  shader->SetInt("NUM_POINT_LIGHTS", static_cast<int>(IRenderer::GetPointLights().size()));
-  for (int i = 0; i < IRenderer::GetPointLights().size(); i++) {
-    if (IRenderer::GetPointLights()[i] != nullptr) {
-      IRenderer::GetPointLights()[i]->SetUniforms(shader, i);
+  shader->SetInt("NUM_POINT_LIGHTS", static_cast<int>(point_lights_.size()));
+  for (int i = 0; i < point_lights_.size(); i++) {
+    if (point_lights_[i] != nullptr) {
+      point_lights_[i]->SetUniforms(shader, i);
     }
   }
-  shader->SetInt("NUM_SPOT_LIGHTS", static_cast<int>(IRenderer::GetSpotLights().size()));
-  for (int i = 0; i < IRenderer::GetSpotLights().size(); i++) {
-    if (IRenderer::GetSpotLights()[i] != nullptr) {
-      IRenderer::GetSpotLights()[i]->SetUniforms(shader, i);
+  shader->SetInt("NUM_SPOT_LIGHTS", static_cast<int>(spot_lights_.size()));
+  for (int i = 0; i < spot_lights_.size(); i++) {
+    if (spot_lights_[i] != nullptr) {
+      spot_lights_[i]->SetUniforms(shader, i);
     }
   }
 
@@ -308,13 +325,6 @@ void IRenderer::DrawModel(const Model* model, const Shader* shader, const glm::v
   for (const auto& mesh : model->meshes_) {
     DrawMesh(mesh, shader, pos, size, rot);
   }
-}
-
-void FBSizeCallback(GLFWwindow* window, int width, int height) {
-  IRenderer::Get<IRenderer>().GetWidth() = width;
-  IRenderer::Get<IRenderer>().GetHeight() = height;
-  RecreateFramebuffer();
-  glViewport(0, 0, IRenderer::Get<IRenderer>().GetWidth(), IRenderer::Get<IRenderer>().GetHeight());
 }
 
 Framebuffer IRenderer::CreateFramebuffer(const FramebufferCreateInfo& create_info) {
@@ -357,7 +367,7 @@ Framebuffer IRenderer::CreateFramebuffer(const FramebufferCreateInfo& create_inf
     glDrawBuffers(framebuffer.attachments_.size(), framebuffer.attachments_.data());
   }
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    IDebug::Throw("Failed to create framebuffer!");
+    engine_->GetDebug().Throw("Failed to create framebuffer!");
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   return framebuffer;
@@ -415,12 +425,12 @@ RenderDrawMode IRenderer::GetRenderDrawMode() {
   }
 }
 
-void RecreateFramebuffer() {
-  IRenderer::DeleteFramebuffer(g_framebuffer);
-  int framebuffer_width = std::max(1, IRenderer::Get<IRenderer>().GetWidth()) /
-                          IRenderer::Get<IRenderer>().GetSettings().render_factor_;
-  int framebuffer_height = std::max(1, IRenderer::Get<IRenderer>().GetHeight()) /
-                           IRenderer::Get<IRenderer>().GetSettings().render_factor_;
+void IRenderer::RecreateFramebuffer() {
+  DeleteFramebuffer(g_framebuffer);
+  int framebuffer_width = std::max(1, width_) /
+                          settings_.render_factor_;
+  int framebuffer_height = std::max(1, height_) /
+                           settings_.render_factor_;
   FramebufferCreateInfo create_info;
   create_info.num_colorbuffers_ = 2;
   create_info.level_ = 0;
@@ -433,7 +443,7 @@ void RecreateFramebuffer() {
   create_info.same_colorbuffer_attachment_ = false;
   create_info.create_renderbuffer_ = true;
   g_framebuffer = IRenderer::CreateFramebuffer(create_info);
-  g_prev_render_factor = IRenderer::Get<IRenderer>().GetSettings().render_factor_;
+  g_prev_render_factor = settings_.render_factor_;
 }
 
 void IRenderer::AddLight(DirectionalLight* light) {

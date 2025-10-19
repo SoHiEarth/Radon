@@ -22,6 +22,8 @@ protected:
   void IInit() override;
   void IUpdate() override;
   void IQuit() override;
+  void LoadWAV(const char* filename, std::vector<char>& data, ALenum& format,
+    ALsizei& frequency);
 
 public:
   const char* Name() override {

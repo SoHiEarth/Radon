@@ -17,7 +17,8 @@ public:
   void SetVec2(const std::string& /*name*/, const glm::vec2& /*value*/) const;
   void SetVec3(const std::string& /*name*/, const glm::vec3& /*value*/) const;
   void SetMat4(const std::string& /*name*/, const glm::mat4& /*value*/) const;
-  Shader(std::string_view vert, std::string_view frag) : vertex_path_(vert), fragment_path_(frag) {
-    path_ = vertex_path_ + ";" + fragment_path_;
-  };
+  Shader(Engine* engine, std::string_view vert, std::string_view frag) :
+    Asset(engine, (std::string(vert) + ";" + std::string(frag))),
+    vertex_path_(vert),
+    fragment_path_(frag) {};
 };

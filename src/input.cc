@@ -11,12 +11,12 @@ static const std::map<ButtonState, std::string> kButtonStateMap{
     {ButtonState::kPress, "Press"},
     {ButtonState::kRelease, "Release"},
 };
-std::map<Trigger, std::function<void()>> g_event_hooks;
+std::map<Trigger, std::function<void(Engine*)>> g_event_hooks;
 std::map<int, bool> g_prev_frame_key_states;
 
-void IInput::AddHook(const Trigger& key, const std::function<void()>& hook) {
+void IInput::AddHook(const Trigger& key, const std::function<void(Engine*)>& hook) {
   if (glfwGetCurrentContext() == nullptr) {
-    IDebug::Throw("No GLFW context to add input hook");
+    engine_->GetDebug().Throw("No GLFW context to add input hook");
   } else {
     g_event_hooks[key] = hook;
   }
@@ -43,20 +43,20 @@ void IInput::IUpdate() {
     bool is_pressed = (glfwGetKey(glfwGetCurrentContext(), key.first) == GLFW_PRESS);
     bool was_pressed = g_prev_frame_key_states[key.first];
     if (key.second == ButtonState::kPress && is_pressed && !was_pressed) {
-      hook();
+      hook(engine_);
     } else if (key.second == ButtonState::kHold && is_pressed) {
-      hook();
+      hook(engine_);
     } else if (key.second == ButtonState::kRelease && !is_pressed && was_pressed) {
-      hook();
+      hook(engine_);
     }
     g_prev_frame_key_states[key.first] = is_pressed;
   }
 }
 
 void IInput::IQuit() {
-  if (IRenderer::Get<IRenderer>().GetWindow() == nullptr) {
-    IDebug::Throw("No GLFW context to quit input");
+  if (engine_->GetRenderer().GetWindow() == nullptr) {
+    engine_->GetDebug().Throw("No GLFW context to quit input");
   } else {
-    glfwSetInputMode(IRenderer::Get<IRenderer>().GetWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetInputMode(engine_->GetRenderer().GetWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   }
 }

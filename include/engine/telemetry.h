@@ -16,12 +16,12 @@ public:
   const char* Name() override {
     return "Telemetry";
   }
-  static void BeginFrame();
-  static void BeginTimer(const std::string& /*name*/);
-  static void EndTimer(const std::string& /*name*/);
-  static void LogTimer(const std::string& /*name*/);
+  void BeginFrame();
+  void BeginTimer(const std::string& /*name*/);
+  void EndTimer(const std::string& /*name*/);
+  void LogTimer(const std::string& /*name*/);
   void UploadTimings(const std::string& /*name*/, Timing& /*data*/);
   Timing& DownloadTimings(const std::string& /*name*/);
-  static Timing& GetTimings();
-  static Timing& GetLog();
+  Timing& GetTimings();
+  Timing& GetLog();
 };

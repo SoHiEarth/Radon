@@ -20,12 +20,6 @@ public:
   }
 
   static std::vector<Interface*>& All();
-  template <typename T>
-  static T& Get() {
-    static_assert(std::is_base_of_v<Interface, T>, "T must derive from Interface");
-    static T instance;
-    return instance;
-  }
 
   void SetEngineInstance(Engine* engine) {
     engine_ = engine;

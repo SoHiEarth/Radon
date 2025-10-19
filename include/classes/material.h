@@ -11,4 +11,5 @@ public:
   Texture* specular_ = nullptr;
   Shader* shader_ = nullptr;
   float shininess_ = 0;
+  explicit Material(Engine* engine, std::string_view path) : Asset(engine, path) {}
 };

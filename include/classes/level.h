@@ -5,9 +5,6 @@
 
 class Object;
 class Level : public Asset {
-private:
-  Engine* engine_;
-
 public:
   AssetType GetType() const override {
     return AssetType::kAssetTypeLevel;
@@ -19,7 +16,5 @@ public:
   void Quit();
   Object* NewObject(const std::string& /*name*/ = "Object");
   void RemoveObject(const Object* /*object*/);
-  explicit Level(std::string_view path, Engine* engine) : engine_(engine) {
-    path_ = path;
-  }
+  explicit Level(Engine* engine, std::string_view path) : Asset(engine, path) {}
 };

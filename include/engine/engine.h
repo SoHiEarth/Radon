@@ -1,42 +1,77 @@
 #pragma once
 #include <engine/interface.h>
-#include <engine/audio.h>
-#include <engine/debug.h>
-#include <engine/devgui.h>
-#include <engine/input.h>
-#include <engine/io.h>
-#include <engine/localization.h>
-#include <engine/physics.h>
-#include <engine/render.h>
-#include <engine/telemetry.h>
+
+// Forward declarations only in header
+class IAudio;
+class IDebug;
+class IGui;
+class IInput;
+class IIO;
+class ILocalization;
+class IPhysics;
+class IRenderer;
+class ITelemetry;
+class IAssetManager;
 
 class Engine {
+private:
+  // Engine OWNS the interfaces - no singletons!
+  IAudio* audio_ = nullptr;
+  IDebug* debug_ = nullptr;
+  IGui* gui_ = nullptr;
+  IInput* input_ = nullptr;
+  IIO* io_ = nullptr;
+  ILocalization* localization_ = nullptr;
+  IPhysics* physics_ = nullptr;
+  IRenderer* renderer_ = nullptr;
+  ITelemetry* telemetry_ = nullptr;
+  IAssetManager* asset_manager_ = nullptr;
+
 public:
-  IAudio& GetAudio() {
-    return Interface::Get<IAudio>();
+  Engine();
+  ~Engine();
+
+  // Delete copy/move to prevent multiple engines
+  Engine(const Engine&) = delete;
+  Engine& operator=(const Engine&) = delete;
+  Engine(Engine&&) = delete;
+  Engine& operator=(Engine&&) = delete;
+
+  // Lifecycle
+  void Init();
+  void Update();
+  void Render();
+  void Quit();
+
+  // Accessors - return references to owned instances
+  IAudio& GetAudio() const {
+    return *audio_;
   }
-  IDebug& GetDebug() {
-    return Interface::Get<IDebug>();
+  IDebug& GetDebug() const {
+    return *debug_;
   }
-  IGui& GetGui() {
-    return Interface::Get<IGui>();
+  IGui& GetGui() const {
+    return *gui_;
   }
-  IInput& GetInput() {
-    return Interface::Get<IInput>();
+  IInput& GetInput() const {
+    return *input_;
   }
-  IIO& GetIO() {
-    return Interface::Get<IIO>();
+  IIO& GetIO() const {
+    return *io_;
   }
-  ILocalization& GetLocalization() {
-    return Interface::Get<ILocalization>();
+  ILocalization& GetLocalization() const {
+    return *localization_;
   }
-  IPhysics& GetPhysics() {
-    return Interface::Get<IPhysics>();
+  IPhysics& GetPhysics() const {
+    return *physics_;
   }
-  IRenderer& GetRenderer() {
-    return Interface::Get<IRenderer>();
+  IRenderer& GetRenderer() const {
+    return *renderer_;
   }
-  ITelemetry& GetTelemetry() {
-    return Interface::Get<ITelemetry>();
+  ITelemetry& GetTelemetry() const {
+    return *telemetry_;
+  }
+  IAssetManager& GetAssetManager() const {
+    return *asset_manager_;
   }
 };

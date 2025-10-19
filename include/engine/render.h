@@ -75,9 +75,10 @@ public:
 
   void DrawModel(const Model* /*model*/, const Shader* /*shader*/, const glm::vec3& /*pos*/,
                  const glm::vec2& /*size*/, const glm::vec3& /*rot*/);
-
-  static Framebuffer CreateFramebuffer(const FramebufferCreateInfo& /*create_info*/);
-  static void DeleteFramebuffer(Framebuffer& /*framebuffer*/);
+  void DrawRendererStatus();
+  Framebuffer CreateFramebuffer(const FramebufferCreateInfo& /*create_info*/);
+  void DeleteFramebuffer(Framebuffer& /*framebuffer*/);
+  void RecreateFramebuffer();
   GLFWwindow* GetWindow() {
     return window_;
   }

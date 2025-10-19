@@ -9,7 +9,5 @@ public:
   unsigned int id_ = 0;
   int width_ = 0, height_ = 0, channels_ = 0;
   const char* name_ = "";
-  explicit Texture(std::string_view path) {
-    path_ = path;
-  }
+  explicit Texture(Engine* engine, std::string_view path) : Asset(engine, path) {}
 };

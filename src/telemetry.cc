@@ -15,7 +15,7 @@ void ITelemetry::IQuit() {
 }
 
 void ITelemetry::BeginFrame() {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
+  if (GetState() != InterfaceState::kInitialized) {
     return;
   }
   g_start_points.clear();
@@ -23,18 +23,18 @@ void ITelemetry::BeginFrame() {
 }
 
 void ITelemetry::BeginTimer(const std::string& name) {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
+  if (GetState() != InterfaceState::kInitialized) {
     return;
   }
   if (!g_start_points.contains(name)) {
     g_start_points.insert({name, std::chrono::high_resolution_clock::now()});
   } else {
-    IDebug::Warning(std::format("Timer with name '{}' already exists!", name));
+    engine_->GetDebug().Warning(std::format("Timer with name '{}' already exists!", name));
   }
 }
 
 void ITelemetry::EndTimer(const std::string& name) {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
+  if (GetState() != InterfaceState::kInitialized) {
     return;
   }
   if (g_start_points.contains(name)) {
@@ -44,23 +44,24 @@ void ITelemetry::EndTimer(const std::string& name) {
     g_durations.insert({name, duration});
     g_start_points.erase(name);
   } else {
-    IDebug::Warning(std::format("Timer with name '{}' does not exist!", name));
+    engine_->GetDebug().Warning(std::format("Timer with name '{}' does not exist!", name));
   }
 }
 
 void ITelemetry::LogTimer(const std::string& name) {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
+  if (GetState() != InterfaceState::kInitialized) {
     return;
   }
   if (g_durations.contains(name)) {
     g_duration_log[name] = g_durations[name];
   } else {
-    IDebug::Warning(std::format("No duration recorded for timer with name '{}'!", name));
+    engine_->GetDebug().Warning(
+        std::format("No duration recorded for timer with name '{}'!", name));
   }
 }
 
 void ITelemetry::UploadTimings(const std::string& name, Timing& data) {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
+  if (GetState() != InterfaceState::kInitialized) {
     return;
   }
   g_uploaded_timings_[name] = std::move(data);
@@ -68,25 +69,25 @@ void ITelemetry::UploadTimings(const std::string& name, Timing& data) {
 
 std::map<std::string, std::chrono::milliseconds>& ITelemetry::DownloadTimings(
     const std::string& name) {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
+  if (GetState() != InterfaceState::kInitialized) {
     return g_empty;
   }
   if (g_uploaded_timings_.contains(name)) {
     return g_uploaded_timings_[name];
   }
-  IDebug::Throw(std::format("No uploaded timings found with name '{}'!", name));
+  engine_->GetDebug().Throw(std::format("No uploaded timings found with name '{}'!", name));
   return g_empty;
 }
 
 std::map<std::string, std::chrono::milliseconds>& ITelemetry::GetTimings() {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
+  if (GetState() != InterfaceState::kInitialized) {
     return g_empty;
   }
   return g_durations;
 }
 
 std::map<std::string, std::chrono::milliseconds>& ITelemetry::GetLog() {
-  if (Interface::Get<ITelemetry>().GetState() != InterfaceState::kInitialized) {
+  if (GetState() != InterfaceState::kInitialized) {
     return g_empty;
   }
   return g_duration_log;

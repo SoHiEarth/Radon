@@ -66,7 +66,7 @@ void Object::AddComponent(Component* component) {
   for (const auto& existing_component : components_) {
     if (existing_component != nullptr &&
         existing_component->GetTypeName() == component->GetTypeName()) {
-      IDebug::Throw(
+      engine_->GetDebug().Throw(
           std::format("Object already has a component of type {}.", component->GetTypeName()));
     }
   }

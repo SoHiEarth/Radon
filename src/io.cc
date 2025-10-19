@@ -52,6 +52,7 @@ bool IIO::CheckFile(std::string_view path) {
 }
 
 void IIO::IInit() {
+  auto& debug = engine_->GetDebug();
   if (!CheckFile("engine_assets")) {
     tinyfd_messageBox("Engine Directory Not Found",
                       "Please select the engine directory to continue.", "ok", "info", 1);
@@ -73,11 +74,13 @@ void IIO::IInit() {
         }
       }
     } else {
-      IDebug::Throw("Engine directory selection cancelled, application cannot continue.");
+      debug.Throw(
+          "Engine directory selection cancelled, application cannot continue.");
     }
   } else {
-    IIO::g_engine_directory_ = "engine_assets";
+    g_engine_directory_ = "engine_assets";
   }
+  debug.Log(std::format("Engine directory set to {}", g_engine_directory_));
 }
 
 void IIO::IQuit() {
@@ -97,24 +100,25 @@ void IIO::IQuit() {
 ///  Level IO functions ///
 ///////////////////////////
 
-Level* IIO::LoadLevel(std::string_view path, Engine* engine) {
+Level* IIO::LoadLevel(std::string_view path) {
+  auto& debug = engine_->GetDebug();
   if (!CheckFile(path)) {
-    IDebug::Throw(std::format("Requested file does not exist. {}", path));
+    debug.Throw(std::format("Requested file does not exist. {}", path));
   }
   pugi::xml_document doc;
   pugi::xml_parse_result result = doc.load_file(path.data());
   if (!result) {
-    IDebug::Throw(std::format("Failed to load level file. {}, {}", path, result.description()));
+    debug.Throw(std::format("Failed to load level file. {}, {}", path, result.description()));
   }
 
   pugi::xml_node root = doc.child("level");
   if (!root) {
-    IDebug::Throw(std::format("Requested file {} is not a valid level file", path));
+    debug.Throw(std::format("Requested file {} is not a valid level file", path));
   }
 
-  auto* level = new Level(path.data(), engine);
+  auto* level = new Level(engine_, path);
   for (pugi::xml_node object_node : root.children("object")) {
-    level->objects_.push_back(IIO::LoadObject(object_node, engine));
+    level->objects_.push_back(LoadObject(object_node));
   }
   glfwSetWindowTitle(glfwGetCurrentContext(), std::format("Radon Engine - {}", path).c_str());
   level->Init();
@@ -130,7 +134,7 @@ void IIO::SaveLevel(const Level* level, std::string_view path) {
   }
   bool save_result = doc.save_file(path.data());
   if (!save_result) {
-    IDebug::Throw(std::format("Failed to save level file. {}", path));
+    engine_->GetDebug().Throw(std::format("Failed to save level file. {}", path));
   }
 }
 
@@ -138,15 +142,15 @@ void IIO::SaveLevel(const Level* level, std::string_view path) {
 ///  Object IO functions ///
 ////////////////////////////
 
-Object* IIO::LoadObject(pugi::xml_node& base_node, Engine* engine) {
-  auto* object = new Object(engine);
+Object* IIO::LoadObject(pugi::xml_node& base_node) {
+  auto* object = new Object(engine_);
 
   // Transform is required, so read it first
   auto transform_node = base_node.child("transform");
   if (transform_node != nullptr) {
     object->transform_.Load(transform_node);
   } else {
-    IDebug::Warning("Object is missing required Transform component, reverting to default values.");
+    engine_->GetDebug().Warning("Object is missing required Transform component, reverting to default values.");
   }
 
   for (auto& component_node : base_node.children("componentheader")) {
@@ -156,11 +160,11 @@ Object* IIO::LoadObject(pugi::xml_node& base_node, Engine* engine) {
       if (component != nullptr) {
         object->AddComponent(component);
       } else {
-        IDebug::Warning(
+        engine_->GetDebug().Warning(
             std::format("Failed to create component of type {}, skipping", component_type));
       }
     } else {
-      IDebug::Warning(
+      engine_->GetDebug().Warning(
           std::format("Component type {} not found in factory, skipping", component_type));
     }
   }
@@ -187,13 +191,10 @@ void IIO::SaveObject(Object*& object, pugi::xml_node& base_node) {
 /// Shader IO functions ///
 ///////////////////////////
 
-std::string ReadFile(std::string_view path);
-unsigned int CompileShader(std::string_view code, int type);
-
 Shader* IIO::LoadShader(std::string_view vertex_path, std::string_view fragment_path) {
+  auto& debug = engine_->GetDebug();
   if (!CheckFile(vertex_path) || !CheckFile(fragment_path)) {
-    IDebug::Throw(
-        std::format("Requested shader file does not exist. {}, {}", vertex_path, fragment_path));
+    debug.Throw(std::format("Requested shader file does not exist. {}, {}", vertex_path, fragment_path));
   }
 
   unsigned int vertex = 0;
@@ -202,7 +203,7 @@ Shader* IIO::LoadShader(std::string_view vertex_path, std::string_view fragment_
     vertex = CompileShader(ReadFile(vertex_path), GL_VERTEX_SHADER);
     fragment = CompileShader(ReadFile(fragment_path), GL_FRAGMENT_SHADER);
   } catch (std::runtime_error& e) {
-    IDebug::Throw(std::format("Failed to load shader. {}", e.what()));
+    debug.Throw(std::format("Failed to load shader. {}", e.what()));
     return nullptr;
   }
   unsigned int program = glCreateProgram();
@@ -214,12 +215,12 @@ Shader* IIO::LoadShader(std::string_view vertex_path, std::string_view fragment_
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if (success == 0) {
     glGetProgramInfoLog(program, kLogSize, nullptr, log.data());
-    IDebug::Throw(std::format("Shader program link failed. {}", log.data()));
+    debug.Throw(std::format("Shader program link failed. {}", log.data()));
     return nullptr;
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);
-  auto* shader = new Shader(vertex_path.data(), fragment_path.data());
+  auto* shader = new Shader(engine_, vertex_path, fragment_path);
   shader->id_ = program;
   return shader;
 }
@@ -237,7 +238,7 @@ Material* IIO::LoadMaterial(std::string_view diffuse, std::string_view specular,
     diffuse_texture = IIO::LoadTexture(diffuse);
     specular_texture = IIO::LoadTexture(specular);
   } catch (std::runtime_error& e) {
-    IDebug::Warning(std::format("Material load failed. {}", e.what()));
+    engine_->GetDebug().Warning(std::format("Material load failed. {}", e.what()));
     diffuse_texture = nullptr;
     specular_texture = nullptr;
   }
@@ -247,17 +248,18 @@ Material* IIO::LoadMaterial(std::string_view diffuse, std::string_view specular,
     shader ->SetInt("material.diffuse", 0);
     shader ->SetInt("material.specular", 1);
   } catch (std::runtime_error& e) {
-    IDebug::Warning(std::format("Material load failed. {}", e.what()));
+    engine_->GetDebug().Warning(std::format("Material load failed. {}", e.what()));
     delete shader;
     shader = nullptr;
   }
   if (diffuse_texture == nullptr &&
       specular_texture == nullptr &&
       shader == nullptr) {
-    IDebug::Throw("Material load failed, no valid textures or shader.");
+    engine_->GetDebug().Throw("Material load failed, no valid textures or shader.");
     return nullptr;
   }
-  auto* material = new Material();
+  auto path = std::format("{};{};{};{}", diffuse, specular, vertex, fragment);
+  auto* material = new Material(engine_, path);
   material->SetPath(std::string(diffuse) + ";" + std::string(specular) + ";" + std::string(vertex) +
                     ";" + std::string(fragment));
   material->shininess_ = shininess;
@@ -312,14 +314,14 @@ inline pugi::xml_node GetOrCreateNode(pugi::xml_node& base_node, std::string_vie
 /// Helper IO functions ///
 ///////////////////////////
 
-std::string ValidateName(std::string input) {
+std::string IIO::ValidateName(std::string input) {
   std::ranges::replace(input.begin(), input.end(), ' ', '_');
   return input;
 }
 
-std::string ReadFile(std::string_view path) {
+std::string IIO::ReadFile(std::string_view path) {
   if (!std::filesystem::exists(path)) {
-    IDebug::Throw(std::format("Requested file does not exist. {}", path));
+    engine_->GetDebug().Throw(std::format("Requested file does not exist. {}", path));
   }
   std::ifstream file;
   file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -330,14 +332,14 @@ std::string ReadFile(std::string_view path) {
     file.close();
     return stream.str();
   } catch (std::ifstream::failure e) {
-    IDebug::Throw(std::format("File IO failure. {}, {}", path, e.what()));
+    engine_->GetDebug().Throw(std::format("File IO failure. {}, {}", path, e.what()));
   }
   return "";
 }
 
-[[nodiscard("Shader Discarded")]] unsigned int CompileShader(std::string_view code, int type) {
+[[nodiscard("Shader Discarded")]] unsigned int IIO::CompileShader(std::string_view code, int type) {
   if (code.empty()) {
-    IDebug::Throw("Got empty code.");
+    engine_->GetDebug().Throw("Got empty code.");
   }
   const char* code_data = code.data();
   unsigned int shader;
@@ -349,7 +351,7 @@ std::string ReadFile(std::string_view path) {
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (success == 0) {
     glGetShaderInfoLog(shader, kLogSize, nullptr, log.data());
-    IDebug::Throw(std::format("Shader compilation failed. {}", log.data()));
+    engine_->GetDebug().Throw(std::format("Shader compilation failed. {}", log.data()));
   }
   return shader;
 }
