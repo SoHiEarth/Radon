@@ -8,10 +8,12 @@
 #include <engine/localization.h>
 #include <engine/physics.h>
 #include <engine/render.h>
+#include <engine/job_system.h>
 #include <engine/telemetry.h>
 #include <classes/level.h>
 
 constexpr const char* kTimerInitName = "Engine Init";
+constexpr const char* kJobSystemInitName = "Job System Init";
 constexpr const char* kTimerIoInitName = "IO Init";
 constexpr const char* kTimerAssetManagerInitName = "Asset Manager Init";
 constexpr const char* kTimerRenderInitName = "Render Init";
@@ -34,6 +36,7 @@ constexpr const char* kTimerAudioUpdateName = "Audio Update";
   telemetry_->LogTimer(NAME);
 
 Engine::Engine() {
+  job_system_ = new IJobSystem();
   debug_ = new IDebug();
   telemetry_ = new ITelemetry();
   asset_manager_ = new IAssetManager();
@@ -44,7 +47,8 @@ Engine::Engine() {
   physics_ = new IPhysics();
   renderer_ = new IRenderer();
   gui_ = new IGui();
-
+  
+  job_system_->SetEngineInstance(this);
   debug_->SetEngineInstance(this);
   telemetry_->SetEngineInstance(this);
   asset_manager_->SetEngineInstance(this);
@@ -68,11 +72,13 @@ Engine::~Engine() {
   delete asset_manager_;
   delete telemetry_;
   delete debug_;
+  delete job_system_;
 }
 
 void Engine::Init() {
   telemetry_->Start();
   telemetry_->BeginTimer(kTimerInitName);
+  TIME(job_system_->Start(), kJobSystemInitName);
   TIME(io_->Start(), kTimerIoInitName);
   TIME(asset_manager_->Start(), kTimerAssetManagerInitName);
   TIME(renderer_->Start(), kTimerRenderInitName);
@@ -118,4 +124,5 @@ void Engine::Quit() {
   asset_manager_->Stop();
   io_->Stop();
   telemetry_->Stop();
+  job_system_->Stop();
 }

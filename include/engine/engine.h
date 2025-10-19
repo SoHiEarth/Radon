@@ -12,6 +12,7 @@ class IPhysics;
 class IRenderer;
 class ITelemetry;
 class IAssetManager;
+class IJobSystem;
 
 class Engine {
 private:
@@ -26,6 +27,7 @@ private:
   IRenderer* renderer_ = nullptr;
   ITelemetry* telemetry_ = nullptr;
   IAssetManager* asset_manager_ = nullptr;
+  IJobSystem* job_system_ = nullptr;
 
 public:
   Engine();
@@ -73,5 +75,8 @@ public:
   }
   IAssetManager& GetAssetManager() const {
     return *asset_manager_;
+  }
+  IJobSystem& GetJobSystem() const {
+    return *job_system_;
   }
 };
