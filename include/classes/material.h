@@ -7,9 +7,9 @@ public:
   AssetType GetType() const override {
     return AssetType::kAssetTypeMaterial;
   }
-  Texture* diffuse_ = nullptr;
-  Texture* specular_ = nullptr;
-  Shader* shader_ = nullptr;
+  std::shared_ptr<Texture> diffuse_ = nullptr;
+  std::shared_ptr<Texture> specular_ = nullptr;
+  std::shared_ptr<Shader> shader_ = nullptr;
   float shininess_ = 0;
   explicit Material(Engine* engine, std::string_view path) : Asset(engine, path) {}
 };

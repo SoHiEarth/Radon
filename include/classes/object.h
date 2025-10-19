@@ -4,11 +4,12 @@
 #include <memory>
 #include <pugixml.hpp>
 #include <vector>
+#include <memory>
 
 class Component;
 class Object {
 private:
-  std::vector<Component*> components_;
+  std::vector<std::unique_ptr<Component>> components_;
   Engine* engine_;
 
 public:
@@ -23,7 +24,7 @@ public:
   void Quit();
   void Load(pugi::xml_node& /*node*/);
   void Save(pugi::xml_node& /*node*/) const;
-  void AddComponent(Component* /*component*/);
+  void AddComponent(std::unique_ptr<Component>& /*component*/);
   template <typename T>
   T*& GetComponent() {
     for (auto& component : components_) {
@@ -33,8 +34,8 @@ public:
     }
     return {};
   }
-  void RemoveComponent(Component* /*component*/);
-  [[nodiscard]] const std::vector<Component*>& GetAllComponents() const {
+  void RemoveComponent(const std::unique_ptr<Component>& /*component*/);
+  [[nodiscard]] const std::vector<std::unique_ptr<Component>>& GetAllComponents() const {
     return components_;
   }
   explicit Object(Engine* engine) : engine_(engine) {

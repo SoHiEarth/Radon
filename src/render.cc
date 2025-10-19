@@ -37,8 +37,8 @@ float g_camera_fov = kDefaultCameraFov;
 unsigned int g_vao, g_vbo;
 Framebuffer g_framebuffer;
 unsigned int g_screen_vao, g_screen_vbo;
-Shader* g_screen_shader = nullptr;
-Shader* g_screen_shader_blur = nullptr;
+std::shared_ptr<Shader> g_screen_shader = nullptr;
+std::shared_ptr<Shader> g_screen_shader_blur = nullptr;
 float g_prev_render_factor = 1.0F;
 ImVec2 g_last_viewport_size = ImVec2(0.0F, 0.0F);
 const std::array<float, 32> kGVertices = {-0.5F, 0.5F,  0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 1.0F,
@@ -204,7 +204,7 @@ void IRenderer::IRender() {
 }
 
 void IRenderer::IQuit() {
-  delete g_screen_shader;
+  g_screen_shader.reset();
   g_screen_shader = nullptr;
   glDeleteVertexArrays(1, &g_vao);
   glDeleteBuffers(1, &g_vbo);
@@ -323,7 +323,7 @@ void IRenderer::DrawModel(const Model* model, const Shader* shader, const glm::v
     return;
   }
   for (const auto& mesh : model->meshes_) {
-    DrawMesh(mesh, shader, pos, size, rot);
+    DrawMesh(mesh.get(), shader, pos, size, rot);
   }
 }
 

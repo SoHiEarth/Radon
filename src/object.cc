@@ -59,7 +59,7 @@ void Object::Save(pugi::xml_node& node) const {
   }
 }
 
-void Object::AddComponent(Component* component) {
+void Object::AddComponent(std::unique_ptr<Component>& component) {
   if (component == nullptr) {
     return;
   }
@@ -78,7 +78,7 @@ void Object::AddComponent(Component* component) {
   }
 }
 
-void Object::RemoveComponent(Component* component) {
+void Object::RemoveComponent(const std::unique_ptr<Component>& component) {
   components_.erase(std::remove(components_.begin(), components_.end(), component),
                     components_.end());
 }

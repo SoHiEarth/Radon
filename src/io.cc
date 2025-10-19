@@ -33,20 +33,19 @@ constexpr const char* kMaterialVertexKeyName = "vs";
 constexpr const char* kMaterialFragmentKeyName = "fs";
 constexpr const char* kMaterialShininessKeyName = "shininess";
 constexpr float kMaterialShininessDefaultValue = 32.0F;
-#define OBJECT_FACTORY_KEY(Object)  \
-  {                                 \
-    #Object, {                      \
-      []() { return new Object(); } \
-    }                               \
+#define OBJECT_FACTORY_KEY(name)                \
+  {                                             \
+    #name, {                                    \
+      []() { return std::make_unique<name>(); } \
+    }                                           \
   }
 
 enum : std::uint16_t { kLogSize = 512 };
-std::unordered_map<std::string_view, std::function<Component*()>> IIO::g_component_factory_ = {
+std::unordered_map<std::string_view, std::function<std::unique_ptr<Component>()>> IIO::g_component_factory_ = {
     OBJECT_FACTORY_KEY(Transform),        OBJECT_FACTORY_KEY(ModelRenderer),
     OBJECT_FACTORY_KEY(AudioSource),      OBJECT_FACTORY_KEY(PhysicsObject),
     OBJECT_FACTORY_KEY(DirectionalLight), OBJECT_FACTORY_KEY(PointLight),
     OBJECT_FACTORY_KEY(SpotLight)};
-std::string ValidateName(std::string input);
 bool IIO::CheckFile(std::string_view path) {
   return std::filesystem::exists(path);
 }
@@ -86,12 +85,11 @@ void IIO::IInit() {
 void IIO::IQuit() {
   if (g_level_ != nullptr) {
     g_level_->Quit();
-    delete g_level_;
-    g_level_ = nullptr;
+    g_level_.reset();
   }
   for (auto& [key, texture] : g_loaded_textures_) {
     glDeleteTextures(1, &texture->id_);
-    delete texture;
+    texture.reset();
   }
   g_loaded_textures_.clear();
 }
@@ -100,7 +98,7 @@ void IIO::IQuit() {
 ///  Level IO functions ///
 ///////////////////////////
 
-Level* IIO::LoadLevel(std::string_view path) {
+std::shared_ptr<Level> IIO::LoadLevel(std::string_view path) {
   auto& debug = engine_->GetDebug();
   if (!CheckFile(path)) {
     debug.Throw(std::format("Requested file does not exist. {}", path));
@@ -115,20 +113,20 @@ Level* IIO::LoadLevel(std::string_view path) {
   if (!root) {
     debug.Throw(std::format("Requested file {} is not a valid level file", path));
   }
-
-  auto* level = new Level(engine_, path);
+  auto level = std::make_shared<Level>(engine_, path);
+  engine_->GetAssetManager().AddAsset(level);
   for (pugi::xml_node object_node : root.children("object")) {
-    level->objects_.push_back(LoadObject(object_node));
+    level->objects_.emplace_back(LoadObject(object_node));
   }
   glfwSetWindowTitle(glfwGetCurrentContext(), std::format("Radon Engine - {}", path).c_str());
   level->Init();
   return level;
 }
 
-void IIO::SaveLevel(const Level* level, std::string_view path) {
+void IIO::SaveLevel(const std::shared_ptr<Level> level, std::string_view path) {
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child("level");
-  for (Object* object : level->objects_) {
+  for (auto& object : level->objects_) {
     auto child = root.append_child("object");
     IIO::SaveObject(object, child);
   }
@@ -142,9 +140,8 @@ void IIO::SaveLevel(const Level* level, std::string_view path) {
 ///  Object IO functions ///
 ////////////////////////////
 
-Object* IIO::LoadObject(pugi::xml_node& base_node) {
-  auto* object = new Object(engine_);
-
+std::unique_ptr<Object> IIO::LoadObject(pugi::xml_node& base_node) {
+  auto object = std::make_unique<Object>(engine_);
   // Transform is required, so read it first
   auto transform_node = base_node.child("transform");
   if (transform_node != nullptr) {
@@ -154,9 +151,9 @@ Object* IIO::LoadObject(pugi::xml_node& base_node) {
   }
 
   for (auto& component_node : base_node.children("componentheader")) {
-    std::string component_type = component_node.attribute("type").as_string();
+    auto component_type = component_node.attribute("type").as_string();
     if (g_component_factory_.contains(component_type)) {
-      Component* component = g_component_factory_[component_type]();
+      auto component = g_component_factory_[component_type]();
       if (component != nullptr) {
         object->AddComponent(component);
       } else {
@@ -173,7 +170,7 @@ Object* IIO::LoadObject(pugi::xml_node& base_node) {
   return object;
 }
 
-void IIO::SaveObject(Object*& object, pugi::xml_node& base_node) {
+void IIO::SaveObject(const std::unique_ptr<Object>& object, pugi::xml_node& base_node) {
   // Write transform
   auto transform_node = base_node.append_child("transform");
   object->transform_.Save(transform_node);
@@ -191,7 +188,7 @@ void IIO::SaveObject(Object*& object, pugi::xml_node& base_node) {
 /// Shader IO functions ///
 ///////////////////////////
 
-Shader* IIO::LoadShader(std::string_view vertex_path, std::string_view fragment_path) {
+std::shared_ptr<Shader> IIO::LoadShader(std::string_view vertex_path, std::string_view fragment_path) {
   auto& debug = engine_->GetDebug();
   if (!CheckFile(vertex_path) || !CheckFile(fragment_path)) {
     debug.Throw(std::format("Requested shader file does not exist. {}, {}", vertex_path, fragment_path));
@@ -220,7 +217,8 @@ Shader* IIO::LoadShader(std::string_view vertex_path, std::string_view fragment_
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);
-  auto* shader = new Shader(engine_, vertex_path, fragment_path);
+  auto shader = std::make_shared<Shader>(engine_, vertex_path, fragment_path);
+  engine_->GetAssetManager().AddAsset(shader);
   shader->id_ = program;
   return shader;
 }
@@ -231,9 +229,9 @@ Shader* IIO::LoadShader(std::string_view vertex_path, std::string_view fragment_
 
 Material* IIO::LoadMaterial(std::string_view diffuse, std::string_view specular,
                             std::string_view vertex, std::string_view fragment, float shininess) {
-  Texture* diffuse_texture = nullptr;
-  Texture* specular_texture = nullptr;
-  Shader* shader = nullptr;
+  std::shared_ptr<Texture> diffuse_texture = nullptr;
+  std::shared_ptr<Texture> specular_texture = nullptr;
+  std::shared_ptr<Shader> shader = nullptr;
   try {
     diffuse_texture = IIO::LoadTexture(diffuse);
     specular_texture = IIO::LoadTexture(specular);
@@ -249,8 +247,6 @@ Material* IIO::LoadMaterial(std::string_view diffuse, std::string_view specular,
     shader ->SetInt("material.specular", 1);
   } catch (std::runtime_error& e) {
     engine_->GetDebug().Warning(std::format("Material load failed. {}", e.what()));
-    delete shader;
-    shader = nullptr;
   }
   if (diffuse_texture == nullptr &&
       specular_texture == nullptr &&
@@ -301,6 +297,7 @@ void IIO::SaveMaterial(const Material* material, pugi::xml_node& base_node) {
 /// Serialized IO functions ///
 ///////////////////////////////
 
+std::string ValidateName(std::string input);
 inline pugi::xml_node GetOrCreateNode(pugi::xml_node& base_node, std::string_view name) {
   auto val_name = ValidateName(name.data());
   pugi::xml_node node = base_node.child(val_name);
@@ -314,7 +311,7 @@ inline pugi::xml_node GetOrCreateNode(pugi::xml_node& base_node, std::string_vie
 /// Helper IO functions ///
 ///////////////////////////
 
-std::string IIO::ValidateName(std::string input) {
+std::string ValidateName(std::string input) {
   std::ranges::replace(input.begin(), input.end(), ' ', '_');
   return input;
 }

@@ -62,6 +62,25 @@ void Level::RemoveObject(const Object* object) {
     return;
   }
 
+  auto it = std::ranges::find_if(objects_.begin(), objects_.end(),
+                                 [object](const std::unique_ptr<Object>& obj) {
+                                   return obj.get() == object;  // Compare raw pointers
+                                 });
+
+  if (it != objects_.end()) {
+    if (!(*it)->has_quit_ && (*it)->has_initialized_) {
+      (*it)->Quit();
+      (*it)->has_quit_ = true;
+    }
+    objects_.erase(it);
+  }
+}
+
+void Level::RemoveObject(const std::unique_ptr<Object>& object) {
+  if (object == nullptr) {
+    return;
+  }
+
   auto it = std::ranges::find(objects_.begin(), objects_.end(), object);
   if (it != objects_.end()) {
     if (!(*it)->has_quit_ && (*it)->has_initialized_) {

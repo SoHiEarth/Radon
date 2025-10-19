@@ -13,21 +13,20 @@
 /// Texture IO functions ///
 ////////////////////////////
 
-Texture* IIO::LoadTexture(std::string_view path) {
+std::shared_ptr<Texture> IIO::LoadTexture(std::string_view path) {
   for (const auto& [key, value] : g_loaded_textures_) {
     if (key == path) {
       return value;
     }
   }
 
-  auto* texture = new Texture(engine_, path);
+  auto texture = std::make_shared<Texture>(engine_, path);
+  engine_->GetAssetManager().AddAsset(texture);
   glGenTextures(1, &texture->id_);
   stbi_set_flip_vertically_on_load(1);
   unsigned char* data =
       stbi_load(path.data(), &texture->width_, &texture->height_, &texture->channels_, 0);
   if (data == nullptr) {
-    delete texture;
-    texture = nullptr;
     engine_->GetDebug().Throw(std::format("Failed to load texture. Details: {}", path));
   }
   GLenum format = GL_RGB;

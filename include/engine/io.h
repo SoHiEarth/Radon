@@ -19,10 +19,10 @@ class Engine;
 
 class IIO : public Interface {
 private:
-  Level* g_level_ = nullptr;
+  std::shared_ptr<Level> g_level_ = nullptr;
   std::string g_engine_directory_;
-  std::map<std::string, Texture*> g_loaded_textures_;
-  static std::unordered_map<std::string_view, std::function<Component* ()>> g_component_factory_;
+  std::map<std::string, std::shared_ptr<Texture>> g_loaded_textures_;
+  static std::unordered_map<std::string_view, std::function<std::unique_ptr<Component>()>> g_component_factory_;
   static bool CheckFile(std::string_view path);
 
 protected:
@@ -33,30 +33,30 @@ public:
   const char* Name() override {
     return "IO";
   }
-  Level*& GetLevel() {
+  std::shared_ptr<Level>& GetLevel() {
     return g_level_;
   }
-  void SetLevel(Level* level) {
+  void SetLevel(std::shared_ptr<Level> level) {
     g_level_ = level;
   }
   [[nodiscard]] std::string GetEngineDirectory() const {
     return g_engine_directory_;
   }
-  std::map<std::string, Texture*>& GetLoadedTextures() {
+  std::map<std::string, std::shared_ptr<Texture>>& GetLoadedTextures() {
     return g_loaded_textures_;
   }
-  static std::unordered_map<std::string_view, std::function<Component* ()>>& GetComponentFactory() {
+  static std::unordered_map<std::string_view, std::function<std::unique_ptr<Component>()>>& GetComponentFactory() {
     return g_component_factory_;
   }
 
-  Shader* LoadShader(std::string_view /*vertex_path*/, std::string_view /*fragment_path*/);
-  Texture* LoadTexture(std::string_view /*path*/);
+  std::shared_ptr<Shader> LoadShader(std::string_view /*vertex_path*/, std::string_view /*fragment_path*/);
+  std::shared_ptr<Texture> LoadTexture(std::string_view /*path*/);
   Model* LoadModel(std::string_view /*path*/);
   Material* LoadMaterial(std::string_view /*diffuse*/, std::string_view /*specular*/,
     std::string_view /*vertex*/, std::string_view /*fragment*/,
     float /*shininess*/);
-  Level* LoadLevel(std::string_view /*path*/);
-  Object* LoadObject(pugi::xml_node& /*base_node*/);
+  std::shared_ptr<Level> LoadLevel(std::string_view /*path*/);
+  std::unique_ptr<Object> LoadObject(pugi::xml_node& /*base_node*/);
   Material* LoadMaterial(pugi::xml_node& /*node*/);
   Model* LoadModel(pugi::xml_node& /*base_node*/);
 
@@ -114,11 +114,10 @@ public:
     }
   }
 
-  void SaveLevel(const Level* /*level*/, std::string_view /*path*/);
-  void SaveObject(Object*& /*object*/, pugi::xml_node& /*base_node*/);
+  void SaveLevel(const std::shared_ptr<Level> /*level*/, std::string_view /*path*/);
+  void SaveObject(const std::unique_ptr<Object>& /*object*/, pugi::xml_node& /*base_node*/);
   void SaveModel(const Model* /*model*/, pugi::xml_node& /*base_node*/);
   void SaveMaterial(const Material* /*material*/, pugi::xml_node& /*base_node*/);
-  std::string ValidateName(std::string input);
   std::string ReadFile(std::string_view path);
   unsigned int CompileShader(std::string_view code, int type);
 };

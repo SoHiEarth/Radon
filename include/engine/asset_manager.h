@@ -21,22 +21,25 @@ enum AssetType : std::uint8_t {
 class Asset;
 class IAssetManager : public Interface {
 private:
-  std::vector<Asset*> assets_;
+  std::vector<std::shared_ptr<Asset>> assets_;
 
 public:
   const char* Name() override {
     return "AssetManager";
   }
 
-  void AddAsset(Asset* asset) {
-    assets_.push_back(asset);
+  void AddAsset(std::shared_ptr<Asset> asset) {
+    assets_.emplace_back(asset);
   }
 
-  void RemoveAsset(Asset* asset) {
-    assets_.erase(std::remove(assets_.begin(), assets_.end(), asset), assets_.end());
+  void RemoveAsset(const Asset* asset) {
+    assets_.erase(
+      std::remove_if(assets_.begin(), assets_.end(),
+        [asset](const std::shared_ptr<Asset>& a) { return a.get() == asset; }),
+      assets_.end());
   }
 
-  const std::vector<Asset*>& GetAssets() {
+  const std::vector<std::shared_ptr<Asset>>& GetAssets() {
     return assets_;
   }
 };

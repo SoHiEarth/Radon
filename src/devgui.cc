@@ -39,7 +39,7 @@ public:
   void SetCurrentObject(Object* object) {
     current_object_ = object;
   }
-  Object*& GetCurrentObject() {
+  Object* GetCurrentObject() {
     return current_object_;
   }
 };
@@ -394,7 +394,7 @@ static void DevNewLevel(Engine* engine) {
   const char* file = tinyfd_saveFileDialog("Save Level XML", "new_level.xml", 1,
                                            kFilterPatterns.data(), "Level Files");
   if (file != nullptr) {
-    engine->GetIO().SetLevel(new Level(engine, file));
+    engine->GetIO().SetLevel(std::make_shared<Level>(engine, file));
   }
 }
 
@@ -431,7 +431,7 @@ void DrawLevel(Engine* engine) {
         ImGui::PushID(object_index);
         ImGui::TableSetColumnIndex(0);
         if (ImGui::Selectable(std::format("{}", *object->name_).c_str())) {
-          GuiManager::Get().SetCurrentObject(object);
+          GuiManager::Get().SetCurrentObject(object.get());
         }
         ImGui::PopID();
       }
@@ -795,7 +795,8 @@ void DrawMenuEdit(Engine* engine) {
         if (ImGui::MenuItem(std::format("{}", name).c_str())) {
           if (io.GetLevel() != nullptr &&
               GuiManager::Get().GetCurrentObject() != nullptr) {
-            GuiManager::Get().GetCurrentObject()->AddComponent(func());
+            auto component = func();
+            GuiManager::Get().GetCurrentObject()->AddComponent(component);
           }
         }
       }

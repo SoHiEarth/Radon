@@ -9,7 +9,7 @@
 
 void ModelRenderer::Render() {
   if (material_ != nullptr) {
-    engine_->GetRenderer().DrawModel(model_, material_->shader_,
+    engine_->GetRenderer().DrawModel(model_, material_->shader_.get(),
                                           static_cast<glm::vec3>(parent_->transform_.position_),
                                           static_cast<glm::vec2>(parent_->transform_.scale_),
                                           static_cast<glm::vec3>(parent_->transform_.rotation_));

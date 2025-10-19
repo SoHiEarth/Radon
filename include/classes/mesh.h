@@ -16,9 +16,9 @@ class Mesh {
 public:
   std::vector<Vertex> vertices_;
   std::vector<unsigned int> indices_;
-  std::vector<Texture*> textures_;
+  std::vector<std::shared_ptr<Texture>> textures_;
   Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
-       std::vector<Texture*> textures)
+       std::vector<std::shared_ptr<Texture>> textures)
       : vertices_(std::move(vertices)),
         indices_(std::move(indices)),
         textures_(std::move(textures)) {
@@ -35,7 +35,7 @@ public:
   AssetType GetType() const override {
     return AssetType::kAssetTypeModel;
   }
-  std::vector<Mesh*> meshes_;
+  std::vector<std::unique_ptr<Mesh>> meshes_;
   std::string directory_;
   Model(Engine* engine, std::string_view path, std::string_view directory)
       : Asset(engine, path), directory_(directory) {}

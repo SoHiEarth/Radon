@@ -13,14 +13,14 @@
 //////////////////////////
 std::map<std::string, Model*> g_loaded_models;
 
-std::vector<Texture*> LoadMaterialTextures(Engine* engine, Model* model, aiMaterial* mat,
+std::vector<std::shared_ptr<Texture>> LoadMaterialTextures(Engine* engine, Model* model, aiMaterial* mat,
                                            aiTextureType type, std::string_view type_name) {
-  std::vector<Texture*> textures;
+  std::vector<std::shared_ptr<Texture>> textures;
   for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
     aiString str;
     mat->GetTexture(type, i, &str);
-    std::string texture_path = std::string(model->directory_) + "/" + std::string(str.C_Str());
-    Texture* texture = engine->GetIO().LoadTexture(texture_path);
+    auto texture_path = std::string(model->directory_) + "/" + std::string(str.C_Str());
+    auto texture = engine->GetIO().LoadTexture(texture_path);
     if (texture != nullptr) {
       texture->name_ = strcpy(new char[type_name.size() + 1], type_name.data());
       textures.push_back(texture);
@@ -29,10 +29,10 @@ std::vector<Texture*> LoadMaterialTextures(Engine* engine, Model* model, aiMater
   return textures;
 }
 
-static Mesh* ProcessMesh(Engine* engine, Model* model, aiMesh* mesh, const aiScene* scene) {
+static std::unique_ptr<Mesh> ProcessMesh(Engine* engine, Model* model, aiMesh* mesh, const aiScene* scene) {
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
-  std::vector<Texture*> textures;
+  std::vector<std::shared_ptr<Texture>> textures;
 
   for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
     Vertex vertex{};
@@ -63,14 +63,14 @@ static Mesh* ProcessMesh(Engine* engine, Model* model, aiMesh* mesh, const aiSce
       indices.push_back(face.mIndices[j]);
     }
   }
-  aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-  std::vector<Texture*> diffuse_textures =
+  auto material = scene->mMaterials[mesh->mMaterialIndex];
+  auto diffuse_textures =
       LoadMaterialTextures(engine, model, material, aiTextureType_DIFFUSE, "texture_diffuse");
   textures.insert(textures.end(), diffuse_textures.begin(), diffuse_textures.end());
-  std::vector<Texture*> specular_textures =
+  auto specular_textures =
       LoadMaterialTextures(engine, model, material, aiTextureType_SPECULAR, "texture_specular");
   textures.insert(textures.end(), specular_textures.begin(), specular_textures.end());
-  return new Mesh(vertices, indices, textures);
+  return std::make_unique<Mesh>(vertices, indices, textures);
 }
 
 static void ProcessNode(Engine* engine, Model* model, aiNode* node, const aiScene* scene) {
