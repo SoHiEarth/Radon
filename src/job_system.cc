@@ -25,7 +25,6 @@ void WorkerThread::Stop() {
 
 void WorkerThread::ThreadLoop() {
   job_system_->RegisterWorkerThreadId(std::this_thread::get_id());
-  fmt::print("Worker thread {} started\n", id_);
   while (running_.load()) {
     Job* job = job_system_->internal_GetNextJob();
     if (job) {
@@ -35,7 +34,6 @@ void WorkerThread::ThreadLoop() {
       std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
   }
-  fmt::print("Worker thread {} stopped", id_);
 }
 
 void IJobSystem::IInit() {
@@ -43,7 +41,7 @@ void IJobSystem::IInit() {
   debug.Log("Initializing Job System");
   shutdown_.store(false);
   worker_count_ = std::max(1u, std::thread::hardware_concurrency() - 1);
-  debug.Log(fmt::format("Creating {} worker threads", worker_count_));
+  fmt::print("Creating {} worker threads\n", worker_count_);
   workers_.reserve(worker_count_);
   for (std::uint32_t i = 0; i < worker_count_; ++i) {
     auto worker = std::make_unique<WorkerThread>(i, this);
@@ -66,6 +64,7 @@ void IJobSystem::IQuit() {
   debug.Log("Shutting down Job System");
   shutdown_.store(true);
   queue_cv_.notify_all();
+  fmt::print("Stopping {} worker threads\n", workers_.size());
   for (auto& worker : workers_) {
     worker->Stop();
   }

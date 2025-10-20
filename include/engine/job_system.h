@@ -154,9 +154,10 @@ public:
   bool IsWorkerThread();
 };
 
-#define PARALLEL_FOR(start, end, body)                                         \
+// Updated macros to use engine context pattern
+#define PARALLEL_FOR(engine, start, end, body)                                 \
   {                                                                            \
-    auto& job_system = Interface::Get<IJobSystem>();                           \
+    auto& job_system = (engine)->GetJobSystem();                               \
     const std::size_t total = (end) - (start);                                 \
     const std::size_t worker_count = job_system.GetWorkerCount();              \
     const std::size_t chunk_size = (total + worker_count - 1) / worker_count;  \
@@ -170,16 +171,21 @@ public:
         for (std::size_t index = chunk_start; index < chunk_end; ++index) {    \
           body;                                                                \
         }                                                                      \
-      }));                                                                     \
+      }, Priority::kMedium));                                                  \
     }                                                                          \
     for (auto& handle : handles) {                                             \
       job_system.Wait(handle);                                                 \
     }                                                                          \
   }
-#define SCHEDULE_JOB(func) Interface::Get<IJobSystem>().Schedule(func)
-#define SCHEDULE_JOB_PRIORITY(func, priority) Interface::Get<IJobSystem>().Schedule(func, priority)
-#define SCHEDULE_JOB_TAGGED(func, tag) \
-  Interface::Get<IJobSystem>().Schedule(func, JobPriority::kNormal, tag)
-#define WAIT_FOR_JOB(handle) Interface::Get<IJobSystem>().Wait(handle)
-#define WAIT_FOR_TAG(tag) Interface::Get<IJobSystem>().WaitForTag(tag)
-#define WAIT_FOR_ALL_JOBS() Interface::Get<IJobSystem>().WaitForAll()
+
+#define SCHEDULE_JOB(engine, func, priority) \
+  (engine)->GetJobSystem().Schedule(func, priority)
+
+#define SCHEDULE_JOB_DEPENDENT(engine, parent, func, priority) \
+  (engine)->GetJobSystem().ScheduleDependent(parent, func, priority)
+
+#define WAIT_FOR_JOB(engine, handle) \
+  (engine)->GetJobSystem().Wait(handle)
+
+#define WAIT_FOR_ALL_JOBS(engine) \
+  (engine)->GetJobSystem().WaitForAll()

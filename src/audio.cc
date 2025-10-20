@@ -3,6 +3,7 @@
 #include <engine/audio.h>
 #include <engine/debug.h>
 #include <engine/engine.h>
+#include <engine/job_system.h>
 #include <cstring>
 #include <format>
 #include <fstream>
@@ -103,13 +104,24 @@ void IAudio::IInit() {
 }
 
 void IAudio::IUpdate() {
+  auto& job_system = engine_->GetJobSystem();
+  std::vector<JobHandle> handles;
+
   for (auto& [handle, sound] : g_sounds_) {
-    ALint state;
-    alGetSourcei(sound.source_, AL_SOURCE_STATE, &state);
-    if (state != AL_PLAYING) {
-      alSourcePlay(sound.source_);
-    }
-    sound.is_playing_ = false;
+    handles.push_back(job_system.Schedule(
+        [&sound]() {
+          ALint state;
+          alGetSourcei(sound.source_, AL_SOURCE_STATE, &state);
+          if (state != AL_PLAYING) {
+            alSourcePlay(sound.source_);
+          }
+          sound.is_playing_ = false;
+        },
+        Priority::kMedium));
+  }
+
+  for (auto& handle : handles) {
+    job_system.Wait(handle);
   }
 }
 

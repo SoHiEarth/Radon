@@ -4,6 +4,7 @@
 #include <engine/debug.h>
 #include <algorithm>
 #include <format>
+#include <engine/job_system.h>
 
 void Level::Init() {
   glfwSetWindowTitle(glfwGetCurrentContext(), std::format("Radon Engine - {}", path_).c_str());
@@ -27,13 +28,15 @@ void Level::Update() {
 }
 
 void Level::Render() {
+  auto& job_system = engine_->GetJobSystem();
+  std::vector<JobHandle> handles;
+
   for (const auto& object : objects_) {
-    if (object != nullptr) {
-      if (object->has_initialized_ && !object->has_quit_) {
-        object->Render();
-      }
+    if (object != nullptr && object->has_initialized_ && !object->has_quit_) {
+      handles.push_back(job_system.Schedule([&object]() { object->Update(); }, Priority::kHigh));
     }
   }
+  engine_->GetJobSystem().WaitForAll();
 }
 
 void Level::Quit() {

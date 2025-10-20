@@ -23,6 +23,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <utility>
 #include <vector>
+#include <engine/job_system.h>
 
 constexpr ImVec4 kTextColorRed = ImVec4(1.0F, 0.0F, 0.0F, 1.0F);
 constexpr float kGuiDragStep = 0.1F;
@@ -71,7 +72,14 @@ void IRenderer::IInit() {
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-  window_ = glfwCreateWindow(width_, height_, "Radon Engine", nullptr, nullptr);
+  const auto* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+  width_ = mode->width;
+  height_ = mode->height;
+  glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+  glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits); 
+  glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+  glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+  window_ = glfwCreateWindow(width_, height_, "Radon Engine", glfwGetPrimaryMonitor(), nullptr);
   auto& debug = engine_->GetDebug();
   if (window_ == nullptr) {
     const char* error_desc;
@@ -166,11 +174,17 @@ void IRenderer::IUpdate() {
   }
   glViewport(0, 0, g_framebuffer.width_, g_framebuffer.height_);
   glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer.framebuffer_);
-  glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
+  glClearColor(camera_.clear_color_.r, camera_.clear_color_.g, camera_.clear_color_.b, camera_.clear_color_.a);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void IRenderer::IRender() {
+  g_screen_shader->Use();
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, g_framebuffer.colorbuffers_[0]);
+  glBindVertexArray(g_screen_vao);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glBindVertexArray(0);
   glViewport(0, 0, width_, height_);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -186,13 +200,6 @@ void IRenderer::IRender() {
     ImGui::Image(g_framebuffer.colorbuffers_[0], image_size, ImVec2(0, 1), ImVec2(1, 0));
 #endif
     ImGui::End();
-  } else {
-    g_screen_shader->Use();
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, g_framebuffer.colorbuffers_[0]);
-    glBindVertexArray(g_screen_vao);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0);
   }
   gui.Render();
   if (window_ != nullptr) {
@@ -223,16 +230,19 @@ void IRenderer::IQuit() {
 void IRenderer::DrawRendererStatus() {
   if (engine_->GetGui().GetHud()) {
     ImGui::Begin("IRenderer");
+    ImGui::SeparatorText("Lights");
     ImGui::Text("Directional light count: %d",
                 static_cast<int>(directional_lights_.size()));
     ImGui::Text("Point light count: %d",
                 static_cast<int>(point_lights_.size()));
     ImGui::Text("Spot light count: %d",
                 static_cast<int>(spot_lights_.size()));
-    ImGui::DragFloat3("Camera Position",
+    ImGui::SeparatorText("Camera");
+    ImGui::DragFloat3("Position",
                       glm::value_ptr(camera_.position_));
-    ImGui::DragFloat("Camera Field of View", &g_camera_fov);
-    ImGui::DragFloat("Camera Speed", &g_camera_speed, 0.01F, 0.01F, 10.0F);
+    ImGui::DragFloat("Field of View", &g_camera_fov);
+    ImGui::DragFloat("Speed", &g_camera_speed, 0.01F, 0.01F, 10.0F);
+    ImGui::ColorEdit4("Clear Color", glm::value_ptr(camera_.clear_color_));
     ImGui::SeparatorText("Screen Shader");
     ImGui::InputFloat("Render Factor", &settings_.render_factor_,
                       kGuiDragStep);
@@ -323,7 +333,9 @@ void IRenderer::DrawModel(const Model* model, const Shader* shader, const glm::v
     return;
   }
   for (const auto& mesh : model->meshes_) {
-    DrawMesh(mesh.get(), shader, pos, size, rot);
+    auto& job_system = engine_->GetJobSystem();
+    PARALLEL_FOR(engine_, 0, model->meshes_.size(),
+                 { DrawMesh(model->meshes_[index].get(), shader, pos, size, rot); });
   }
 }
 
