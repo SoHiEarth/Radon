@@ -29,10 +29,20 @@
   Model*& GetModel() override {          \
     return model_;                       \
   }
+#define REGISTER_COMPONENT(Type)               \
+  namespace {                                  \
+  struct Type##Registrar {                     \
+    Type##Registrar() {                        \
+      IIO::GetComponentFactory()[#Type] = []() { return std::make_unique<##Type>(); };\
+    }                                          \
+  };                                           \
+  static Type##Registrar g_##Type##_registrar; \
+  }
 
 #include <classes/editable.h>
 #include <pugixml.hpp>
 #include <engine/engine.h>
+#include <engine/io.h>
 
 class Model;
 class Object;

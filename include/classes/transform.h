@@ -14,3 +14,5 @@ public:
     return "Transform";
   }
 };
+
+REGISTER_COMPONENT(Transform);

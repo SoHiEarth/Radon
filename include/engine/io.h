@@ -22,7 +22,6 @@ private:
   std::shared_ptr<Level> g_level_ = nullptr;
   std::string g_engine_directory_;
   std::map<std::string, std::shared_ptr<Texture>> g_loaded_textures_;
-  static std::unordered_map<std::string_view, std::function<std::unique_ptr<Component>()>> g_component_factory_;
   static bool CheckFile(std::string_view path);
 
 protected:
@@ -30,6 +29,13 @@ protected:
   void IQuit() override;
 
 public:
+  static std::unordered_map<std::string_view, std::function<std::unique_ptr<Component>()>>&
+  GetComponentFactory() {
+    static std::unordered_map<std::string_view, std::function<std::unique_ptr<Component>()>>
+        factory;
+    return factory;
+  }
+
   const char* Name() override {
     return "IO";
   }
@@ -44,9 +50,6 @@ public:
   }
   std::map<std::string, std::shared_ptr<Texture>>& GetLoadedTextures() {
     return g_loaded_textures_;
-  }
-  static std::unordered_map<std::string_view, std::function<std::unique_ptr<Component>()>>& GetComponentFactory() {
-    return g_component_factory_;
   }
 
   std::shared_ptr<Shader> LoadShader(std::string_view /*vertex_path*/, std::string_view /*fragment_path*/);

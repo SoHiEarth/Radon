@@ -22,6 +22,7 @@ public:
   }
   void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
 };
+REGISTER_COMPONENT(DirectionalLight);
 
 class PointLight : public Light {
 public:
@@ -36,6 +37,7 @@ public:
   }
   void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
 };
+REGISTER_COMPONENT(PointLight);
 
 class SpotLight : public Light {
 public:
@@ -51,3 +53,4 @@ public:
   }
   void SetUniforms(const Shader* /*shader*/, int /*kPos*/);
 };
+REGISTER_COMPONENT(SpotLight);

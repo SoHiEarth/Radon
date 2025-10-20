@@ -11,3 +11,5 @@ public:
     return "PhysicsObject";
   }
 };
+
+REGISTER_COMPONENT(PhysicsObject);

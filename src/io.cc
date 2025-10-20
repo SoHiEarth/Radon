@@ -41,11 +41,6 @@ constexpr float kMaterialShininessDefaultValue = 32.0F;
   }
 
 enum : std::uint16_t { kLogSize = 512 };
-std::unordered_map<std::string_view, std::function<std::unique_ptr<Component>()>> IIO::g_component_factory_ = {
-    OBJECT_FACTORY_KEY(Transform),        OBJECT_FACTORY_KEY(ModelRenderer),
-    OBJECT_FACTORY_KEY(AudioSource),      OBJECT_FACTORY_KEY(PhysicsObject),
-    OBJECT_FACTORY_KEY(DirectionalLight), OBJECT_FACTORY_KEY(PointLight),
-    OBJECT_FACTORY_KEY(SpotLight)};
 bool IIO::CheckFile(std::string_view path) {
   return std::filesystem::exists(path);
 }
@@ -152,8 +147,8 @@ std::unique_ptr<Object> IIO::LoadObject(pugi::xml_node& base_node) {
 
   for (auto& component_node : base_node.children("componentheader")) {
     auto component_type = component_node.attribute("type").as_string();
-    if (g_component_factory_.contains(component_type)) {
-      auto component = g_component_factory_[component_type]();
+    if (GetComponentFactory().contains(component_type)) {
+      auto component = GetComponentFactory()[component_type]();
       if (component != nullptr) {
         object->AddComponent(component);
       } else {

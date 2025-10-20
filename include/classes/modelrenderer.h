@@ -16,3 +16,5 @@ public:
     return "ModelRenderer";
   }
 };
+
+REGISTER_COMPONENT(ModelRenderer);

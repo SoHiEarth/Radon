@@ -17,3 +17,5 @@ public:
 private:
   unsigned int handle_;
 };
+
+REGISTER_COMPONENT(AudioSource);
